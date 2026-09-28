@@ -1,0 +1,1548 @@
+
+--- src\components\AddIdeaModal.tsx : 108 ---
+          <button className="icon-btn" type="button" aria-label="Tutup modal" onClick={onClose}>
+            <X size={18} />
+          </button>
+
+
+--- src\components\AddIdeaModal.tsx : 195 ---
+          <button className="btn btn-secondary" type="button" onClick={onClose}>
+            Cancel
+          </button>
+
+
+--- src\components\AddIdeaModal.tsx : 198 ---
+          <button className="btn btn-primary" type="submit">
+            {initialData ? 'Simpan Perubahan' : 'Simpan Ide'}
+          </button>
+
+
+--- src\components\AlertModal.tsx : 210 ---
+          <button
+            type="button"
+            className="icon-btn alert-close-btn"
+            onClick={onClose}
+            aria-label="Tutup alert"
+          >
+            <X size={16} />
+          </button>
+
+
+--- src\components\AlertModal.tsx : 229 ---
+                <button
+                  type="button"
+                  className="alert-copy-btn"
+                  onClick={handleCopyTechDetails}
+                  title="Salin rincian error"
+                >
+                  {copied ? <Check size={12} /> : <Copy size={12} />}
+                  {copied ? 'Tersalin' : 'Salin Log'}
+                </button>
+
+
+--- src\components\AlertModal.tsx : 258 ---
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => {
+                actionButton.onClick();
+                onClose();
+              }}
+            >
+              <ExternalLink size={15} /> {actionButton.label}
+            </button>
+
+
+--- src\components\AlertModal.tsx : 270 ---
+            <button
+              type="button"
+              className="btn btn-secondary alert-cancel-btn"
+              onClick={handleCancel}
+            >
+              {cancelText}
+            </button>
+
+
+--- src\components\AlertModal.tsx : 278 ---
+          <button
+            type="button"
+            className="btn btn-primary alert-confirm-btn"
+            onClick={handleConfirm}
+            autoFocus
+          >
+            {confirmText}
+          </button>
+
+
+--- src\components\BulkImportModal.tsx : 164 ---
+          <button
+            className="icon-btn"
+            type="button"
+            aria-label="Tutup modal"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            <X size={18} />
+          </button>
+
+
+--- src\components\BulkImportModal.tsx : 183 ---
+              <button
+                type="button"
+                className={`tab ${activeTab === 'file' ? 'active' : ''}`}
+                onClick={() => setActiveTab('file')}
+                style={{ padding: '8px 16px', borderRadius: 8, fontSize: '0.85rem' }}
+              >
+                Upload Berkas (CSV / MD / TXT)
+              </button>
+
+
+--- src\components\BulkImportModal.tsx : 191 ---
+              <button
+                type="button"
+                className={`tab ${activeTab === 'paste' ? 'active' : ''}`}
+                onClick={() => setActiveTab('paste')}
+                style={{ padding: '8px 16px', borderRadius: 8, fontSize: '0.85rem' }}
+              >
+                Tempel Teks Langsung
+              </button>
+
+
+--- src\components\BulkImportModal.tsx : 280 ---
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => handleProcessText(pasteText, 'txt', 'Teks Input')}
+                  disabled={!pasteText.trim()}
+                  style={{ alignSelf: 'flex-end', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  <Sparkles size={16} /> Parsing Ide Konten
+                </button>
+
+
+--- src\components\BulkImportModal.tsx : 318 ---
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleToggleSelectAll}
+                  style={{ fontSize: '0.78rem', padding: '4px 10px' }}
+                >
+                  {parsedItems.every((i) => i.selected) ? 'Batalkan Semua' : 'Pilih Semua'}
+                </button>
+
+
+--- src\components\BulkImportModal.tsx : 326 ---
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleReset}
+                  style={{ fontSize: '0.78rem', padding: '4px 10px' }}
+                >
+                  Ganti Berkas
+                </button>
+
+
+--- src\components\BulkImportModal.tsx : 425 ---
+                        <button
+                          type="button"
+                          className="icon-btn"
+                          onClick={() => handleDeleteItem(item.id)}
+                          title="Hapus baris ini"
+                          style={{ color: '#ef4444', padding: 4 }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+
+
+--- src\components\BulkImportModal.tsx : 444 ---
+          <button className="btn btn-secondary" type="button" onClick={onClose} disabled={isSubmitting}>
+            Batal
+          </button>
+
+
+--- src\components\BulkImportModal.tsx : 448 ---
+            <button
+              className="btn btn-primary"
+              type="button"
+              onClick={handleConfirmImport}
+              disabled={isSubmitting || selectedCount === 0}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              <Check size={16} />
+              {isSubmitting ? 'Mengimpor...' : `Import ${selectedCount} Ide ke Pipeline`}
+            </button>
+
+
+--- src\components\ImportModal.tsx : 68 ---
+          <button
+            className="icon-btn"
+            type="button"
+            aria-label="Tutup modal"
+            onClick={onClose}
+            disabled={isProcessing}
+          >
+            <X size={18} />
+          </button>
+
+
+--- src\components\ImportModal.tsx : 214 ---
+          <button className="btn btn-secondary" type="button" onClick={onClose} disabled={isProcessing}>
+            Tutup
+          </button>
+
+
+--- src\components\Sidebar.tsx : 37 ---
+          <button className="icon-btn" type="button" aria-label="Tutup navigasi" onClick={onClose}>
+            <X size={18} />
+          </button>
+
+
+--- src\components\Sidebar.tsx : 45 ---
+              <button
+                key={item.key}
+                className={`nav-item ${activeView === item.key ? 'active' : ''}`}
+                type="button"
+                onClick={() => onNavigate(item.key)}
+              >
+                <Icon size={17} />
+                {item.label}
+              </button>
+
+
+--- src\components\Terminal.tsx : 275 ---
+            <button
+              className="icon-btn"
+              type="button"
+              aria-label="Bersihkan log"
+              onClick={onClear}
+              title="Bersihkan riwayat log"
+              style={{ width: 26, height: 26, fontSize: '.75rem', opacity: 0.7 }}
+            >
+              <Trash2 size={13} />
+            </button>
+
+
+--- src\components\Terminal.tsx : 286 ---
+          <button
+            className="icon-btn"
+            type="button"
+            aria-label="Tutup terminal"
+            onClick={handleManualClose}
+            title="Tutup terminal log"
+            style={{ width: 28, height: 28, fontSize: '.75rem' }}
+          >
+            <X size={14} />
+          </button>
+
+
+--- src\components\Topbar.tsx : 45 ---
+      <button className="icon-btn" type="button" aria-label="Buka navigasi" onClick={onMenuClick}>
+        <Menu size={19} />
+      </button>
+
+
+--- src\components\Topbar.tsx : 86 ---
+      <button
+        className="icon-btn"
+        type="button"
+        aria-label="Toggle Activity Log"
+        onClick={() => (isOpen ? closeTerminal() : openTerminal())}
+        title={isOpen ? 'Tutup Activity Log' : 'Buka Activity Log'}
+        style={{
+          position: 'relative',
+          width: 34,
+          height: 34,
+          color: isOpen ? 'var(--cyan)' : 'inherit',
+          borderColor: isOpen ? 'rgba(79, 232, 255, 0.4)' : undefined,
+          background: isOpen ? 'rgba(79, 232, 255, 0.1)' : undefined,
+        }}
+      >
+        <TerminalIcon size={16} />
+        {status === 'LIVE' && (
+          <span
+            style={{
+              position: 'absolute',
+              top: 5,
+              right: 5,
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              background: 'var(--green)',
+              boxShadow: '0 0 6px var(--green)',
+            }}
+          />
+        )}
+      </button>
+
+
+--- src\views\ContentTable.tsx : 206 ---
+          <button className="row-action" type="button" onClick={() => onValidate(item)} title="Validasi Ide dengan AI">
+            <Zap size={14} /> Validasi AI
+          </button>
+
+
+--- src\views\ContentTable.tsx : 218 ---
+          <button className="row-action" type="button" onClick={() => onViewScript(item)} title="Buka Workspace">
+            <FileText size={14} /> Workspace
+          </button>
+
+
+--- src\views\ContentTable.tsx : 224 ---
+          <button className="row-action" type="button" onClick={() => onViewScript(item)} title="View Script">
+            <FileText size={14} /> Script
+          </button>
+
+
+--- src\views\ContentTable.tsx : 230 ---
+          <button className="row-action" type="button" onClick={() => onViewScript(item)} title="Buat Thumbnail">
+            <Image size={14} /> Thumbnail
+          </button>
+
+
+--- src\views\ContentTable.tsx : 236 ---
+          <button className="row-action" type="button" onClick={() => onViewPublished(item)} title="Open Published">
+            <ExternalLink size={14} /> Open
+          </button>
+
+
+--- src\views\ContentTable.tsx : 264 ---
+          <button className="btn btn-primary" type="button" onClick={onAddIdea}>
+            <Plus size={18} /> Tambah Ide
+          </button>
+
+
+--- src\views\ContentTable.tsx : 267 ---
+          <button className="btn btn-secondary" type="button" onClick={onImportFile}>
+            <Upload size={18} /> Import File
+          </button>
+
+
+--- src\views\ContentTable.tsx : 277 ---
+              <button
+                key={tab.key}
+                className={`tab ${activeTab === tab.key ? 'active' : ''}`}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+              >
+                {tab.label}
+              </button>
+
+
+--- src\views\ContentTable.tsx : 308 ---
+            <button
+              className="small-btn"
+              type="button"
+              onClick={() => {
+                setCategoryFilter('');
+                setStatusFilter('');
+              }}
+              style={{
+                cursor: (categoryFilter || statusFilter) ? 'pointer' : 'default',
+                color: (categoryFilter || statusFilter) ? 'var(--cyan)' : undefined,
+                borderColor: (categoryFilter || statusFilter) ? 'var(--cyan)' : undefined,
+              }}
+              title={(categoryFilter || statusFilter) ? 'Klik untuk mereset filter' : 'Filter aktif'}
+            >
+              <Filter size={13} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />
+              {(categoryFilter || statusFilter) ? 'Reset Filter' : 'Filter'}
+            </button>
+
+
+--- src\views\ContentTable.tsx : 360 ---
+                        <button
+                          type="button"
+                          className="cell-title cell-title-btn"
+                          onClick={() => handleTitleClick(item)}
+                          title={`Buka detail / workspace: ${item.title}`}
+                          aria-label={`Buka detail ${item.title}`}
+                        >
+                          {item.title}
+                        </button>
+
+
+--- src\views\ContentTable.tsx : 435 ---
+                          <button
+                            className="row-action default"
+                            type="button"
+                            onClick={() => onEdit(item)}
+                            title="Edit Ide"
+                            style={{ padding: '6px' }}
+                          >
+                            <Pencil size={14} />
+                          </button>
+
+
+--- src\views\ContentTable.tsx : 444 ---
+                          <button
+                            className="row-action danger"
+                            type="button"
+                            onClick={() => handleDeleteClick(item)}
+                            title="Hapus"
+                            style={{ padding: '6px' }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+
+
+--- src\views\FileManager.tsx : 69 ---
+          <button className="btn btn-primary" type="button" onClick={onImportFile}>
+            <UploadCloud size={18} /> Upload Dokumen (.docx / .txt)
+          </button>
+
+
+--- src\views\FileManager.tsx : 123 ---
+                      <button
+                        className="row-action"
+                        type="button"
+                        onClick={() => setPreviewFile(file)}
+                        title="Lihat teks hasil ekstraksi"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                      >
+                        <Eye size={13} /> Preview
+                      </button>
+
+
+--- src\views\FileManager.tsx : 132 ---
+                      <button
+                        className="row-action danger"
+                        type="button"
+                        onClick={() => handleDeleteClick(file)}
+                        title="Hapus file"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+
+
+--- src\views\FileManager.tsx : 177 ---
+              <button className="icon-btn" type="button" onClick={() => setPreviewFile(null)}>
+                <X size={18} />
+              </button>
+
+
+--- src\views\FileManager.tsx : 194 ---
+                <button
+                  className="row-action"
+                  type="button"
+                  onClick={() => handleCopy(previewFile.extracted_text || '')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                >
+                  {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'Tersalin' : 'Salin Teks'}
+                </button>
+
+
+--- src\views\FileManager.tsx : 220 ---
+              <button className="btn btn-secondary" type="button" onClick={() => setPreviewFile(null)}>
+                Tutup
+              </button>
+
+
+--- src\views\Overview.tsx : 102 ---
+          <button className="btn btn-primary" type="button" onClick={onAddIdea}>
+            <Plus size={18} /> Tambah Ide
+          </button>
+
+
+--- src\views\Overview.tsx : 105 ---
+          <button className="btn btn-secondary" type="button" onClick={onImportFile}>
+            <Upload size={18} /> Import File
+          </button>
+
+
+--- src\views\Overview.tsx : 149 ---
+          <button
+            className="small-btn"
+            type="button"
+            onClick={() => onNavigate('ideas')}
+          >
+            Lihat Semua
+          </button>
+
+
+--- src\views\Overview.tsx : 176 ---
+                      <button
+                        type="button"
+                        className="cell-title cell-title-btn"
+                        onClick={() => handleTitleClick(item)}
+                        title={`Buka detail / workspace: ${item.title}`}
+                        aria-label={`Buka detail ${item.title}`}
+                      >
+                        {item.title}
+                      </button>
+
+
+--- src\views\PublishedDetail.tsx : 220 ---
+        <button
+          className="btn btn-secondary"
+          type="button"
+          onClick={onBack}
+        >
+          <ArrowLeft size={18} /> Kembali ke Pipeline
+        </button>
+
+
+--- src\views\PublishedDetail.tsx : 229 ---
+          <button
+            className="btn btn-secondary"
+            type="button"
+            onClick={() => setIsEditing(true)}
+          >
+            <Edit3 size={16} /> Edit Metrik Performa
+          </button>
+
+
+--- src\views\PublishedDetail.tsx : 288 ---
+                <button
+                  className="btn btn-secondary revert-stage-btn"
+                  type="button"
+                  onClick={() => handleStatusChange('Thumbnailing')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fcd34d', padding: '4px 12px', fontSize: '0.8rem' }}
+                  title="Kembalikan status pipeline ke tahap Thumbnailing"
+                >
+                  <Undo2 size={14} /> Revert ke Thumbnailing
+                </button>
+
+
+--- src\views\PublishedDetail.tsx : 380 ---
+              <button
+                className="btn btn-secondary"
+                type="button"
+                onClick={() => {
+                  setViewsInput(String(item.views ?? 0));
+                  setLikesInput(String(item.likes ?? 0));
+                  setCommentsInput(String(item.comments ?? 0));
+                  setPlatformInput(item.target_platform || 'YouTube');
+                  setIsEditing(false);
+                }}
+                disabled={isSaving}
+              >
+                Batal
+              </button>
+
+
+--- src\views\PublishedDetail.tsx : 394 ---
+              <button
+                className="btn btn-primary"
+                type="submit"
+                disabled={isSaving}
+              >
+                <Save size={16} /> {isSaving ? 'Menyimpan…' : 'Simpan Metrik'}
+              </button>
+
+
+--- src\views\PublishedDetail.tsx : 458 ---
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={handleGenerateTitles}
+              disabled={generatingTitles}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', padding: '6px 14px' }}
+              title="Generate ulang alternatif judul Mode A & Mode B"
+            >
+              {generatingTitles ? (
+                <>
+                  <Loader2 size={14} className="spin" /> Membuat Judul...
+                </>
+              ) : (
+                <>
+                  <RotateCw size={14} /> Buat Ulang Judul A/B
+                </>
+              )}
+            </button>
+
+
+--- src\views\PublishedDetail.tsx : 494 ---
+              <button
+                type="button"
+                className={`copy-action-btn ${copiedKey === 'titleA' ? 'copied' : ''}`}
+                onClick={() => copyText(activeTitleA, 'titleA')}
+                title="Salin judul Mode A"
+              >
+                {copiedKey === 'titleA' ? <Check size={13} /> : <Copy size={13} />}
+                <span>{copiedKey === 'titleA' ? 'Tersalin' : 'Copy'}</span>
+              </button>
+
+
+--- src\views\PublishedDetail.tsx : 504 ---
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => handleApplyTitleAsMain(activeTitleA)}
+                  style={{ padding: '3px 9px', fontSize: '0.76rem' }}
+                  title="Terapkan sebagai judul utama"
+                >
+                  Gunakan sbg Judul Utama
+                </button>
+
+
+--- src\views\PublishedDetail.tsx : 533 ---
+                  <button
+                    type="button"
+                    className={`copy-action-btn ${copiedKey === 'titleB' ? 'copied' : ''}`}
+                    onClick={() => copyText(activeTitleB, 'titleB')}
+                    title="Salin judul Mode B"
+                  >
+                    {copiedKey === 'titleB' ? <Check size={13} /> : <Copy size={13} />}
+                    <span>{copiedKey === 'titleB' ? 'Tersalin' : 'Copy'}</span>
+                  </button>
+
+
+--- src\views\PublishedDetail.tsx : 543 ---
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => handleApplyTitleAsMain(activeTitleB)}
+                      style={{ padding: '3px 9px', fontSize: '0.76rem' }}
+                      title="Terapkan sebagai judul utama"
+                    >
+                      Gunakan sbg Judul Utama
+                    </button>
+
+
+--- src\views\PublishedDetail.tsx : 588 ---
+              <button
+                type="button"
+                className={`copy-action-btn ${copiedKey === 'finalScript' ? 'copied' : ''}`}
+                onClick={() => copyText(finalScriptText, 'finalScript')}
+                title="Salin Naskah Video Final"
+              >
+                {copiedKey === 'finalScript' ? <Check size={14} /> : <Copy size={14} />}
+                <span>{copiedKey === 'finalScript' ? 'Tersalin' : 'Copy Naskah'}</span>
+              </button>
+
+
+--- src\views\PublishedDetail.tsx : 598 ---
+            <button
+              type="button"
+              className="copy-action-btn"
+              onClick={() => setIsScriptCollapsed((prev) => !prev)}
+              title={isScriptCollapsed ? 'Buka Naskah' : 'Susutkan Naskah'}
+            >
+              {isScriptCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+              <span>{isScriptCollapsed ? 'Buka' : 'Susut'}</span>
+            </button>
+
+
+--- src\views\PublishedDetail.tsx : 646 ---
+              <button
+                type="button"
+                className={`copy-action-btn ${copiedKey === 'thumbPrompt' ? 'copied' : ''}`}
+                onClick={() => copyText(item.generated_thumbnail_prompt, 'thumbPrompt')}
+                title="Salin Prompt Thumbnail"
+              >
+                {copiedKey === 'thumbPrompt' ? <Check size={13} /> : <Copy size={13} />}
+                <span>{copiedKey === 'thumbPrompt' ? 'Tersalin' : 'Copy'}</span>
+              </button>
+
+
+--- src\views\ScriptDetail.tsx : 1102 ---
+      <button
+        className="btn btn-secondary"
+        type="button"
+        onClick={handleBack}
+        style={{ marginBottom: 18 }}
+      >
+        <ArrowLeft size={18} /> Kembali ke Pipeline
+      </button>
+
+
+--- src\views\ScriptDetail.tsx : 1189 ---
+                  <button
+                    type="button"
+                    className="copy-action-btn"
+                    onClick={handleRegenerateResearchPrompt}
+                    disabled={generatingResearch}
+                    title="Generate ulang Research Brief"
+                  >
+                    <RotateCw size={14} className={generatingResearch ? 'spin' : ''} />
+                    <span>{generatingResearch ? 'Memproses...' : (item.research_brief_prompt ? 'Regenerate' : 'Generate Brief')}</span>
+                  </button>
+
+
+--- src\views\ScriptDetail.tsx : 1200 ---
+                <button
+                  type="button"
+                  className={`copy-action-btn ${copied === 'rbp' ? 'copied' : ''}`}
+                  onClick={() => copyText(formatPromptText(item.research_brief_prompt || researchBriefPrompt) || '', 'rbp')}
+                  title="Salin Research Brief"
+                >
+                  {copied === 'rbp' ? <Check size={15} /> : <Copy size={15} />}
+                  <span>{copied === 'rbp' ? 'Tersalin' : 'Copy'}</span>
+                </button>
+
+
+--- src\views\ScriptDetail.tsx : 1209 ---
+                <button
+                  type="button"
+                  className="copy-action-btn"
+                  onClick={() => setIsResearchCollapsed((prev) => !prev)}
+                  title={isResearchCollapsed ? 'Buka tampilan Research Brief' : 'Susutkan tampilan Research Brief'}
+                >
+                  {isResearchCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                  <span>{isResearchCollapsed ? 'Buka' : 'Susut'}</span>
+                </button>
+
+
+--- src\views\ScriptDetail.tsx : 1258 ---
+                  <button
+                    type="button"
+                    className={`copy-action-btn ${copied === 'handoff' ? 'copied' : ''}`}
+                    onClick={() => copyText(formatPromptText(item.scriptwriter_brief_prompt || handoffPrompt) || '', 'handoff')}
+                    title="Salin Scriptwriter Handoff"
+                  >
+                    {copied === 'handoff' ? <Check size={15} /> : <Copy size={15} />}
+                    <span>{copied === 'handoff' ? 'Tersalin' : 'Copy'}</span>
+                  </button>
+
+
+--- src\views\ScriptDetail.tsx : 1267 ---
+                  <button
+                    type="button"
+                    className="copy-action-btn"
+                    onClick={() => setIsHandoffCollapsed((prev) => !prev)}
+                    title={isHandoffCollapsed ? 'Buka tampilan Scriptwriter Handoff' : 'Susutkan tampilan Scriptwriter Handoff'}
+                  >
+                    {isHandoffCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                    <span>{isHandoffCollapsed ? 'Buka' : 'Susut'}</span>
+                  </button>
+
+
+--- src\views\ScriptDetail.tsx : 1300 ---
+                <button
+                  type="button"
+                  className={`copy-action-btn ${copied === 'tp' ? 'copied' : ''}`}
+                  onClick={() => copyText(formatPromptText(item.generated_thumbnail_prompt || thumbnailPrompt) || '', 'tp')}
+                  title="Salin Thumbnail Generator"
+                >
+                  {copied === 'tp' ? <Check size={15} /> : <Copy size={15} />}
+                  <span>{copied === 'tp' ? 'Tersalin' : 'Copy'}</span>
+                </button>
+
+
+--- src\views\ScriptDetail.tsx : 1364 ---
+                <button
+                  className="btn btn-secondary"
+                  type="button"
+                  onClick={onBack}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  <ArrowLeft size={16} /> Kembali ke Ide
+                </button>
+
+
+--- src\views\ScriptDetail.tsx : 1372 ---
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={async () => {
+                    await handleStatusChange('Researching');
+                    if (!item.research_brief_prompt) {
+                      await handleRegenerateResearchPrompt();
+                    }
+                  }}
+                  disabled={loading || generatingResearch}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px' }}
+                  title="Pindah ke tahap riset dan siapkan workspace riset"
+                >
+                  {generatingResearch ? (
+                    <>
+                      <Loader2 size={16} className="spin" /> Menyiapkan Riset...
+                    </>
+                  ) : (
+                    <>
+                      Mulai Riset (Lanjut ke Researching) <ArrowRight size={16} />
+                    </>
+                  )}
+                </button>
+
+
+--- src\views\ScriptDetail.tsx : 1599 ---
+                  <button
+                    className="btn btn-secondary revert-stage-btn"
+                    type="button"
+                    onClick={() => handleStatusChange('Idea')}
+                    disabled={loading || generatingHandoff || generatingResearch}
+                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fcd34d' }}
+                    title="Kembalikan status pipeline ke tahap Idea"
+                  >
+                    <Undo2 size={16} /> Revert ke Idea
+                  </button>
+
+
+--- src\views\ScriptDetail.tsx : 1610 ---
+                    <button
+                      className="btn btn-secondary"
+                      type="button"
+                      onClick={() => handleGenerateHandoff(false)}
+                      disabled={loading || generatingHandoff}
+                      style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 18px', fontSize: '0.9rem' }}
+                      title="Generate ulang Scriptwriter Handoff berdasarkan data riset terbaru"
+                    >
+                      <RotateCw size={16} className={generatingHandoff ? 'spin' : ''} />
+                      {generatingHandoff ? 'Meregenerasi...' : 'Generate Ulang Handoff'}
+                    </button>
+
+
+--- src\views\ScriptDetail.tsx : 1622 ---
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    onClick={hasGeneratedScriptBrief ? handleProceedToScripting : () => handleGenerateHandoff(false)}
+                    disabled={loading || generatingHandoff}
+                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', fontSize: '0.9rem' }}
+                  >
+                    {generatingHandoff ? (
+                      <>
+                        <Loader2 size={16} className="spin" /> Memproses...
+                      </>
+                    ) : hasGeneratedScriptBrief ? (
+                      <>
+                        Lanjut ke Scripting <ArrowRight size={16} />
+                      </>
+                    ) : (
+                      <>
+                        Lanjut: Generate Scriptwriter Handoff <ArrowRight size={16} />
+                      </>
+                    )}
+                  </button>
+
+
+--- src\views\ScriptDetail.tsx : 1674 ---
+                      <button
+                        type="button"
+                        className="editor-maximize-btn"
+                        onClick={() => setIsScriptMaximized(true)}
+                        title="Perbesar / Maximize Editor Naskah"
+                      >
+                        <Maximize2 size={13} />
+                        <span>Maximize</span>
+                      </button>
+
+
+--- src\views\ScriptDetail.tsx : 1683 ---
+                      <button
+                        type="button"
+                        className="copy-action-btn"
+                        onClick={() => setIsScriptInputCollapsed(false)}
+                        title="Buka Editor Naskah"
+                      >
+                        <ChevronDown size={14} />
+                        <span>Buka</span>
+                      </button>
+
+
+--- src\views\ScriptDetail.tsx : 1720 ---
+                      <button
+                        type="button"
+                        className="copy-action-btn"
+                        onClick={() => setIsScriptInputCollapsed(true)}
+                        title="Susutkan Editor Naskah menjadi kartu ringkas"
+                      >
+                        <ChevronUp size={14} />
+                        <span>Susutkan</span>
+                      </button>
+
+
+--- src\views\ScriptDetail.tsx : 1745 ---
+                            <button
+                              type="button"
+                              className="editor-maximize-btn"
+                              onClick={handleUndoLatestAiRevision}
+                              title="Undo revisi AI terakhir dan kembalikan draf sebelum revisi"
+                              style={{ color: '#fcd34d' }}
+                            >
+                              <Undo2 size={13} />
+                              <span>Undo Revisi AI</span>
+                            </button>
+
+
+--- src\views\ScriptDetail.tsx : 1757 ---
+                            <button
+                              type="button"
+                              className="editor-maximize-btn"
+                              onClick={() => setShowDraftHistoryModal(true)}
+                              title="Lihat riwayat snapshot draf"
+                            >
+                              <Clock size={13} />
+                              <span>Riwayat Draf ({draftHistory.length})</span>
+                            </button>
+
+
+--- src\views\ScriptDetail.tsx : 1767 ---
+                          <button
+                            type="button"
+                            className="editor-maximize-btn"
+                            onClick={() => setIsScriptMaximized(true)}
+                            title="Perbesar / Maximize Editor Naskah"
+                          >
+                            <Maximize2 size={13} />
+                            <span>Maximize</span>
+                          </button>
+
+
+--- src\views\ScriptDetail.tsx : 1964 ---
+                  <button
+                    className="btn btn-secondary revert-stage-btn"
+                    type="button"
+                    onClick={() => handleStatusChange('Researching')}
+                    disabled={loading || generatingAudit || generatingVisualCue || generatingThumbnail}
+                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fcd34d' }}
+                    title="Kembalikan status pipeline ke tahap Riset (Researching)"
+                  >
+                    <Undo2 size={16} /> Revert ke Researching
+                  </button>
+
+
+--- src\views\ScriptDetail.tsx : 1974 ---
+                  <button
+                    className="btn btn-secondary"
+                    onClick={handleRunAudit}
+                    disabled={generatingAudit || loading || generatingVisualCue}
+                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    title="Audit kelayakan tutur lisan dan prosodi AI TTS untuk naskah ini"
+                  >
+                    {generatingAudit ? (
+                      <>
+                        <Loader2 size={15} className="spin" /> Mengaudit...
+                      </>
+                    ) : (
+                      'Audit Spoken & TTS ✨'
+                    )}
+                  </button>
+
+
+--- src\views\ScriptDetail.tsx : 1989 ---
+                  <button
+                    className="btn btn-secondary"
+                    onClick={handleRunVisualCueAnnotation}
+                    disabled={generatingVisualCue || loading || generatingAudit}
+                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    title="Anotasi visual cue dan b-roll director secara langsung pada naskah"
+                  >
+                    {generatingVisualCue ? (
+                      <>
+                        <Loader2 size={15} className="spin" /> Menganotasi...
+                      </>
+                    ) : (
+                      'Anotasi Visual Cue ✨'
+                    )}
+                  </button>
+
+
+--- src\views\ScriptDetail.tsx : 2004 ---
+                  <button
+                    className="btn btn-secondary"
+                    onClick={handleGenerateTitles}
+                    disabled={generatingTitles || loading || generatingAudit || generatingVisualCue}
+                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    title="Generate 2 alternatif judul YouTube: Mode A (5-8 kata) & Mode B (SEO Keyword)"
+                  >
+                    {generatingTitles ? (
+                      <>
+                        <Loader2 size={15} className="spin" /> Membuat Judul...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={15} style={{ color: 'var(--amber)' }} /> Buat Judul A/B ✨
+                      </>
+                    )}
+                  </button>
+
+
+--- src\views\ScriptDetail.tsx : 2022 ---
+                    <button
+                      className="btn btn-secondary"
+                      type="button"
+                      onClick={() => handleGenerateThumbnail(false)}
+                      disabled={loading || generatingThumbnail || generatingAudit || generatingVisualCue}
+                      style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 18px', fontSize: '0.9rem' }}
+                      title="Generate ulang Thumbnail Copy Prompt berdasarkan naskah terbaru"
+                    >
+                      <RotateCw size={16} className={generatingThumbnail ? 'spin' : ''} />
+                      {generatingThumbnail ? 'Meregenerasi...' : 'Generate Ulang Thumbnail'}
+                    </button>
+
+
+--- src\views\ScriptDetail.tsx : 2034 ---
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    onClick={hasGeneratedThumbnail ? handleProceedToThumbnailing : () => handleGenerateThumbnail(false)}
+                    disabled={loading || generatingAudit || generatingVisualCue || generatingThumbnail}
+                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', fontSize: '0.9rem' }}
+                  >
+                    {generatingThumbnail ? (
+                      <>
+                        <Loader2 size={16} className="spin" /> Memproses...
+                      </>
+                    ) : hasGeneratedThumbnail ? (
+                      <>
+                        Lanjut ke Thumbnailing <ArrowRight size={16} />
+                      </>
+                    ) : (
+                      <>
+                        Lanjut: Generate Thumbnail <ArrowRight size={16} />
+                      </>
+                    )}
+                  </button>
+
+
+--- src\views\ScriptDetail.tsx : 2085 ---
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={handleGenerateTitles}
+                        disabled={generatingTitles || loading}
+                        style={{ padding: '4px 10px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                        title="Generate ulang alternatif judul Mode A & Mode B"
+                      >
+                        <RotateCw size={13} className={generatingTitles ? 'spin' : ''} />
+                        <span>{generatingTitles ? 'Membuat...' : 'Generate Ulang'}</span>
+                      </button>
+
+
+--- src\views\ScriptDetail.tsx : 2116 ---
+                            <button
+                              type="button"
+                              className={`copy-action-btn ${copied === 'titleA' ? 'copied' : ''}`}
+                              onClick={() => copyText(titleA, 'titleA')}
+                              title="Salin judul Mode A"
+                            >
+                              {copied === 'titleA' ? <Check size={13} /> : <Copy size={13} />}
+                              <span>{copied === 'titleA' ? 'Tersalin' : 'Copy'}</span>
+                            </button>
+
+
+--- src\views\ScriptDetail.tsx : 2125 ---
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              onClick={() => handleApplyTitleAsMain(titleA)}
+                              style={{ padding: '3px 8px', fontSize: '0.74rem' }}
+                              title="Gunakan sebagai judul utama konten ini"
+                            >
+                              Gunakan sbg Judul
+                            </button>
+
+
+--- src\views\ScriptDetail.tsx : 2153 ---
+                            <button
+                              type="button"
+                              className={`copy-action-btn ${copied === 'titleB' ? 'copied' : ''}`}
+                              onClick={() => copyText(titleB, 'titleB')}
+                              title="Salin judul Mode B"
+                            >
+                              {copied === 'titleB' ? <Check size={13} /> : <Copy size={13} />}
+                              <span>{copied === 'titleB' ? 'Tersalin' : 'Copy'}</span>
+                            </button>
+
+
+--- src\views\ScriptDetail.tsx : 2162 ---
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              onClick={() => handleApplyTitleAsMain(titleB)}
+                              style={{ padding: '3px 8px', fontSize: '0.74rem' }}
+                              title="Gunakan sebagai judul utama konten ini"
+                            >
+                              Gunakan sbg Judul
+                            </button>
+
+
+--- src\views\ScriptDetail.tsx : 2215 ---
+                      <button
+                        type="button"
+                        className={`copy-action-btn ${copied === 'findings' ? 'copied' : ''}`}
+                        onClick={() => copyText(auditFindings, 'findings')}
+                        title="Salin Laporan Temuan"
+                      >
+                        {copied === 'findings' ? <Check size={14} /> : <Copy size={14} />}
+                        <span>{copied === 'findings' ? 'Tersalin' : 'Copy'}</span>
+                      </button>
+
+
+--- src\views\ScriptDetail.tsx : 2225 ---
+                        <button
+                          type="button"
+                          className={`copy-action-btn ${appliedKey === 'audit' ? 'copied' : ''}`}
+                          onClick={() => handleApplyToDraft(auditRevisedDraft, 'audit')}
+                          title="Terapkan draft revisi ke editor naskah"
+                        >
+                          <Check size={14} />
+                          <span>{appliedKey === 'audit' ? 'Diterapkan' : 'Terapkan'}</span>
+                        </button>
+
+
+--- src\views\ScriptDetail.tsx : 2235 ---
+                      <button
+                        type="button"
+                        className="copy-action-btn"
+                        onClick={() => setIsAuditResultsCollapsed((prev) => !prev)}
+                        title={isAuditResultsCollapsed ? 'Buka Hasil Audit' : 'Susutkan Hasil Audit'}
+                      >
+                        {isAuditResultsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                        <span>{isAuditResultsCollapsed ? 'Buka' : 'Susut'}</span>
+                      </button>
+
+
+--- src\views\ScriptDetail.tsx : 2252 ---
+                          <button
+                            type="button"
+                            className={`copy-action-btn ${copied === 'findings' ? 'copied' : ''}`}
+                            onClick={() => copyText(auditFindings, 'findings')}
+                            title="Salin Laporan Temuan"
+                          >
+                            {copied === 'findings' ? <Check size={14} /> : <Copy size={14} />}
+                            <span>{copied === 'findings' ? 'Tersalin' : 'Copy'}</span>
+                          </button>
+
+
+--- src\views\ScriptDetail.tsx : 2270 ---
+                            <button
+                              type="button"
+                              className={`btn ${appliedKey === 'audit' ? 'btn-applied' : 'btn-primary'}`}
+                              onClick={() => handleApplyToDraft(auditRevisedDraft, 'audit')}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '8px 14px' }}
+                            >
+                              <Check size={15} /> {appliedKey === 'audit' ? 'Sudah Diterapkan' : 'Terapkan ke Draft'}
+                            </button>
+
+
+--- src\views\ScriptDetail.tsx : 2278 ---
+                            <button
+                              type="button"
+                              className={`copy-action-btn ${copied === 'revised' ? 'copied' : ''}`}
+                              onClick={() => copyText(auditRevisedDraft, 'revised')}
+                              title="Salin Draft Revisi"
+                            >
+                              {copied === 'revised' ? <Check size={15} /> : <Copy size={15} />}
+                              <span>{copied === 'revised' ? 'Tersalin' : 'Copy'}</span>
+                            </button>
+
+
+--- src\views\ScriptDetail.tsx : 2331 ---
+                      <button
+                        type="button"
+                        className={`copy-action-btn ${copied === 'vcannot' ? 'copied' : ''}`}
+                        onClick={() => copyText(annotatedScript, 'vcannot')}
+                        title="Salin Naskah Teranotasi"
+                      >
+                        {copied === 'vcannot' ? <Check size={14} /> : <Copy size={14} />}
+                        <span>{copied === 'vcannot' ? 'Tersalin' : 'Copy'}</span>
+                      </button>
+
+
+--- src\views\ScriptDetail.tsx : 2340 ---
+                      <button
+                        type="button"
+                        className={`copy-action-btn ${appliedKey === 'visual' ? 'copied' : ''}`}
+                        onClick={() => handleApplyToDraft(annotatedScript, 'visual')}
+                        title="Terapkan naskah teranotasi ke editor naskah"
+                      >
+                        <Check size={14} />
+                        <span>{appliedKey === 'visual' ? 'Diterapkan' : 'Terapkan'}</span>
+                      </button>
+
+
+--- src\views\ScriptDetail.tsx : 2349 ---
+                      <button
+                        type="button"
+                        className="copy-action-btn"
+                        onClick={() => setIsVisualCueResultsCollapsed((prev) => !prev)}
+                        title={isVisualCueResultsCollapsed ? 'Buka Anotasi Visual' : 'Susutkan Anotasi Visual'}
+                      >
+                        {isVisualCueResultsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                        <span>{isVisualCueResultsCollapsed ? 'Buka' : 'Susut'}</span>
+                      </button>
+
+
+--- src\views\ScriptDetail.tsx : 2365 ---
+                        <button
+                          type="button"
+                          className={`btn ${appliedKey === 'visual' ? 'btn-applied' : 'btn-primary'}`}
+                          onClick={() => handleApplyToDraft(annotatedScript, 'visual')}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '8px 14px' }}
+                        >
+                          <Check size={15} /> {appliedKey === 'visual' ? 'Sudah Diterapkan' : 'Terapkan ke Draft'}
+                        </button>
+
+
+--- src\views\ScriptDetail.tsx : 2373 ---
+                        <button
+                          type="button"
+                          className={`copy-action-btn ${copied === 'vcannot' ? 'copied' : ''}`}
+                          onClick={() => copyText(annotatedScript, 'vcannot')}
+                          title="Salin Naskah Teranotasi"
+                        >
+                          {copied === 'vcannot' ? <Check size={15} /> : <Copy size={15} />}
+                          <span>{copied === 'vcannot' ? 'Tersalin' : 'Copy'}</span>
+                        </button>
+
+
+--- src\views\ScriptDetail.tsx : 2398 ---
+                  <button
+                    className="btn btn-secondary revert-stage-btn"
+                    type="button"
+                    onClick={() => handleStatusChange('Scripting')}
+                    disabled={loading || generatingThumbnail}
+                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 16px', fontSize: '0.88rem', color: '#fcd34d' }}
+                    title="Kembalikan status pipeline ke tahap Naskah (Scripting)"
+                  >
+                    <Undo2 size={16} /> Revert ke Scripting
+                  </button>
+
+
+--- src\views\ScriptDetail.tsx : 2408 ---
+                  <button
+                    className="btn btn-secondary"
+                    type="button"
+                    onClick={() => handleGenerateThumbnail(false)}
+                    disabled={loading || generatingThumbnail}
+                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 7, padding: '10px 18px', fontSize: '0.88rem' }}
+                    title="Generate ulang Thumbnail Copy Prompt berdasarkan naskah"
+                  >
+                    <RotateCw size={15} className={generatingThumbnail ? 'spin' : ''} />
+                    {generatingThumbnail ? 'Meregenerasi...' : 'Generate Ulang Thumbnail'}
+                  </button>
+
+
+--- src\views\ScriptDetail.tsx : 2419 ---
+                  <button
+                    className="btn btn-secondary"
+                    type="button"
+                    onClick={handleGenerateTitles}
+                    disabled={generatingTitles || loading}
+                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 16px', fontSize: '0.88rem' }}
+                    title="Generate atau perbarui judul Mode A & Mode B"
+                  >
+                    <Sparkles size={15} style={{ color: 'var(--amber)' }} />
+                    {generatingTitles ? 'Membuat Judul...' : 'Buat Judul A/B ✨'}
+                  </button>
+
+
+--- src\views\ScriptDetail.tsx : 2430 ---
+                  <button
+                    className="btn btn-primary"
+                    onClick={handlePublish}
+                    disabled={loading || generatingThumbnail}
+                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', fontSize: '0.88rem' }}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 size={16} className="spin" /> Memproses...
+                      </>
+                    ) : (
+                      <>
+                        Tandai Selesai (Publish) <Check size={16} />
+                      </>
+                    )}
+                  </button>
+
+
+--- src\views\ScriptDetail.tsx : 2476 ---
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={handleGenerateTitles}
+                        disabled={generatingTitles || loading}
+                        style={{ padding: '4px 10px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                        title="Generate ulang alternatif judul Mode A & Mode B"
+                      >
+                        <RotateCw size={13} className={generatingTitles ? 'spin' : ''} />
+                        <span>{generatingTitles ? 'Membuat...' : 'Generate Ulang'}</span>
+                      </button>
+
+
+--- src\views\ScriptDetail.tsx : 2507 ---
+                            <button
+                              type="button"
+                              className={`copy-action-btn ${copied === 'titleA' ? 'copied' : ''}`}
+                              onClick={() => copyText(titleA, 'titleA')}
+                              title="Salin judul Mode A"
+                            >
+                              {copied === 'titleA' ? <Check size={13} /> : <Copy size={13} />}
+                              <span>{copied === 'titleA' ? 'Tersalin' : 'Copy'}</span>
+                            </button>
+
+
+--- src\views\ScriptDetail.tsx : 2516 ---
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              onClick={() => handleApplyTitleAsMain(titleA)}
+                              style={{ padding: '3px 8px', fontSize: '0.74rem' }}
+                              title="Gunakan sebagai judul utama konten ini"
+                            >
+                              Gunakan sbg Judul
+                            </button>
+
+
+--- src\views\ScriptDetail.tsx : 2544 ---
+                            <button
+                              type="button"
+                              className={`copy-action-btn ${copied === 'titleB' ? 'copied' : ''}`}
+                              onClick={() => copyText(titleB, 'titleB')}
+                              title="Salin judul Mode B"
+                            >
+                              {copied === 'titleB' ? <Check size={13} /> : <Copy size={13} />}
+                              <span>{copied === 'titleB' ? 'Tersalin' : 'Copy'}</span>
+                            </button>
+
+
+--- src\views\ScriptDetail.tsx : 2553 ---
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              onClick={() => handleApplyTitleAsMain(titleB)}
+                              style={{ padding: '3px 8px', fontSize: '0.74rem' }}
+                              title="Gunakan sebagai judul utama konten ini"
+                            >
+                              Gunakan sbg Judul
+                            </button>
+
+
+--- src\views\ScriptDetail.tsx : 2597 ---
+                    <button
+                      type="button"
+                      className={`copy-action-btn ${copied === 'thumbScript' ? 'copied' : ''}`}
+                      onClick={() => copyText(scriptOutput, 'thumbScript')}
+                      title="Salin Naskah Video"
+                    >
+                      {copied === 'thumbScript' ? <Check size={14} /> : <Copy size={14} />}
+                      <span>{copied === 'thumbScript' ? 'Tersalin' : 'Copy Naskah'}</span>
+                    </button>
+
+
+--- src\views\ScriptDetail.tsx : 2606 ---
+                    <button
+                      type="button"
+                      className="editor-maximize-btn"
+                      onClick={() => setIsScriptMaximized(true)}
+                      title="Perbesar / Maximize Naskah"
+                    >
+                      <Maximize2 size={13} />
+                      <span>Maximize</span>
+                    </button>
+
+
+--- src\views\ScriptDetail.tsx : 2615 ---
+                    <button
+                      type="button"
+                      className="copy-action-btn"
+                      onClick={() => setIsThumbnailScriptCollapsed((prev) => !prev)}
+                      title={isThumbnailScriptCollapsed ? 'Buka Naskah' : 'Susutkan Naskah'}
+                    >
+                      {isThumbnailScriptCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                      <span>{isThumbnailScriptCollapsed ? 'Buka' : 'Susut'}</span>
+                    </button>
+
+
+--- src\views\ScriptDetail.tsx : 2673 ---
+                      <button
+                        type="button"
+                        className={`copy-action-btn ${copied === 'findings' ? 'copied' : ''}`}
+                        onClick={() => copyText(auditFindings, 'findings')}
+                      >
+                        {copied === 'findings' ? <Check size={14} /> : <Copy size={14} />}
+                        <span>{copied === 'findings' ? 'Tersalin' : 'Copy'}</span>
+                      </button>
+
+
+--- src\views\ScriptDetail.tsx : 2681 ---
+                      <button
+                        type="button"
+                        className="copy-action-btn"
+                        onClick={() => setIsAuditResultsCollapsed((prev) => !prev)}
+                      >
+                        {isAuditResultsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                        <span>{isAuditResultsCollapsed ? 'Buka' : 'Susut'}</span>
+                      </button>
+
+
+--- src\views\ScriptDetail.tsx : 2720 ---
+                      <button
+                        type="button"
+                        className={`copy-action-btn ${copied === 'vcannot' ? 'copied' : ''}`}
+                        onClick={() => copyText(annotatedScript, 'vcannot')}
+                      >
+                        {copied === 'vcannot' ? <Check size={14} /> : <Copy size={14} />}
+                        <span>{copied === 'vcannot' ? 'Tersalin' : 'Copy'}</span>
+                      </button>
+
+
+--- src\views\ScriptDetail.tsx : 2728 ---
+                      <button
+                        type="button"
+                        className="copy-action-btn"
+                        onClick={() => setIsVisualCueResultsCollapsed((prev) => !prev)}
+                      >
+                        {isVisualCueResultsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                        <span>{isVisualCueResultsCollapsed ? 'Buka' : 'Susut'}</span>
+                      </button>
+
+
+--- src\views\ScriptDetail.tsx : 2753 ---
+              <button
+                className="btn btn-secondary revert-stage-btn"
+                type="button"
+                onClick={() => handleStatusChange('Thumbnailing')}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fcd34d' }}
+                title="Kembalikan status ke tahap Thumbnailing jika perlu perbaikan"
+              >
+                <Undo2 size={16} /> Revert ke Thumbnailing
+              </button>
+
+
+--- src\views\ScriptDetail.tsx : 2784 ---
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setIsScriptMaximized(false)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', fontSize: '0.85rem', marginLeft: 8 }}
+                >
+                  <Minimize2 size={15} /> Selesai / Perkecil (Esc)
+                </button>
+
+
+--- src\views\ScriptDetail.tsx : 2837 ---
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowDraftHistoryModal(false)}
+                style={{ padding: '4px 10px', fontSize: '0.82rem' }}
+              >
+                Tutup
+              </button>
+
+
+--- src\views\ScriptDetail.tsx : 2913 ---
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={() => handleRestoreSnapshot(snap)}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', padding: '6px 12px', color: 'var(--green)' }}
+                        >
+                          <RotateCcw size={14} /> Pulihkan Draf Ini
+                        </button>
+
+
+--- src\views\Settings.tsx : 380 ---
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    onClick={() => handleSave(p.key)}
+                    disabled={saving === p.key}
+                    style={{ whiteSpace: 'nowrap' }}
+                  >
+                    {savedKey === p.key ? <Check size={16} /> : <Save size={16} />}
+                    {saving === p.key ? 'Menyimpan…' : savedKey === p.key ? 'Tersimpan ✓' : 'Simpan'}
+                  </button>
+
+
+--- src\views\Settings.tsx : 452 ---
+                    <button
+                      className="btn btn-secondary"
+                      type="button"
+                      onClick={() => handleImportModelsForProvider(cfg.provider)}
+                      disabled={!cfg.isConfigured || isImporting}
+                      title={!cfg.isConfigured ? cfg.unconfiguredHint : `Import daftar model ${cfg.label}`}
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      <Download size={16} /> {isImporting ? 'Mengambil…' : 'Auto Import Models'}
+                    </button>
+
+
+--- src\views\Settings.tsx : 463 ---
+                    <button
+                      className="btn btn-primary"
+                      type="button"
+                      onClick={() => handleSave(cfg.key)}
+                      disabled={saving === cfg.key}
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      {savedKey === cfg.key ? <Check size={16} /> : <Save size={16} />}
+                      {saving === cfg.key ? 'Menyimpan…' : savedKey === cfg.key ? 'Tersimpan ✓' : 'Simpan'}
+                    </button>
+
+
+--- src\views\Settings.tsx : 491 ---
+                              <button
+                                key={rec.id}
+                                type="button"
+                                className={`rec-chip ${isSelected ? 'selected' : ''}`}
+                                title={rec.desc || rec.name}
+                                onClick={() => {
+                                  setValues((v) => ({ ...v, [cfg.key]: rec.id }));
+                                  if (!currentList.includes(rec.id)) {
+                                    const updated = [rec.id, ...currentList];
+                                    setProviderModels((prev) => ({
+                                      ...prev,
+                                      [cfg.provider]: updated,
+                                    }));
+                                    try {
+                                      localStorage.setItem(
+                                        MODELS_CACHE_KEY,
+                                        JSON.stringify({ ...providerModels, [cfg.provider]: updated })
+                                      );
+                                    } catch { /* ignore */ }
+                                  }
+                                }}
+                              >
+                                <span className="rec-badge">{rec.badge}</span>
+                                <span className="rec-name">{rec.name}</span>
+                                {isSelected && <span className="rec-check">✓ Terpilih</span>}
+                              </button>
+
+
+--- src\views\Settings.tsx : 627 ---
+              <button
+                className="btn btn-secondary"
+                type="button"
+                onClick={handleVerifyTelegramBot}
+                disabled={verifyingBot || saving === 'telegram_token' || deletingToken || !values.telegram_token?.trim()}
+                style={{ whiteSpace: 'nowrap' }}
+                title="Uji koneksi dan keabsahan bot langsung ke server Telegram API via getMe"
+              >
+                <Radio size={16} className={verifyingBot ? 'animate-pulse' : ''} />
+                {verifyingBot ? 'Menguji…' : 'Uji Koneksi Bot'}
+              </button>
+
+
+--- src\views\Settings.tsx : 638 ---
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={() => handleSave('telegram_token')}
+                disabled={saving === 'telegram_token' || deletingToken || verifyingBot}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                {savedKey === 'telegram_token' ? <Check size={16} /> : <Save size={16} />}
+                {saving === 'telegram_token' ? 'Menyimpan…' : savedKey === 'telegram_token' ? 'Tersimpan ✓' : 'Simpan'}
+              </button>
+
+
+--- src\views\Settings.tsx : 648 ---
+              <button
+                className="btn btn-danger"
+                type="button"
+                onClick={handleDeleteTelegramToken}
+                disabled={deletingToken || saving === 'telegram_token' || verifyingBot || (!values.telegram_token?.trim() && !settings.telegram_token?.trim())}
+                style={{ whiteSpace: 'nowrap' }}
+                title="Hapus token bot Telegram dari penyimpanan aman"
+              >
+                <Trash2 size={16} />
+                {deletingToken ? 'Menghapus…' : 'Hapus Token'}
+              </button>
+
+
+--- src\views\Settings.tsx : 778 ---
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={() => handleSave('telegram_allowed_chat_ids')}
+                disabled={saving === 'telegram_allowed_chat_ids'}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                {savedKey === 'telegram_allowed_chat_ids' ? <Check size={16} /> : <Save size={16} />}
+                {saving === 'telegram_allowed_chat_ids' ? 'Menyimpan…' : savedKey === 'telegram_allowed_chat_ids' ? 'Tersimpan ✓' : 'Simpan Whitelist'}
+              </button>
+

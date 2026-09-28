@@ -1,0 +1,642 @@
+[
+  {
+    "file": "AddIdeaModal.tsx",
+    "line": 108,
+    "code": "<button className=\"icon-btn\" type=\"button\" aria-label=\"Tutup modal\" onClick={onClose}>\n            <X size={18} />\n          </button>"
+  },
+  {
+    "file": "AddIdeaModal.tsx",
+    "line": 195,
+    "code": "<button className=\"btn btn-secondary\" type=\"button\" onClick={onClose}>\n            Cancel\n          </button>"
+  },
+  {
+    "file": "AddIdeaModal.tsx",
+    "line": 198,
+    "code": "<button className=\"btn btn-primary\" type=\"submit\">\n            {initialData ? 'Simpan Perubahan' : 'Simpan Ide'}\n          </button>"
+  },
+  {
+    "file": "AlertModal.tsx",
+    "line": 210,
+    "code": "<button\n            type=\"button\"\n            className=\"icon-btn alert-close-btn\"\n            onClick={onClose}\n            aria-label=\"Tutup alert\"\n          >\n            <X size={16} />\n          </button>"
+  },
+  {
+    "file": "AlertModal.tsx",
+    "line": 229,
+    "code": "<button\n                  type=\"button\"\n                  className=\"alert-copy-btn\"\n                  onClick={handleCopyTechDetails}\n                  title=\"Salin rincian error\"\n                >\n                  {copied ? <Check size={12} /> : <Copy size={12} />}\n                  {copied ? 'Tersalin' : 'Salin Log'}\n                </button>"
+  },
+  {
+    "file": "AlertModal.tsx",
+    "line": 258,
+    "code": "<button\n              type=\"button\"\n              className=\"btn btn-secondary\"\n              onClick={() => {\n                actionButton.onClick();\n                onClose();\n              }}\n            >\n              <ExternalLink size={15} /> {actionButton.label}\n            </button>"
+  },
+  {
+    "file": "AlertModal.tsx",
+    "line": 270,
+    "code": "<button\n              type=\"button\"\n              className=\"btn btn-secondary alert-cancel-btn\"\n              onClick={handleCancel}\n            >\n              {cancelText}\n            </button>"
+  },
+  {
+    "file": "AlertModal.tsx",
+    "line": 278,
+    "code": "<button\n            type=\"button\"\n            className=\"btn btn-primary alert-confirm-btn\"\n            onClick={handleConfirm}\n            autoFocus\n          >\n            {confirmText}\n          </button>"
+  },
+  {
+    "file": "BulkImportModal.tsx",
+    "line": 164,
+    "code": "<button\n            className=\"icon-btn\"\n            type=\"button\"\n            aria-label=\"Tutup modal\"\n            onClick={onClose}\n            disabled={isSubmitting}\n          >\n            <X size={18} />\n          </button>"
+  },
+  {
+    "file": "BulkImportModal.tsx",
+    "line": 183,
+    "code": "<button\n                type=\"button\"\n                className={`tab ${activeTab === 'file' ? 'active' : ''}`}\n                onClick={() => setActiveTab('file')}\n                style={{ padding: '8px 16px', borderRadius: 8, fontSize: '0.85rem' }}\n              >\n                Upload Berkas (CSV / MD / TXT)\n              </button>"
+  },
+  {
+    "file": "BulkImportModal.tsx",
+    "line": 191,
+    "code": "<button\n                type=\"button\"\n                className={`tab ${activeTab === 'paste' ? 'active' : ''}`}\n                onClick={() => setActiveTab('paste')}\n                style={{ padding: '8px 16px', borderRadius: 8, fontSize: '0.85rem' }}\n              >\n                Tempel Teks Langsung\n              </button>"
+  },
+  {
+    "file": "BulkImportModal.tsx",
+    "line": 280,
+    "code": "<button\n                  type=\"button\"\n                  className=\"btn btn-primary\"\n                  onClick={() => handleProcessText(pasteText, 'txt', 'Teks Input')}\n                  disabled={!pasteText.trim()}\n                  style={{ alignSelf: 'flex-end', display: 'inline-flex', alignItems: 'center', gap: 6 }}\n                >\n                  <Sparkles size={16} /> Parsing Ide Konten\n                </button>"
+  },
+  {
+    "file": "BulkImportModal.tsx",
+    "line": 318,
+    "code": "<button\n                  type=\"button\"\n                  className=\"btn btn-secondary\"\n                  onClick={handleToggleSelectAll}\n                  style={{ fontSize: '0.78rem', padding: '4px 10px' }}\n                >\n                  {parsedItems.every((i) => i.selected) ? 'Batalkan Semua' : 'Pilih Semua'}\n                </button>"
+  },
+  {
+    "file": "BulkImportModal.tsx",
+    "line": 326,
+    "code": "<button\n                  type=\"button\"\n                  className=\"btn btn-secondary\"\n                  onClick={handleReset}\n                  style={{ fontSize: '0.78rem', padding: '4px 10px' }}\n                >\n                  Ganti Berkas\n                </button>"
+  },
+  {
+    "file": "BulkImportModal.tsx",
+    "line": 425,
+    "code": "<button\n                          type=\"button\"\n                          className=\"icon-btn\"\n                          onClick={() => handleDeleteItem(item.id)}\n                          title=\"Hapus baris ini\"\n                          style={{ color: '#ef4444', padding: 4 }}\n                        >\n                          <Trash2 size={14} />\n                        </button>"
+  },
+  {
+    "file": "BulkImportModal.tsx",
+    "line": 444,
+    "code": "<button className=\"btn btn-secondary\" type=\"button\" onClick={onClose} disabled={isSubmitting}>\n            Batal\n          </button>"
+  },
+  {
+    "file": "BulkImportModal.tsx",
+    "line": 448,
+    "code": "<button\n              className=\"btn btn-primary\"\n              type=\"button\"\n              onClick={handleConfirmImport}\n              disabled={isSubmitting || selectedCount === 0}\n              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}\n            >\n              <Check size={16} />\n              {isSubmitting ? 'Mengimpor...' : `Import ${selectedCount} Ide ke Pipeline`}\n            </button>"
+  },
+  {
+    "file": "ImportModal.tsx",
+    "line": 68,
+    "code": "<button\n            className=\"icon-btn\"\n            type=\"button\"\n            aria-label=\"Tutup modal\"\n            onClick={onClose}\n            disabled={isProcessing}\n          >\n            <X size={18} />\n          </button>"
+  },
+  {
+    "file": "ImportModal.tsx",
+    "line": 214,
+    "code": "<button className=\"btn btn-secondary\" type=\"button\" onClick={onClose} disabled={isProcessing}>\n            Tutup\n          </button>"
+  },
+  {
+    "file": "Sidebar.tsx",
+    "line": 37,
+    "code": "<button className=\"icon-btn\" type=\"button\" aria-label=\"Tutup navigasi\" onClick={onClose}>\n            <X size={18} />\n          </button>"
+  },
+  {
+    "file": "Sidebar.tsx",
+    "line": 45,
+    "code": "<button\n                key={item.key}\n                className={`nav-item ${activeView === item.key ? 'active' : ''}`}\n                type=\"button\"\n                onClick={() => onNavigate(item.key)}\n              >\n                <Icon size={17} />\n                {item.label}\n              </button>"
+  },
+  {
+    "file": "Terminal.tsx",
+    "line": 275,
+    "code": "<button\n              className=\"icon-btn\"\n              type=\"button\"\n              aria-label=\"Bersihkan log\"\n              onClick={onClear}\n              title=\"Bersihkan riwayat log\"\n              style={{ width: 26, height: 26, fontSize: '.75rem', opacity: 0.7 }}\n            >\n              <Trash2 size={13} />\n            </button>"
+  },
+  {
+    "file": "Terminal.tsx",
+    "line": 286,
+    "code": "<button\n            className=\"icon-btn\"\n            type=\"button\"\n            aria-label=\"Tutup terminal\"\n            onClick={handleManualClose}\n            title=\"Tutup terminal log\"\n            style={{ width: 28, height: 28, fontSize: '.75rem' }}\n          >\n            <X size={14} />\n          </button>"
+  },
+  {
+    "file": "Topbar.tsx",
+    "line": 45,
+    "code": "<button className=\"icon-btn\" type=\"button\" aria-label=\"Buka navigasi\" onClick={onMenuClick}>\n        <Menu size={19} />\n      </button>"
+  },
+  {
+    "file": "Topbar.tsx",
+    "line": 86,
+    "code": "<button\n        className=\"icon-btn\"\n        type=\"button\"\n        aria-label=\"Toggle Activity Log\"\n        onClick={() => (isOpen ? closeTerminal() : openTerminal())}\n        title={isOpen ? 'Tutup Activity Log' : 'Buka Activity Log'}\n        style={{\n          position: 'relative',\n          width: 34,\n          height: 34,\n          color: isOpen ? 'var(--cyan)' : 'inherit',\n          borderColor: isOpen ? 'rgba(79, 232, 255, 0.4)' : undefined,\n          background: isOpen ? 'rgba(79, 232, 255, 0.1)' : undefined,\n        }}\n      >\n        <TerminalIcon size={16} />\n        {status === 'LIVE' && (\n          <span\n            style={{\n              position: 'absolute',\n              top: 5,\n              right: 5,\n              width: 7,\n              height: 7,\n              borderRadius: '50%',\n              background: 'var(--green)',\n              boxShadow: '0 0 6px var(--green)',\n            }}\n          />\n        )}\n      </button>"
+  },
+  {
+    "file": "ContentTable.tsx",
+    "line": 206,
+    "code": "<button className=\"row-action\" type=\"button\" onClick={() => onValidate(item)} title=\"Validasi Ide dengan AI\">\n            <Zap size={14} /> Validasi AI\n          </button>"
+  },
+  {
+    "file": "ContentTable.tsx",
+    "line": 218,
+    "code": "<button className=\"row-action\" type=\"button\" onClick={() => onViewScript(item)} title=\"Buka Workspace\">\n            <FileText size={14} /> Workspace\n          </button>"
+  },
+  {
+    "file": "ContentTable.tsx",
+    "line": 224,
+    "code": "<button className=\"row-action\" type=\"button\" onClick={() => onViewScript(item)} title=\"View Script\">\n            <FileText size={14} /> Script\n          </button>"
+  },
+  {
+    "file": "ContentTable.tsx",
+    "line": 230,
+    "code": "<button className=\"row-action\" type=\"button\" onClick={() => onViewScript(item)} title=\"Buat Thumbnail\">\n            <Image size={14} /> Thumbnail\n          </button>"
+  },
+  {
+    "file": "ContentTable.tsx",
+    "line": 236,
+    "code": "<button className=\"row-action\" type=\"button\" onClick={() => onViewPublished(item)} title=\"Open Published\">\n            <ExternalLink size={14} /> Open\n          </button>"
+  },
+  {
+    "file": "ContentTable.tsx",
+    "line": 264,
+    "code": "<button className=\"btn btn-primary\" type=\"button\" onClick={onAddIdea}>\n            <Plus size={18} /> Tambah Ide\n          </button>"
+  },
+  {
+    "file": "ContentTable.tsx",
+    "line": 267,
+    "code": "<button className=\"btn btn-secondary\" type=\"button\" onClick={onImportFile}>\n            <Upload size={18} /> Import File\n          </button>"
+  },
+  {
+    "file": "ContentTable.tsx",
+    "line": 277,
+    "code": "<button\n                key={tab.key}\n                className={`tab ${activeTab === tab.key ? 'active' : ''}`}\n                type=\"button\"\n                onClick={() => setActiveTab(tab.key)}\n              >\n                {tab.label}\n              </button>"
+  },
+  {
+    "file": "ContentTable.tsx",
+    "line": 308,
+    "code": "<button\n              className=\"small-btn\"\n              type=\"button\"\n              onClick={() => {\n                setCategoryFilter('');\n                setStatusFilter('');\n              }}\n              style={{\n                cursor: (categoryFilter || statusFilter) ? 'pointer' : 'default',\n                color: (categoryFilter || statusFilter) ? 'var(--cyan)' : undefined,\n                borderColor: (categoryFilter || statusFilter) ? 'var(--cyan)' : undefined,\n              }}\n              title={(categoryFilter || statusFilter) ? 'Klik untuk mereset filter' : 'Filter aktif'}\n            >\n              <Filter size={13} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />\n              {(categoryFilter || statusFilter) ? 'Reset Filter' : 'Filter'}\n            </button>"
+  },
+  {
+    "file": "ContentTable.tsx",
+    "line": 360,
+    "code": "<button\n                          type=\"button\"\n                          className=\"cell-title cell-title-btn\"\n                          onClick={() => handleTitleClick(item)}\n                          title={`Buka detail / workspace: ${item.title}`}\n                          aria-label={`Buka detail ${item.title}`}\n                        >\n                          {item.title}\n                        </button>"
+  },
+  {
+    "file": "ContentTable.tsx",
+    "line": 435,
+    "code": "<button\n                            className=\"row-action default\"\n                            type=\"button\"\n                            onClick={() => onEdit(item)}\n                            title=\"Edit Ide\"\n                            style={{ padding: '6px' }}\n                          >\n                            <Pencil size={14} />\n                          </button>"
+  },
+  {
+    "file": "ContentTable.tsx",
+    "line": 444,
+    "code": "<button\n                            className=\"row-action danger\"\n                            type=\"button\"\n                            onClick={() => handleDeleteClick(item)}\n                            title=\"Hapus\"\n                            style={{ padding: '6px' }}\n                          >\n                            <Trash2 size={14} />\n                          </button>"
+  },
+  {
+    "file": "FileManager.tsx",
+    "line": 69,
+    "code": "<button className=\"btn btn-primary\" type=\"button\" onClick={onImportFile}>\n            <UploadCloud size={18} /> Upload Dokumen (.docx / .txt)\n          </button>"
+  },
+  {
+    "file": "FileManager.tsx",
+    "line": 123,
+    "code": "<button\n                        className=\"row-action\"\n                        type=\"button\"\n                        onClick={() => setPreviewFile(file)}\n                        title=\"Lihat teks hasil ekstraksi\"\n                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}\n                      >\n                        <Eye size={13} /> Preview\n                      </button>"
+  },
+  {
+    "file": "FileManager.tsx",
+    "line": 132,
+    "code": "<button\n                        className=\"row-action danger\"\n                        type=\"button\"\n                        onClick={() => handleDeleteClick(file)}\n                        title=\"Hapus file\"\n                      >\n                        <Trash2 size={14} />\n                      </button>"
+  },
+  {
+    "file": "FileManager.tsx",
+    "line": 177,
+    "code": "<button className=\"icon-btn\" type=\"button\" onClick={() => setPreviewFile(null)}>\n                <X size={18} />\n              </button>"
+  },
+  {
+    "file": "FileManager.tsx",
+    "line": 194,
+    "code": "<button\n                  className=\"row-action\"\n                  type=\"button\"\n                  onClick={() => handleCopy(previewFile.extracted_text || '')}\n                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}\n                >\n                  {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'Tersalin' : 'Salin Teks'}\n                </button>"
+  },
+  {
+    "file": "FileManager.tsx",
+    "line": 220,
+    "code": "<button className=\"btn btn-secondary\" type=\"button\" onClick={() => setPreviewFile(null)}>\n                Tutup\n              </button>"
+  },
+  {
+    "file": "Overview.tsx",
+    "line": 102,
+    "code": "<button className=\"btn btn-primary\" type=\"button\" onClick={onAddIdea}>\n            <Plus size={18} /> Tambah Ide\n          </button>"
+  },
+  {
+    "file": "Overview.tsx",
+    "line": 105,
+    "code": "<button className=\"btn btn-secondary\" type=\"button\" onClick={onImportFile}>\n            <Upload size={18} /> Import File\n          </button>"
+  },
+  {
+    "file": "Overview.tsx",
+    "line": 149,
+    "code": "<button\n            className=\"small-btn\"\n            type=\"button\"\n            onClick={() => onNavigate('ideas')}\n          >\n            Lihat Semua\n          </button>"
+  },
+  {
+    "file": "Overview.tsx",
+    "line": 176,
+    "code": "<button\n                        type=\"button\"\n                        className=\"cell-title cell-title-btn\"\n                        onClick={() => handleTitleClick(item)}\n                        title={`Buka detail / workspace: ${item.title}`}\n                        aria-label={`Buka detail ${item.title}`}\n                      >\n                        {item.title}\n                      </button>"
+  },
+  {
+    "file": "PublishedDetail.tsx",
+    "line": 220,
+    "code": "<button\n          className=\"btn btn-secondary\"\n          type=\"button\"\n          onClick={onBack}\n        >\n          <ArrowLeft size={18} /> Kembali ke Pipeline\n        </button>"
+  },
+  {
+    "file": "PublishedDetail.tsx",
+    "line": 229,
+    "code": "<button\n            className=\"btn btn-secondary\"\n            type=\"button\"\n            onClick={() => setIsEditing(true)}\n          >\n            <Edit3 size={16} /> Edit Metrik Performa\n          </button>"
+  },
+  {
+    "file": "PublishedDetail.tsx",
+    "line": 288,
+    "code": "<button\n                  className=\"btn btn-secondary revert-stage-btn\"\n                  type=\"button\"\n                  onClick={() => handleStatusChange('Thumbnailing')}\n                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fcd34d', padding: '4px 12px', fontSize: '0.8rem' }}\n                  title=\"Kembalikan status pipeline ke tahap Thumbnailing\"\n                >\n                  <Undo2 size={14} /> Revert ke Thumbnailing\n                </button>"
+  },
+  {
+    "file": "PublishedDetail.tsx",
+    "line": 380,
+    "code": "<button\n                className=\"btn btn-secondary\"\n                type=\"button\"\n                onClick={() => {\n                  setViewsInput(String(item.views ?? 0));\n                  setLikesInput(String(item.likes ?? 0));\n                  setCommentsInput(String(item.comments ?? 0));\n                  setPlatformInput(item.target_platform || 'YouTube');\n                  setIsEditing(false);\n                }}\n                disabled={isSaving}\n              >\n                Batal\n              </button>"
+  },
+  {
+    "file": "PublishedDetail.tsx",
+    "line": 394,
+    "code": "<button\n                className=\"btn btn-primary\"\n                type=\"submit\"\n                disabled={isSaving}\n              >\n                <Save size={16} /> {isSaving ? 'Menyimpan…' : 'Simpan Metrik'}\n              </button>"
+  },
+  {
+    "file": "PublishedDetail.tsx",
+    "line": 458,
+    "code": "<button\n              type=\"button\"\n              className=\"btn btn-secondary\"\n              onClick={handleGenerateTitles}\n              disabled={generatingTitles}\n              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', padding: '6px 14px' }}\n              title=\"Generate ulang alternatif judul Mode A & Mode B\"\n            >\n              {generatingTitles ? (\n                <>\n                  <Loader2 size={14} className=\"spin\" /> Membuat Judul...\n                </>\n              ) : (\n                <>\n                  <RotateCw size={14} /> Buat Ulang Judul A/B\n                </>\n              )}\n            </button>"
+  },
+  {
+    "file": "PublishedDetail.tsx",
+    "line": 494,
+    "code": "<button\n                type=\"button\"\n                className={`copy-action-btn ${copiedKey === 'titleA' ? 'copied' : ''}`}\n                onClick={() => copyText(activeTitleA, 'titleA')}\n                title=\"Salin judul Mode A\"\n              >\n                {copiedKey === 'titleA' ? <Check size={13} /> : <Copy size={13} />}\n                <span>{copiedKey === 'titleA' ? 'Tersalin' : 'Copy'}</span>\n              </button>"
+  },
+  {
+    "file": "PublishedDetail.tsx",
+    "line": 504,
+    "code": "<button\n                  type=\"button\"\n                  className=\"btn btn-secondary\"\n                  onClick={() => handleApplyTitleAsMain(activeTitleA)}\n                  style={{ padding: '3px 9px', fontSize: '0.76rem' }}\n                  title=\"Terapkan sebagai judul utama\"\n                >\n                  Gunakan sbg Judul Utama\n                </button>"
+  },
+  {
+    "file": "PublishedDetail.tsx",
+    "line": 533,
+    "code": "<button\n                    type=\"button\"\n                    className={`copy-action-btn ${copiedKey === 'titleB' ? 'copied' : ''}`}\n                    onClick={() => copyText(activeTitleB, 'titleB')}\n                    title=\"Salin judul Mode B\"\n                  >\n                    {copiedKey === 'titleB' ? <Check size={13} /> : <Copy size={13} />}\n                    <span>{copiedKey === 'titleB' ? 'Tersalin' : 'Copy'}</span>\n                  </button>"
+  },
+  {
+    "file": "PublishedDetail.tsx",
+    "line": 543,
+    "code": "<button\n                      type=\"button\"\n                      className=\"btn btn-secondary\"\n                      onClick={() => handleApplyTitleAsMain(activeTitleB)}\n                      style={{ padding: '3px 9px', fontSize: '0.76rem' }}\n                      title=\"Terapkan sebagai judul utama\"\n                    >\n                      Gunakan sbg Judul Utama\n                    </button>"
+  },
+  {
+    "file": "PublishedDetail.tsx",
+    "line": 588,
+    "code": "<button\n                type=\"button\"\n                className={`copy-action-btn ${copiedKey === 'finalScript' ? 'copied' : ''}`}\n                onClick={() => copyText(finalScriptText, 'finalScript')}\n                title=\"Salin Naskah Video Final\"\n              >\n                {copiedKey === 'finalScript' ? <Check size={14} /> : <Copy size={14} />}\n                <span>{copiedKey === 'finalScript' ? 'Tersalin' : 'Copy Naskah'}</span>\n              </button>"
+  },
+  {
+    "file": "PublishedDetail.tsx",
+    "line": 598,
+    "code": "<button\n              type=\"button\"\n              className=\"copy-action-btn\"\n              onClick={() => setIsScriptCollapsed((prev) => !prev)}\n              title={isScriptCollapsed ? 'Buka Naskah' : 'Susutkan Naskah'}\n            >\n              {isScriptCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}\n              <span>{isScriptCollapsed ? 'Buka' : 'Susut'}</span>\n            </button>"
+  },
+  {
+    "file": "PublishedDetail.tsx",
+    "line": 646,
+    "code": "<button\n                type=\"button\"\n                className={`copy-action-btn ${copiedKey === 'thumbPrompt' ? 'copied' : ''}`}\n                onClick={() => copyText(item.generated_thumbnail_prompt, 'thumbPrompt')}\n                title=\"Salin Prompt Thumbnail\"\n              >\n                {copiedKey === 'thumbPrompt' ? <Check size={13} /> : <Copy size={13} />}\n                <span>{copiedKey === 'thumbPrompt' ? 'Tersalin' : 'Copy'}</span>\n              </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1102,
+    "code": "<button\n        className=\"btn btn-secondary\"\n        type=\"button\"\n        onClick={handleBack}\n        style={{ marginBottom: 18 }}\n      >\n        <ArrowLeft size={18} /> Kembali ke Pipeline\n      </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1189,
+    "code": "<button\n                    type=\"button\"\n                    className=\"copy-action-btn\"\n                    onClick={handleRegenerateResearchPrompt}\n                    disabled={generatingResearch}\n                    title=\"Generate ulang Research Brief\"\n                  >\n                    <RotateCw size={14} className={generatingResearch ? 'spin' : ''} />\n                    <span>{generatingResearch ? 'Memproses...' : (item.research_brief_prompt ? 'Regenerate' : 'Generate Brief')}</span>\n                  </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1200,
+    "code": "<button\n                  type=\"button\"\n                  className={`copy-action-btn ${copied === 'rbp' ? 'copied' : ''}`}\n                  onClick={() => copyText(formatPromptText(item.research_brief_prompt || researchBriefPrompt) || '', 'rbp')}\n                  title=\"Salin Research Brief\"\n                >\n                  {copied === 'rbp' ? <Check size={15} /> : <Copy size={15} />}\n                  <span>{copied === 'rbp' ? 'Tersalin' : 'Copy'}</span>\n                </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1209,
+    "code": "<button\n                  type=\"button\"\n                  className=\"copy-action-btn\"\n                  onClick={() => setIsResearchCollapsed((prev) => !prev)}\n                  title={isResearchCollapsed ? 'Buka tampilan Research Brief' : 'Susutkan tampilan Research Brief'}\n                >\n                  {isResearchCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}\n                  <span>{isResearchCollapsed ? 'Buka' : 'Susut'}</span>\n                </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1258,
+    "code": "<button\n                    type=\"button\"\n                    className={`copy-action-btn ${copied === 'handoff' ? 'copied' : ''}`}\n                    onClick={() => copyText(formatPromptText(item.scriptwriter_brief_prompt || handoffPrompt) || '', 'handoff')}\n                    title=\"Salin Scriptwriter Handoff\"\n                  >\n                    {copied === 'handoff' ? <Check size={15} /> : <Copy size={15} />}\n                    <span>{copied === 'handoff' ? 'Tersalin' : 'Copy'}</span>\n                  </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1267,
+    "code": "<button\n                    type=\"button\"\n                    className=\"copy-action-btn\"\n                    onClick={() => setIsHandoffCollapsed((prev) => !prev)}\n                    title={isHandoffCollapsed ? 'Buka tampilan Scriptwriter Handoff' : 'Susutkan tampilan Scriptwriter Handoff'}\n                  >\n                    {isHandoffCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}\n                    <span>{isHandoffCollapsed ? 'Buka' : 'Susut'}</span>\n                  </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1300,
+    "code": "<button\n                  type=\"button\"\n                  className={`copy-action-btn ${copied === 'tp' ? 'copied' : ''}`}\n                  onClick={() => copyText(formatPromptText(item.generated_thumbnail_prompt || thumbnailPrompt) || '', 'tp')}\n                  title=\"Salin Thumbnail Generator\"\n                >\n                  {copied === 'tp' ? <Check size={15} /> : <Copy size={15} />}\n                  <span>{copied === 'tp' ? 'Tersalin' : 'Copy'}</span>\n                </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1364,
+    "code": "<button\n                  className=\"btn btn-secondary\"\n                  type=\"button\"\n                  onClick={onBack}\n                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}\n                >\n                  <ArrowLeft size={16} /> Kembali ke Ide\n                </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1372,
+    "code": "<button\n                  className=\"btn btn-primary\"\n                  type=\"button\"\n                  onClick={async () => {\n                    await handleStatusChange('Researching');\n                    if (!item.research_brief_prompt) {\n                      await handleRegenerateResearchPrompt();\n                    }\n                  }}\n                  disabled={loading || generatingResearch}\n                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px' }}\n                  title=\"Pindah ke tahap riset dan siapkan workspace riset\"\n                >\n                  {generatingResearch ? (\n                    <>\n                      <Loader2 size={16} className=\"spin\" /> Menyiapkan Riset...\n                    </>\n                  ) : (\n                    <>\n                      Mulai Riset (Lanjut ke Researching) <ArrowRight size={16} />\n                    </>\n                  )}\n                </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1599,
+    "code": "<button\n                    className=\"btn btn-secondary revert-stage-btn\"\n                    type=\"button\"\n                    onClick={() => handleStatusChange('Idea')}\n                    disabled={loading || generatingHandoff || generatingResearch}\n                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fcd34d' }}\n                    title=\"Kembalikan status pipeline ke tahap Idea\"\n                  >\n                    <Undo2 size={16} /> Revert ke Idea\n                  </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1610,
+    "code": "<button\n                      className=\"btn btn-secondary\"\n                      type=\"button\"\n                      onClick={() => handleGenerateHandoff(false)}\n                      disabled={loading || generatingHandoff}\n                      style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 18px', fontSize: '0.9rem' }}\n                      title=\"Generate ulang Scriptwriter Handoff berdasarkan data riset terbaru\"\n                    >\n                      <RotateCw size={16} className={generatingHandoff ? 'spin' : ''} />\n                      {generatingHandoff ? 'Meregenerasi...' : 'Generate Ulang Handoff'}\n                    </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1622,
+    "code": "<button\n                    className=\"btn btn-primary\"\n                    type=\"button\"\n                    onClick={hasGeneratedScriptBrief ? handleProceedToScripting : () => handleGenerateHandoff(false)}\n                    disabled={loading || generatingHandoff}\n                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', fontSize: '0.9rem' }}\n                  >\n                    {generatingHandoff ? (\n                      <>\n                        <Loader2 size={16} className=\"spin\" /> Memproses...\n                      </>\n                    ) : hasGeneratedScriptBrief ? (\n                      <>\n                        Lanjut ke Scripting <ArrowRight size={16} />\n                      </>\n                    ) : (\n                      <>\n                        Lanjut: Generate Scriptwriter Handoff <ArrowRight size={16} />\n                      </>\n                    )}\n                  </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1674,
+    "code": "<button\n                        type=\"button\"\n                        className=\"editor-maximize-btn\"\n                        onClick={() => setIsScriptMaximized(true)}\n                        title=\"Perbesar / Maximize Editor Naskah\"\n                      >\n                        <Maximize2 size={13} />\n                        <span>Maximize</span>\n                      </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1683,
+    "code": "<button\n                        type=\"button\"\n                        className=\"copy-action-btn\"\n                        onClick={() => setIsScriptInputCollapsed(false)}\n                        title=\"Buka Editor Naskah\"\n                      >\n                        <ChevronDown size={14} />\n                        <span>Buka</span>\n                      </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1720,
+    "code": "<button\n                        type=\"button\"\n                        className=\"copy-action-btn\"\n                        onClick={() => setIsScriptInputCollapsed(true)}\n                        title=\"Susutkan Editor Naskah menjadi kartu ringkas\"\n                      >\n                        <ChevronUp size={14} />\n                        <span>Susutkan</span>\n                      </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1745,
+    "code": "<button\n                              type=\"button\"\n                              className=\"editor-maximize-btn\"\n                              onClick={handleUndoLatestAiRevision}\n                              title=\"Undo revisi AI terakhir dan kembalikan draf sebelum revisi\"\n                              style={{ color: '#fcd34d' }}\n                            >\n                              <Undo2 size={13} />\n                              <span>Undo Revisi AI</span>\n                            </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1757,
+    "code": "<button\n                              type=\"button\"\n                              className=\"editor-maximize-btn\"\n                              onClick={() => setShowDraftHistoryModal(true)}\n                              title=\"Lihat riwayat snapshot draf\"\n                            >\n                              <Clock size={13} />\n                              <span>Riwayat Draf ({draftHistory.length})</span>\n                            </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1767,
+    "code": "<button\n                            type=\"button\"\n                            className=\"editor-maximize-btn\"\n                            onClick={() => setIsScriptMaximized(true)}\n                            title=\"Perbesar / Maximize Editor Naskah\"\n                          >\n                            <Maximize2 size={13} />\n                            <span>Maximize</span>\n                          </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1964,
+    "code": "<button\n                    className=\"btn btn-secondary revert-stage-btn\"\n                    type=\"button\"\n                    onClick={() => handleStatusChange('Researching')}\n                    disabled={loading || generatingAudit || generatingVisualCue || generatingThumbnail}\n                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fcd34d' }}\n                    title=\"Kembalikan status pipeline ke tahap Riset (Researching)\"\n                  >\n                    <Undo2 size={16} /> Revert ke Researching\n                  </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1974,
+    "code": "<button\n                    className=\"btn btn-secondary\"\n                    onClick={handleRunAudit}\n                    disabled={generatingAudit || loading || generatingVisualCue}\n                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}\n                    title=\"Audit kelayakan tutur lisan dan prosodi AI TTS untuk naskah ini\"\n                  >\n                    {generatingAudit ? (\n                      <>\n                        <Loader2 size={15} className=\"spin\" /> Mengaudit...\n                      </>\n                    ) : (\n                      'Audit Spoken & TTS ✨'\n                    )}\n                  </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 1989,
+    "code": "<button\n                    className=\"btn btn-secondary\"\n                    onClick={handleRunVisualCueAnnotation}\n                    disabled={generatingVisualCue || loading || generatingAudit}\n                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}\n                    title=\"Anotasi visual cue dan b-roll director secara langsung pada naskah\"\n                  >\n                    {generatingVisualCue ? (\n                      <>\n                        <Loader2 size={15} className=\"spin\" /> Menganotasi...\n                      </>\n                    ) : (\n                      'Anotasi Visual Cue ✨'\n                    )}\n                  </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2004,
+    "code": "<button\n                    className=\"btn btn-secondary\"\n                    onClick={handleGenerateTitles}\n                    disabled={generatingTitles || loading || generatingAudit || generatingVisualCue}\n                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}\n                    title=\"Generate 2 alternatif judul YouTube: Mode A (5-8 kata) & Mode B (SEO Keyword)\"\n                  >\n                    {generatingTitles ? (\n                      <>\n                        <Loader2 size={15} className=\"spin\" /> Membuat Judul...\n                      </>\n                    ) : (\n                      <>\n                        <Sparkles size={15} style={{ color: 'var(--amber)' }} /> Buat Judul A/B ✨\n                      </>\n                    )}\n                  </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2022,
+    "code": "<button\n                      className=\"btn btn-secondary\"\n                      type=\"button\"\n                      onClick={() => handleGenerateThumbnail(false)}\n                      disabled={loading || generatingThumbnail || generatingAudit || generatingVisualCue}\n                      style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 18px', fontSize: '0.9rem' }}\n                      title=\"Generate ulang Thumbnail Copy Prompt berdasarkan naskah terbaru\"\n                    >\n                      <RotateCw size={16} className={generatingThumbnail ? 'spin' : ''} />\n                      {generatingThumbnail ? 'Meregenerasi...' : 'Generate Ulang Thumbnail'}\n                    </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2034,
+    "code": "<button\n                    className=\"btn btn-primary\"\n                    type=\"button\"\n                    onClick={hasGeneratedThumbnail ? handleProceedToThumbnailing : () => handleGenerateThumbnail(false)}\n                    disabled={loading || generatingAudit || generatingVisualCue || generatingThumbnail}\n                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', fontSize: '0.9rem' }}\n                  >\n                    {generatingThumbnail ? (\n                      <>\n                        <Loader2 size={16} className=\"spin\" /> Memproses...\n                      </>\n                    ) : hasGeneratedThumbnail ? (\n                      <>\n                        Lanjut ke Thumbnailing <ArrowRight size={16} />\n                      </>\n                    ) : (\n                      <>\n                        Lanjut: Generate Thumbnail <ArrowRight size={16} />\n                      </>\n                    )}\n                  </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2085,
+    "code": "<button\n                        type=\"button\"\n                        className=\"btn btn-secondary\"\n                        onClick={handleGenerateTitles}\n                        disabled={generatingTitles || loading}\n                        style={{ padding: '4px 10px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 5 }}\n                        title=\"Generate ulang alternatif judul Mode A & Mode B\"\n                      >\n                        <RotateCw size={13} className={generatingTitles ? 'spin' : ''} />\n                        <span>{generatingTitles ? 'Membuat...' : 'Generate Ulang'}</span>\n                      </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2116,
+    "code": "<button\n                              type=\"button\"\n                              className={`copy-action-btn ${copied === 'titleA' ? 'copied' : ''}`}\n                              onClick={() => copyText(titleA, 'titleA')}\n                              title=\"Salin judul Mode A\"\n                            >\n                              {copied === 'titleA' ? <Check size={13} /> : <Copy size={13} />}\n                              <span>{copied === 'titleA' ? 'Tersalin' : 'Copy'}</span>\n                            </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2125,
+    "code": "<button\n                              type=\"button\"\n                              className=\"btn btn-secondary\"\n                              onClick={() => handleApplyTitleAsMain(titleA)}\n                              style={{ padding: '3px 8px', fontSize: '0.74rem' }}\n                              title=\"Gunakan sebagai judul utama konten ini\"\n                            >\n                              Gunakan sbg Judul\n                            </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2153,
+    "code": "<button\n                              type=\"button\"\n                              className={`copy-action-btn ${copied === 'titleB' ? 'copied' : ''}`}\n                              onClick={() => copyText(titleB, 'titleB')}\n                              title=\"Salin judul Mode B\"\n                            >\n                              {copied === 'titleB' ? <Check size={13} /> : <Copy size={13} />}\n                              <span>{copied === 'titleB' ? 'Tersalin' : 'Copy'}</span>\n                            </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2162,
+    "code": "<button\n                              type=\"button\"\n                              className=\"btn btn-secondary\"\n                              onClick={() => handleApplyTitleAsMain(titleB)}\n                              style={{ padding: '3px 8px', fontSize: '0.74rem' }}\n                              title=\"Gunakan sebagai judul utama konten ini\"\n                            >\n                              Gunakan sbg Judul\n                            </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2215,
+    "code": "<button\n                        type=\"button\"\n                        className={`copy-action-btn ${copied === 'findings' ? 'copied' : ''}`}\n                        onClick={() => copyText(auditFindings, 'findings')}\n                        title=\"Salin Laporan Temuan\"\n                      >\n                        {copied === 'findings' ? <Check size={14} /> : <Copy size={14} />}\n                        <span>{copied === 'findings' ? 'Tersalin' : 'Copy'}</span>\n                      </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2225,
+    "code": "<button\n                          type=\"button\"\n                          className={`copy-action-btn ${appliedKey === 'audit' ? 'copied' : ''}`}\n                          onClick={() => handleApplyToDraft(auditRevisedDraft, 'audit')}\n                          title=\"Terapkan draft revisi ke editor naskah\"\n                        >\n                          <Check size={14} />\n                          <span>{appliedKey === 'audit' ? 'Diterapkan' : 'Terapkan'}</span>\n                        </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2235,
+    "code": "<button\n                        type=\"button\"\n                        className=\"copy-action-btn\"\n                        onClick={() => setIsAuditResultsCollapsed((prev) => !prev)}\n                        title={isAuditResultsCollapsed ? 'Buka Hasil Audit' : 'Susutkan Hasil Audit'}\n                      >\n                        {isAuditResultsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}\n                        <span>{isAuditResultsCollapsed ? 'Buka' : 'Susut'}</span>\n                      </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2252,
+    "code": "<button\n                            type=\"button\"\n                            className={`copy-action-btn ${copied === 'findings' ? 'copied' : ''}`}\n                            onClick={() => copyText(auditFindings, 'findings')}\n                            title=\"Salin Laporan Temuan\"\n                          >\n                            {copied === 'findings' ? <Check size={14} /> : <Copy size={14} />}\n                            <span>{copied === 'findings' ? 'Tersalin' : 'Copy'}</span>\n                          </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2270,
+    "code": "<button\n                              type=\"button\"\n                              className={`btn ${appliedKey === 'audit' ? 'btn-applied' : 'btn-primary'}`}\n                              onClick={() => handleApplyToDraft(auditRevisedDraft, 'audit')}\n                              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '8px 14px' }}\n                            >\n                              <Check size={15} /> {appliedKey === 'audit' ? 'Sudah Diterapkan' : 'Terapkan ke Draft'}\n                            </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2278,
+    "code": "<button\n                              type=\"button\"\n                              className={`copy-action-btn ${copied === 'revised' ? 'copied' : ''}`}\n                              onClick={() => copyText(auditRevisedDraft, 'revised')}\n                              title=\"Salin Draft Revisi\"\n                            >\n                              {copied === 'revised' ? <Check size={15} /> : <Copy size={15} />}\n                              <span>{copied === 'revised' ? 'Tersalin' : 'Copy'}</span>\n                            </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2331,
+    "code": "<button\n                        type=\"button\"\n                        className={`copy-action-btn ${copied === 'vcannot' ? 'copied' : ''}`}\n                        onClick={() => copyText(annotatedScript, 'vcannot')}\n                        title=\"Salin Naskah Teranotasi\"\n                      >\n                        {copied === 'vcannot' ? <Check size={14} /> : <Copy size={14} />}\n                        <span>{copied === 'vcannot' ? 'Tersalin' : 'Copy'}</span>\n                      </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2340,
+    "code": "<button\n                        type=\"button\"\n                        className={`copy-action-btn ${appliedKey === 'visual' ? 'copied' : ''}`}\n                        onClick={() => handleApplyToDraft(annotatedScript, 'visual')}\n                        title=\"Terapkan naskah teranotasi ke editor naskah\"\n                      >\n                        <Check size={14} />\n                        <span>{appliedKey === 'visual' ? 'Diterapkan' : 'Terapkan'}</span>\n                      </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2349,
+    "code": "<button\n                        type=\"button\"\n                        className=\"copy-action-btn\"\n                        onClick={() => setIsVisualCueResultsCollapsed((prev) => !prev)}\n                        title={isVisualCueResultsCollapsed ? 'Buka Anotasi Visual' : 'Susutkan Anotasi Visual'}\n                      >\n                        {isVisualCueResultsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}\n                        <span>{isVisualCueResultsCollapsed ? 'Buka' : 'Susut'}</span>\n                      </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2365,
+    "code": "<button\n                          type=\"button\"\n                          className={`btn ${appliedKey === 'visual' ? 'btn-applied' : 'btn-primary'}`}\n                          onClick={() => handleApplyToDraft(annotatedScript, 'visual')}\n                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '8px 14px' }}\n                        >\n                          <Check size={15} /> {appliedKey === 'visual' ? 'Sudah Diterapkan' : 'Terapkan ke Draft'}\n                        </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2373,
+    "code": "<button\n                          type=\"button\"\n                          className={`copy-action-btn ${copied === 'vcannot' ? 'copied' : ''}`}\n                          onClick={() => copyText(annotatedScript, 'vcannot')}\n                          title=\"Salin Naskah Teranotasi\"\n                        >\n                          {copied === 'vcannot' ? <Check size={15} /> : <Copy size={15} />}\n                          <span>{copied === 'vcannot' ? 'Tersalin' : 'Copy'}</span>\n                        </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2398,
+    "code": "<button\n                    className=\"btn btn-secondary revert-stage-btn\"\n                    type=\"button\"\n                    onClick={() => handleStatusChange('Scripting')}\n                    disabled={loading || generatingThumbnail}\n                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 16px', fontSize: '0.88rem', color: '#fcd34d' }}\n                    title=\"Kembalikan status pipeline ke tahap Naskah (Scripting)\"\n                  >\n                    <Undo2 size={16} /> Revert ke Scripting\n                  </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2408,
+    "code": "<button\n                    className=\"btn btn-secondary\"\n                    type=\"button\"\n                    onClick={() => handleGenerateThumbnail(false)}\n                    disabled={loading || generatingThumbnail}\n                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 7, padding: '10px 18px', fontSize: '0.88rem' }}\n                    title=\"Generate ulang Thumbnail Copy Prompt berdasarkan naskah\"\n                  >\n                    <RotateCw size={15} className={generatingThumbnail ? 'spin' : ''} />\n                    {generatingThumbnail ? 'Meregenerasi...' : 'Generate Ulang Thumbnail'}\n                  </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2419,
+    "code": "<button\n                    className=\"btn btn-secondary\"\n                    type=\"button\"\n                    onClick={handleGenerateTitles}\n                    disabled={generatingTitles || loading}\n                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 16px', fontSize: '0.88rem' }}\n                    title=\"Generate atau perbarui judul Mode A & Mode B\"\n                  >\n                    <Sparkles size={15} style={{ color: 'var(--amber)' }} />\n                    {generatingTitles ? 'Membuat Judul...' : 'Buat Judul A/B ✨'}\n                  </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2430,
+    "code": "<button\n                    className=\"btn btn-primary\"\n                    onClick={handlePublish}\n                    disabled={loading || generatingThumbnail}\n                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', fontSize: '0.88rem' }}\n                  >\n                    {loading ? (\n                      <>\n                        <Loader2 size={16} className=\"spin\" /> Memproses...\n                      </>\n                    ) : (\n                      <>\n                        Tandai Selesai (Publish) <Check size={16} />\n                      </>\n                    )}\n                  </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2476,
+    "code": "<button\n                        type=\"button\"\n                        className=\"btn btn-secondary\"\n                        onClick={handleGenerateTitles}\n                        disabled={generatingTitles || loading}\n                        style={{ padding: '4px 10px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 5 }}\n                        title=\"Generate ulang alternatif judul Mode A & Mode B\"\n                      >\n                        <RotateCw size={13} className={generatingTitles ? 'spin' : ''} />\n                        <span>{generatingTitles ? 'Membuat...' : 'Generate Ulang'}</span>\n                      </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2507,
+    "code": "<button\n                              type=\"button\"\n                              className={`copy-action-btn ${copied === 'titleA' ? 'copied' : ''}`}\n                              onClick={() => copyText(titleA, 'titleA')}\n                              title=\"Salin judul Mode A\"\n                            >\n                              {copied === 'titleA' ? <Check size={13} /> : <Copy size={13} />}\n                              <span>{copied === 'titleA' ? 'Tersalin' : 'Copy'}</span>\n                            </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2516,
+    "code": "<button\n                              type=\"button\"\n                              className=\"btn btn-secondary\"\n                              onClick={() => handleApplyTitleAsMain(titleA)}\n                              style={{ padding: '3px 8px', fontSize: '0.74rem' }}\n                              title=\"Gunakan sebagai judul utama konten ini\"\n                            >\n                              Gunakan sbg Judul\n                            </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2544,
+    "code": "<button\n                              type=\"button\"\n                              className={`copy-action-btn ${copied === 'titleB' ? 'copied' : ''}`}\n                              onClick={() => copyText(titleB, 'titleB')}\n                              title=\"Salin judul Mode B\"\n                            >\n                              {copied === 'titleB' ? <Check size={13} /> : <Copy size={13} />}\n                              <span>{copied === 'titleB' ? 'Tersalin' : 'Copy'}</span>\n                            </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2553,
+    "code": "<button\n                              type=\"button\"\n                              className=\"btn btn-secondary\"\n                              onClick={() => handleApplyTitleAsMain(titleB)}\n                              style={{ padding: '3px 8px', fontSize: '0.74rem' }}\n                              title=\"Gunakan sebagai judul utama konten ini\"\n                            >\n                              Gunakan sbg Judul\n                            </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2597,
+    "code": "<button\n                      type=\"button\"\n                      className={`copy-action-btn ${copied === 'thumbScript' ? 'copied' : ''}`}\n                      onClick={() => copyText(scriptOutput, 'thumbScript')}\n                      title=\"Salin Naskah Video\"\n                    >\n                      {copied === 'thumbScript' ? <Check size={14} /> : <Copy size={14} />}\n                      <span>{copied === 'thumbScript' ? 'Tersalin' : 'Copy Naskah'}</span>\n                    </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2606,
+    "code": "<button\n                      type=\"button\"\n                      className=\"editor-maximize-btn\"\n                      onClick={() => setIsScriptMaximized(true)}\n                      title=\"Perbesar / Maximize Naskah\"\n                    >\n                      <Maximize2 size={13} />\n                      <span>Maximize</span>\n                    </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2615,
+    "code": "<button\n                      type=\"button\"\n                      className=\"copy-action-btn\"\n                      onClick={() => setIsThumbnailScriptCollapsed((prev) => !prev)}\n                      title={isThumbnailScriptCollapsed ? 'Buka Naskah' : 'Susutkan Naskah'}\n                    >\n                      {isThumbnailScriptCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}\n                      <span>{isThumbnailScriptCollapsed ? 'Buka' : 'Susut'}</span>\n                    </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2673,
+    "code": "<button\n                        type=\"button\"\n                        className={`copy-action-btn ${copied === 'findings' ? 'copied' : ''}`}\n                        onClick={() => copyText(auditFindings, 'findings')}\n                      >\n                        {copied === 'findings' ? <Check size={14} /> : <Copy size={14} />}\n                        <span>{copied === 'findings' ? 'Tersalin' : 'Copy'}</span>\n                      </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2681,
+    "code": "<button\n                        type=\"button\"\n                        className=\"copy-action-btn\"\n                        onClick={() => setIsAuditResultsCollapsed((prev) => !prev)}\n                      >\n                        {isAuditResultsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}\n                        <span>{isAuditResultsCollapsed ? 'Buka' : 'Susut'}</span>\n                      </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2720,
+    "code": "<button\n                        type=\"button\"\n                        className={`copy-action-btn ${copied === 'vcannot' ? 'copied' : ''}`}\n                        onClick={() => copyText(annotatedScript, 'vcannot')}\n                      >\n                        {copied === 'vcannot' ? <Check size={14} /> : <Copy size={14} />}\n                        <span>{copied === 'vcannot' ? 'Tersalin' : 'Copy'}</span>\n                      </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2728,
+    "code": "<button\n                        type=\"button\"\n                        className=\"copy-action-btn\"\n                        onClick={() => setIsVisualCueResultsCollapsed((prev) => !prev)}\n                      >\n                        {isVisualCueResultsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}\n                        <span>{isVisualCueResultsCollapsed ? 'Buka' : 'Susut'}</span>\n                      </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2753,
+    "code": "<button\n                className=\"btn btn-secondary revert-stage-btn\"\n                type=\"button\"\n                onClick={() => handleStatusChange('Thumbnailing')}\n                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fcd34d' }}\n                title=\"Kembalikan status ke tahap Thumbnailing jika perlu perbaikan\"\n              >\n                <Undo2 size={16} /> Revert ke Thumbnailing\n              </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2784,
+    "code": "<button\n                  type=\"button\"\n                  className=\"btn btn-secondary\"\n                  onClick={() => setIsScriptMaximized(false)}\n                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', fontSize: '0.85rem', marginLeft: 8 }}\n                >\n                  <Minimize2 size={15} /> Selesai / Perkecil (Esc)\n                </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2837,
+    "code": "<button\n                type=\"button\"\n                className=\"btn btn-secondary\"\n                onClick={() => setShowDraftHistoryModal(false)}\n                style={{ padding: '4px 10px', fontSize: '0.82rem' }}\n              >\n                Tutup\n              </button>"
+  },
+  {
+    "file": "ScriptDetail.tsx",
+    "line": 2913,
+    "code": "<button\n                          type=\"button\"\n                          className=\"btn btn-secondary\"\n                          onClick={() => handleRestoreSnapshot(snap)}\n                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', padding: '6px 12px', color: 'var(--green)' }}\n                        >\n                          <RotateCcw size={14} /> Pulihkan Draf Ini\n                        </button>"
+  },
+  {
+    "file": "Settings.tsx",
+    "line": 380,
+    "code": "<button\n                    className=\"btn btn-primary\"\n                    type=\"button\"\n                    onClick={() => handleSave(p.key)}\n                    disabled={saving === p.key}\n                    style={{ whiteSpace: 'nowrap' }}\n                  >\n                    {savedKey === p.key ? <Check size={16} /> : <Save size={16} />}\n                    {saving === p.key ? 'Menyimpan…' : savedKey === p.key ? 'Tersimpan ✓' : 'Simpan'}\n                  </button>"
+  },
+  {
+    "file": "Settings.tsx",
+    "line": 452,
+    "code": "<button\n                      className=\"btn btn-secondary\"\n                      type=\"button\"\n                      onClick={() => handleImportModelsForProvider(cfg.provider)}\n                      disabled={!cfg.isConfigured || isImporting}\n                      title={!cfg.isConfigured ? cfg.unconfiguredHint : `Import daftar model ${cfg.label}`}\n                      style={{ whiteSpace: 'nowrap' }}\n                    >\n                      <Download size={16} /> {isImporting ? 'Mengambil…' : 'Auto Import Models'}\n                    </button>"
+  },
+  {
+    "file": "Settings.tsx",
+    "line": 463,
+    "code": "<button\n                      className=\"btn btn-primary\"\n                      type=\"button\"\n                      onClick={() => handleSave(cfg.key)}\n                      disabled={saving === cfg.key}\n                      style={{ whiteSpace: 'nowrap' }}\n                    >\n                      {savedKey === cfg.key ? <Check size={16} /> : <Save size={16} />}\n                      {saving === cfg.key ? 'Menyimpan…' : savedKey === cfg.key ? 'Tersimpan ✓' : 'Simpan'}\n                    </button>"
+  },
+  {
+    "file": "Settings.tsx",
+    "line": 491,
+    "code": "<button\n                                key={rec.id}\n                                type=\"button\"\n                                className={`rec-chip ${isSelected ? 'selected' : ''}`}\n                                title={rec.desc || rec.name}\n                                onClick={() => {\n                                  setValues((v) => ({ ...v, [cfg.key]: rec.id }));\n                                  if (!currentList.includes(rec.id)) {\n                                    const updated = [rec.id, ...currentList];\n                                    setProviderModels((prev) => ({\n                                      ...prev,\n                                      [cfg.provider]: updated,\n                                    }));\n                                    try {\n                                      localStorage.setItem(\n                                        MODELS_CACHE_KEY,\n                                        JSON.stringify({ ...providerModels, [cfg.provider]: updated })\n                                      );\n                                    } catch { /* ignore */ }\n                                  }\n                                }}\n                              >\n                                <span className=\"rec-badge\">{rec.badge}</span>\n                                <span className=\"rec-name\">{rec.name}</span>\n                                {isSelected && <span className=\"rec-check\">✓ Terpilih</span>}\n                              </button>"
+  },
+  {
+    "file": "Settings.tsx",
+    "line": 627,
+    "code": "<button\n                className=\"btn btn-secondary\"\n                type=\"button\"\n                onClick={handleVerifyTelegramBot}\n                disabled={verifyingBot || saving === 'telegram_token' || deletingToken || !values.telegram_token?.trim()}\n                style={{ whiteSpace: 'nowrap' }}\n                title=\"Uji koneksi dan keabsahan bot langsung ke server Telegram API via getMe\"\n              >\n                <Radio size={16} className={verifyingBot ? 'animate-pulse' : ''} />\n                {verifyingBot ? 'Menguji…' : 'Uji Koneksi Bot'}\n              </button>"
+  },
+  {
+    "file": "Settings.tsx",
+    "line": 638,
+    "code": "<button\n                className=\"btn btn-primary\"\n                type=\"button\"\n                onClick={() => handleSave('telegram_token')}\n                disabled={saving === 'telegram_token' || deletingToken || verifyingBot}\n                style={{ whiteSpace: 'nowrap' }}\n              >\n                {savedKey === 'telegram_token' ? <Check size={16} /> : <Save size={16} />}\n                {saving === 'telegram_token' ? 'Menyimpan…' : savedKey === 'telegram_token' ? 'Tersimpan ✓' : 'Simpan'}\n              </button>"
+  },
+  {
+    "file": "Settings.tsx",
+    "line": 648,
+    "code": "<button\n                className=\"btn btn-danger\"\n                type=\"button\"\n                onClick={handleDeleteTelegramToken}\n                disabled={deletingToken || saving === 'telegram_token' || verifyingBot || (!values.telegram_token?.trim() && !settings.telegram_token?.trim())}\n                style={{ whiteSpace: 'nowrap' }}\n                title=\"Hapus token bot Telegram dari penyimpanan aman\"\n              >\n                <Trash2 size={16} />\n                {deletingToken ? 'Menghapus…' : 'Hapus Token'}\n              </button>"
+  },
+  {
+    "file": "Settings.tsx",
+    "line": 778,
+    "code": "<button\n                className=\"btn btn-primary\"\n                type=\"button\"\n                onClick={() => handleSave('telegram_allowed_chat_ids')}\n                disabled={saving === 'telegram_allowed_chat_ids'}\n                style={{ whiteSpace: 'nowrap' }}\n              >\n                {savedKey === 'telegram_allowed_chat_ids' ? <Check size={16} /> : <Save size={16} />}\n                {saving === 'telegram_allowed_chat_ids' ? 'Menyimpan…' : savedKey === 'telegram_allowed_chat_ids' ? 'Tersimpan ✓' : 'Simpan Whitelist'}\n              </button>"
+  }
+]

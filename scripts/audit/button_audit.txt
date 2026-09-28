@@ -1,0 +1,768 @@
+
+--- src\components\AddIdeaModal.tsx : 108 ---
+          <h2 id="idea-modal-title">{initialData ? 'Edit Ide' : 'Tambah Ide Baru'}</h2>
+          <button className="icon-btn" type="button" aria-label="Tutup modal" onClick={onClose}>
+            <X size={18} />
+          </button>
+
+--- src\components\AddIdeaModal.tsx : 195 ---
+        <div className="modal-actions">
+          <button className="btn btn-secondary" type="button" onClick={onClose}>
+            Cancel
+          </button>
+
+--- src\components\AddIdeaModal.tsx : 198 ---
+          </button>
+          <button className="btn btn-primary" type="submit">
+            {initialData ? 'Simpan Perubahan' : 'Simpan Ide'}
+          </button>
+
+--- src\components\AlertModal.tsx : 210 ---
+          </div>
+          <button
+            type="button"
+            className="icon-btn alert-close-btn"
+
+--- src\components\AlertModal.tsx : 229 ---
+                <span>Rincian Kode / Log Error:</span>
+                <button
+                  type="button"
+                  className="alert-copy-btn"
+
+--- src\components\AlertModal.tsx : 258 ---
+          {actionButton && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+
+--- src\components\AlertModal.tsx : 270 ---
+          {cancelText && (
+            <button
+              type="button"
+              className="btn btn-secondary alert-cancel-btn"
+
+--- src\components\AlertModal.tsx : 278 ---
+          )}
+          <button
+            type="button"
+            className="btn btn-primary alert-confirm-btn"
+
+--- src\components\BulkImportModal.tsx : 164 ---
+          </div>
+          <button
+            className="icon-btn"
+            type="button"
+
+--- src\components\BulkImportModal.tsx : 183 ---
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <button
+                type="button"
+                className={`tab ${activeTab === 'file' ? 'active' : ''}`}
+
+--- src\components\BulkImportModal.tsx : 191 ---
+              </button>
+              <button
+                type="button"
+                className={`tab ${activeTab === 'paste' ? 'active' : ''}`}
+
+--- src\components\BulkImportModal.tsx : 280 ---
+                />
+                <button
+                  type="button"
+                  className="btn btn-primary"
+
+--- src\components\BulkImportModal.tsx : 318 ---
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+
+--- src\components\BulkImportModal.tsx : 326 ---
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+
+--- src\components\BulkImportModal.tsx : 425 ---
+                      <td style={{ padding: '8px', textAlign: 'center' }}>
+                        <button
+                          type="button"
+                          className="icon-btn"
+
+--- src\components\BulkImportModal.tsx : 444 ---
+        <div className="modal-actions" style={{ marginTop: 20 }}>
+          <button className="btn btn-secondary" type="button" onClick={onClose} disabled={isSubmitting}>
+            Batal
+          </button>
+
+--- src\components\BulkImportModal.tsx : 448 ---
+          {parsedItems.length > 0 && (
+            <button
+              className="btn btn-primary"
+              type="button"
+
+--- src\components\ImportModal.tsx : 68 ---
+          <h2 id="import-modal-title">Import File Referensi</h2>
+          <button
+            className="icon-btn"
+            type="button"
+
+--- src\components\ImportModal.tsx : 214 ---
+        <div className="modal-actions" style={{ marginTop: 18 }}>
+          <button className="btn btn-secondary" type="button" onClick={onClose} disabled={isProcessing}>
+            Tutup
+          </button>
+
+--- src\components\Sidebar.tsx : 37 ---
+          </div>
+          <button className="icon-btn" type="button" aria-label="Tutup navigasi" onClick={onClose}>
+            <X size={18} />
+          </button>
+
+--- src\components\Sidebar.tsx : 45 ---
+            return (
+              <button
+                key={item.key}
+                className={`nav-item ${activeView === item.key ? 'active' : ''}`}
+
+--- src\components\Terminal.tsx : 275 ---
+          {onClear && logs.length > 0 && (
+            <button
+              className="icon-btn"
+              type="button"
+
+--- src\components\Terminal.tsx : 286 ---
+          )}
+          <button
+            className="icon-btn"
+            type="button"
+
+--- src\components\Topbar.tsx : 45 ---
+    <header className="topbar glass">
+      <button className="icon-btn" type="button" aria-label="Buka navigasi" onClick={onMenuClick}>
+        <Menu size={19} />
+      </button>
+
+--- src\components\Topbar.tsx : 86 ---
+      </div>
+      <button
+        className="icon-btn"
+        type="button"
+
+--- src\views\ContentTable.tsx : 206 ---
+        return (
+          <button className="row-action" type="button" onClick={() => onValidate(item)} title="Validasi Ide dengan AI">
+            <Zap size={14} /> Validasi AI
+          </button>
+
+--- src\views\ContentTable.tsx : 218 ---
+        return (
+          <button className="row-action" type="button" onClick={() => onViewScript(item)} title="Buka Workspace">
+            <FileText size={14} /> Workspace
+          </button>
+
+--- src\views\ContentTable.tsx : 224 ---
+        return (
+          <button className="row-action" type="button" onClick={() => onViewScript(item)} title="View Script">
+            <FileText size={14} /> Script
+          </button>
+
+--- src\views\ContentTable.tsx : 230 ---
+        return (
+          <button className="row-action" type="button" onClick={() => onViewScript(item)} title="Buat Thumbnail">
+            <Image size={14} /> Thumbnail
+          </button>
+
+--- src\views\ContentTable.tsx : 236 ---
+        return (
+          <button className="row-action" type="button" onClick={() => onViewPublished(item)} title="Open Published">
+            <ExternalLink size={14} /> Open
+          </button>
+
+--- src\views\ContentTable.tsx : 264 ---
+        <div className="hero-actions">
+          <button className="btn btn-primary" type="button" onClick={onAddIdea}>
+            <Plus size={18} /> Tambah Ide
+          </button>
+
+--- src\views\ContentTable.tsx : 267 ---
+          </button>
+          <button className="btn btn-secondary" type="button" onClick={onImportFile}>
+            <Upload size={18} /> Import File
+          </button>
+
+--- src\views\ContentTable.tsx : 277 ---
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                className={`tab ${activeTab === tab.key ? 'active' : ''}`}
+
+--- src\views\ContentTable.tsx : 308 ---
+            </select>
+            <button
+              className="small-btn"
+              type="button"
+
+--- src\views\ContentTable.tsx : 360 ---
+                      <td>
+                        <button
+                          type="button"
+                          className="cell-title cell-title-btn"
+
+--- src\views\ContentTable.tsx : 435 ---
+                          {renderAction(item)}
+                          <button
+                            className="row-action default"
+                            type="button"
+
+--- src\views\ContentTable.tsx : 444 ---
+                          </button>
+                          <button
+                            className="row-action danger"
+                            type="button"
+
+--- src\views\FileManager.tsx : 69 ---
+        <div className="hero-actions">
+          <button className="btn btn-primary" type="button" onClick={onImportFile}>
+            <UploadCloud size={18} /> Upload Dokumen (.docx / .txt)
+          </button>
+
+--- src\views\FileManager.tsx : 123 ---
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <button
+                        className="row-action"
+                        type="button"
+
+--- src\views\FileManager.tsx : 132 ---
+                      </button>
+                      <button
+                        className="row-action danger"
+                        type="button"
+
+--- src\views\FileManager.tsx : 177 ---
+              </div>
+              <button className="icon-btn" type="button" onClick={() => setPreviewFile(null)}>
+                <X size={18} />
+              </button>
+
+--- src\views\FileManager.tsx : 194 ---
+                </span>
+                <button
+                  className="row-action"
+                  type="button"
+
+--- src\views\FileManager.tsx : 220 ---
+            <div className="modal-actions">
+              <button className="btn btn-secondary" type="button" onClick={() => setPreviewFile(null)}>
+                Tutup
+              </button>
+
+--- src\views\Overview.tsx : 102 ---
+        <div className="hero-actions">
+          <button className="btn btn-primary" type="button" onClick={onAddIdea}>
+            <Plus size={18} /> Tambah Ide
+          </button>
+
+--- src\views\Overview.tsx : 105 ---
+          </button>
+          <button className="btn btn-secondary" type="button" onClick={onImportFile}>
+            <Upload size={18} /> Import File
+          </button>
+
+--- src\views\Overview.tsx : 149 ---
+          <h2>Recent Activity</h2>
+          <button
+            className="small-btn"
+            type="button"
+
+--- src\views\Overview.tsx : 176 ---
+                    <td>
+                      <button
+                        type="button"
+                        className="cell-title cell-title-btn"
+
+--- src\views\PublishedDetail.tsx : 220 ---
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+        <button
+          className="btn btn-secondary"
+          type="button"
+
+--- src\views\PublishedDetail.tsx : 229 ---
+        {onUpdate && !isEditing && (
+          <button
+            className="btn btn-secondary"
+            type="button"
+
+--- src\views\PublishedDetail.tsx : 288 ---
+                </div>
+                <button
+                  className="btn btn-secondary revert-stage-btn"
+                  type="button"
+
+--- src\views\PublishedDetail.tsx : 380 ---
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+              <button
+                className="btn btn-secondary"
+                type="button"
+
+--- src\views\PublishedDetail.tsx : 394 ---
+              </button>
+              <button
+                className="btn btn-primary"
+                type="submit"
+
+--- src\views\PublishedDetail.tsx : 458 ---
+          {providerConfig && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+
+--- src\views\PublishedDetail.tsx : 494 ---
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <button
+                type="button"
+                className={`copy-action-btn ${copiedKey === 'titleA' ? 'copied' : ''}`}
+
+--- src\views\PublishedDetail.tsx : 504 ---
+              {onUpdate && activeTitleA !== item.title && (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+
+--- src\views\PublishedDetail.tsx : 533 ---
+                <>
+                  <button
+                    type="button"
+                    className={`copy-action-btn ${copiedKey === 'titleB' ? 'copied' : ''}`}
+
+--- src\views\PublishedDetail.tsx : 543 ---
+                  {onUpdate && activeTitleB !== item.title && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+
+--- src\views\PublishedDetail.tsx : 588 ---
+            {finalScriptText && (
+              <button
+                type="button"
+                className={`copy-action-btn ${copiedKey === 'finalScript' ? 'copied' : ''}`}
+
+--- src\views\PublishedDetail.tsx : 598 ---
+            )}
+            <button
+              type="button"
+              className="copy-action-btn"
+
+--- src\views\PublishedDetail.tsx : 646 ---
+            {item.generated_thumbnail_prompt && (
+              <button
+                type="button"
+                className={`copy-action-btn ${copiedKey === 'thumbPrompt' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 1102 ---
+    <main className="main-content">
+      <button
+        className="btn btn-secondary"
+        type="button"
+
+--- src\views\ScriptDetail.tsx : 1189 ---
+                {(item.status === 'Researching' || item.status === 'Idea' || item.status === 'Validating') && (
+                  <button
+                    type="button"
+                    className="copy-action-btn"
+
+--- src\views\ScriptDetail.tsx : 1200 ---
+                )}
+                <button
+                  type="button"
+                  className={`copy-action-btn ${copied === 'rbp' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 1209 ---
+                </button>
+                <button
+                  type="button"
+                  className="copy-action-btn"
+
+--- src\views\ScriptDetail.tsx : 1258 ---
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    className={`copy-action-btn ${copied === 'handoff' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 1267 ---
+                  </button>
+                  <button
+                    type="button"
+                    className="copy-action-btn"
+
+--- src\views\ScriptDetail.tsx : 1300 ---
+                </h4>
+                <button
+                  type="button"
+                  className={`copy-action-btn ${copied === 'tp' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 1364 ---
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button
+                  className="btn btn-secondary"
+                  type="button"
+
+--- src\views\ScriptDetail.tsx : 1372 ---
+                </button>
+                <button
+                  className="btn btn-primary"
+                  type="button"
+
+--- src\views\ScriptDetail.tsx : 1599 ---
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    className="btn btn-secondary revert-stage-btn"
+                    type="button"
+
+--- src\views\ScriptDetail.tsx : 1610 ---
+                  {hasGeneratedScriptBrief && (
+                    <button
+                      className="btn btn-secondary"
+                      type="button"
+
+--- src\views\ScriptDetail.tsx : 1622 ---
+                  )}
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+
+--- src\views\ScriptDetail.tsx : 1674 ---
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className="editor-maximize-btn"
+
+--- src\views\ScriptDetail.tsx : 1683 ---
+                      </button>
+                      <button
+                        type="button"
+                        className="copy-action-btn"
+
+--- src\views\ScriptDetail.tsx : 1720 ---
+                    {(showAuditResults || showVisualCueResults || scriptOutput.trim().length > 0) && (
+                      <button
+                        type="button"
+                        className="copy-action-btn"
+
+--- src\views\ScriptDetail.tsx : 1745 ---
+                          {draftHistory.length > 0 && (
+                            <button
+                              type="button"
+                              className="editor-maximize-btn"
+
+--- src\views\ScriptDetail.tsx : 1757 ---
+                          {draftHistory.length > 0 && (
+                            <button
+                              type="button"
+                              className="editor-maximize-btn"
+
+--- src\views\ScriptDetail.tsx : 1767 ---
+                          )}
+                          <button
+                            type="button"
+                            className="editor-maximize-btn"
+
+--- src\views\ScriptDetail.tsx : 1964 ---
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    className="btn btn-secondary revert-stage-btn"
+                    type="button"
+
+--- src\views\ScriptDetail.tsx : 1974 ---
+                  </button>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={handleRunAudit}
+
+--- src\views\ScriptDetail.tsx : 1989 ---
+                  </button>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={handleRunVisualCueAnnotation}
+
+--- src\views\ScriptDetail.tsx : 2004 ---
+                  </button>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={handleGenerateTitles}
+
+--- src\views\ScriptDetail.tsx : 2022 ---
+                  {hasGeneratedThumbnail && (
+                    <button
+                      className="btn btn-secondary"
+                      type="button"
+
+--- src\views\ScriptDetail.tsx : 2034 ---
+                  )}
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+
+--- src\views\ScriptDetail.tsx : 2085 ---
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+
+--- src\views\ScriptDetail.tsx : 2116 ---
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              className={`copy-action-btn ${copied === 'titleA' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 2125 ---
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+
+--- src\views\ScriptDetail.tsx : 2153 ---
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              className={`copy-action-btn ${copied === 'titleB' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 2162 ---
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+
+--- src\views\ScriptDetail.tsx : 2215 ---
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className={`copy-action-btn ${copied === 'findings' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 2225 ---
+                      {auditRevisedDraft && (
+                        <button
+                          type="button"
+                          className={`copy-action-btn ${appliedKey === 'audit' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 2235 ---
+                      )}
+                      <button
+                        type="button"
+                        className="copy-action-btn"
+
+--- src\views\ScriptDetail.tsx : 2252 ---
+                          <h5 style={{ margin: 0 }}>📋 Laporan Temuan</h5>
+                          <button
+                            type="button"
+                            className={`copy-action-btn ${copied === 'findings' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 2270 ---
+                          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                            <button
+                              type="button"
+                              className={`btn ${appliedKey === 'audit' ? 'btn-applied' : 'btn-primary'}`}
+
+--- src\views\ScriptDetail.tsx : 2278 ---
+                            </button>
+                            <button
+                              type="button"
+                              className={`copy-action-btn ${copied === 'revised' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 2331 ---
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className={`copy-action-btn ${copied === 'vcannot' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 2340 ---
+                      </button>
+                      <button
+                        type="button"
+                        className={`copy-action-btn ${appliedKey === 'visual' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 2349 ---
+                      </button>
+                      <button
+                        type="button"
+                        className="copy-action-btn"
+
+--- src\views\ScriptDetail.tsx : 2365 ---
+                      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                        <button
+                          type="button"
+                          className={`btn ${appliedKey === 'visual' ? 'btn-applied' : 'btn-primary'}`}
+
+--- src\views\ScriptDetail.tsx : 2373 ---
+                        </button>
+                        <button
+                          type="button"
+                          className={`copy-action-btn ${copied === 'vcannot' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 2398 ---
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <button
+                    className="btn btn-secondary revert-stage-btn"
+                    type="button"
+
+--- src\views\ScriptDetail.tsx : 2408 ---
+                  </button>
+                  <button
+                    className="btn btn-secondary"
+                    type="button"
+
+--- src\views\ScriptDetail.tsx : 2419 ---
+                  </button>
+                  <button
+                    className="btn btn-secondary"
+                    type="button"
+
+--- src\views\ScriptDetail.tsx : 2430 ---
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={handlePublish}
+
+--- src\views\ScriptDetail.tsx : 2476 ---
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+
+--- src\views\ScriptDetail.tsx : 2507 ---
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              className={`copy-action-btn ${copied === 'titleA' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 2516 ---
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+
+--- src\views\ScriptDetail.tsx : 2544 ---
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              className={`copy-action-btn ${copied === 'titleB' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 2553 ---
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+
+--- src\views\ScriptDetail.tsx : 2597 ---
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      className={`copy-action-btn ${copied === 'thumbScript' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 2606 ---
+                    </button>
+                    <button
+                      type="button"
+                      className="editor-maximize-btn"
+
+--- src\views\ScriptDetail.tsx : 2615 ---
+                    </button>
+                    <button
+                      type="button"
+                      className="copy-action-btn"
+
+--- src\views\ScriptDetail.tsx : 2673 ---
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className={`copy-action-btn ${copied === 'findings' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 2681 ---
+                      </button>
+                      <button
+                        type="button"
+                        className="copy-action-btn"
+
+--- src\views\ScriptDetail.tsx : 2720 ---
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className={`copy-action-btn ${copied === 'vcannot' ? 'copied' : ''}`}
+
+--- src\views\ScriptDetail.tsx : 2728 ---
+                      </button>
+                      <button
+                        type="button"
+                        className="copy-action-btn"
+
+--- src\views\ScriptDetail.tsx : 2753 ---
+              <p style={{ color: '#7890af', marginBottom: 16 }}>Konten ini telah selesai melalui seluruh pipeline AI.</p>
+              <button
+                className="btn btn-secondary revert-stage-btn"
+                type="button"
+
+--- src\views\ScriptDetail.tsx : 2784 ---
+                <span>{scriptOutput.length.toLocaleString('id-ID')} karakter</span>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+
+--- src\views\ScriptDetail.tsx : 2837 ---
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary"
+
+--- src\views\ScriptDetail.tsx : 2913 ---
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+
+--- src\views\Settings.tsx : 380 ---
+                  </div>
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+
+--- src\views\Settings.tsx : 452 ---
+
+                    <button
+                      className="btn btn-secondary"
+                      type="button"
+
+--- src\views\Settings.tsx : 463 ---
+
+                    <button
+                      className="btn btn-primary"
+                      type="button"
+
+--- src\views\Settings.tsx : 491 ---
+                            return (
+                              <button
+                                key={rec.id}
+                                type="button"
+
+--- src\views\Settings.tsx : 627 ---
+              </div>
+              <button
+                className="btn btn-secondary"
+                type="button"
+
+--- src\views\Settings.tsx : 638 ---
+              </button>
+              <button
+                className="btn btn-primary"
+                type="button"
+
+--- src\views\Settings.tsx : 648 ---
+              </button>
+              <button
+                className="btn btn-danger"
+                type="button"
+
+--- src\views\Settings.tsx : 778 ---
+              </div>
+              <button
+                className="btn btn-primary"
+                type="button"
