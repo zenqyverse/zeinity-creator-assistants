@@ -1,6 +1,36 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Save, Bot, Key, MessageSquare, Link2, Cpu, Download, Check, Sparkles, Info, Trash2, Radio, Shield, Users, HelpCircle } from 'lucide-react';
 import {
+  Save,
+  Bot,
+  Key,
+  MessageSquare,
+  Link2,
+  Cpu,
+  Download,
+  Check,
+  Sparkles,
+  Info,
+  Trash2,
+  Radio,
+  Shield,
+  Users,
+  HelpCircle,
+  Zap,
+  RotateCcw,
+  Globe,
+  HardDrive,
+  CheckCircle2,
+  ShieldCheck,
+  Clock,
+  RefreshCw,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react';
+import {
+  fetchNineRouterCatalog,
+  DEFAULT_NINEROUTER_CATALOG,
+  fetchAvailableCustomGatewayModels,
+  DEFAULT_CUSTOM_MODELS,
   fetchAvailableGeminiModels,
   DEFAULT_GEMINI_MODELS,
   fetchAvailableOpenRouterModels,
@@ -8,10 +38,17 @@ import {
   fetchAvailableOllamaModels,
   DEFAULT_OLLAMA_MODELS,
   getDynamicRecommendations,
+  getProviderLabel,
 } from '@/lib/gemini';
 import { useAlert } from '@/components/AlertModal';
 import { useTerminal } from '@/components/Terminal';
-import { isValidTelegramToken, verifyTelegramBotToken, type TelegramVerificationResult } from '@/hooks/useSettings';
+import {
+  isValidTelegramToken,
+  verifyTelegramBotToken,
+  parseFallbackChain,
+  type TelegramVerificationResult,
+} from '@/hooks/useSettings';
+import type { AIProvider, NineRouterCatalog } from '@/types';
 
 interface SettingsProps {
   settings: Record<string, string>;
@@ -24,8 +61,15 @@ interface SettingsProps {
 const providers = [
   { key: 'gemini_api_key', label: 'Google Gemini API Key', icon: Bot, placeholder: 'AIza…', mask: 'gemini' },
   { key: 'openrouter_api_key', label: 'OpenRouter / Groq API Key', icon: Link2, placeholder: 'sk-or-…', mask: 'openrouter' },
-  { key: 'ollama_endpoint', label: 'Ollama Local Endpoint', icon: Key, placeholder: 'http://localhost:11434', mask: 'ollama' },
+  { key: 'custom_gateway_endpoint', label: '9Router Gateway Endpoint URL', icon: Zap, placeholder: 'http://localhost:20128/v1', mask: 'custom_ep' },
+  { key: 'custom_gateway_api_key', label: '9Router Gateway API Key (Opsional)', icon: Key, placeholder: 'sk-dummy… (kosongkan jika tanpa auth)', mask: 'custom_key' },
+  { key: 'ollama_endpoint', label: 'Ollama Local Endpoint', icon: HardDrive, placeholder: 'http://localhost:11434', mask: 'ollama' },
 ];
+
+export function checkIsPasswordKey(p: { key: string }) {
+  const isPassword = p.key !== 'ollama_endpoint' && p.key !== 'custom_gateway_endpoint';
+  return isPassword;
+}
 
 export default function Settings({ settings, onSave, onDelete, onResetTelegramToken, onShowToast }: SettingsProps) {
   const { showAlert, showError, showWarning } = useAlert();
@@ -37,7 +81,16 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
     openrouter_model_version: settings.openrouter_model_version || 'openrouter/free',
     ollama_endpoint: settings.ollama_endpoint || 'http://localhost:11434',
     ollama_model_version: settings.ollama_model_version || 'llama3',
-    active_provider: settings.active_provider || 'gemini',
+    custom_gateway_endpoint: settings.custom_gateway_endpoint || 'http://localhost:20128/v1',
+    custom_gateway_api_key: settings.custom_gateway_api_key || '',
+    custom_gateway_model_version: settings.custom_gateway_model_version || 'Creator-Combo',
+    custom_gateway_model_mode: settings.custom_gateway_model_mode || 'combo',
+    custom_gateway_direct_model: settings.custom_gateway_direct_model || 'groq/llama-3.3-70b-versatile',
+    active_provider: 'custom',
+    auto_switch_enabled: settings.auto_switch_enabled ?? 'true',
+    ai_request_timeout: settings.ai_request_timeout || '90',
+    fallback_provider_order: settings.fallback_provider_order || 'custom,gemini,openrouter,ollama',
+    skip_quick_switch_confirm: settings.skip_quick_switch_confirm || 'false',
     telegram_token: settings.telegram_token || '',
     telegram_allowed_chat_ids: settings.telegram_allowed_chat_ids || '',
   });
@@ -52,7 +105,16 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
       openrouter_model_version: settings.openrouter_model_version || prev.openrouter_model_version,
       ollama_endpoint: settings.ollama_endpoint || prev.ollama_endpoint,
       ollama_model_version: settings.ollama_model_version || prev.ollama_model_version,
-      active_provider: settings.active_provider || prev.active_provider,
+      custom_gateway_endpoint: settings.custom_gateway_endpoint !== undefined ? settings.custom_gateway_endpoint : prev.custom_gateway_endpoint,
+      custom_gateway_api_key: settings.custom_gateway_api_key !== undefined ? settings.custom_gateway_api_key : prev.custom_gateway_api_key,
+      custom_gateway_model_version: settings.custom_gateway_model_version || prev.custom_gateway_model_version,
+      custom_gateway_model_mode: settings.custom_gateway_model_mode || prev.custom_gateway_model_mode,
+      custom_gateway_direct_model: settings.custom_gateway_direct_model || prev.custom_gateway_direct_model,
+      active_provider: 'custom',
+      auto_switch_enabled: settings.auto_switch_enabled !== undefined ? settings.auto_switch_enabled : prev.auto_switch_enabled,
+      ai_request_timeout: settings.ai_request_timeout || prev.ai_request_timeout,
+      fallback_provider_order: settings.fallback_provider_order || prev.fallback_provider_order,
+      skip_quick_switch_confirm: settings.skip_quick_switch_confirm !== undefined ? settings.skip_quick_switch_confirm : prev.skip_quick_switch_confirm,
       telegram_token: settings.telegram_token !== undefined ? settings.telegram_token : prev.telegram_token,
       telegram_allowed_chat_ids: settings.telegram_allowed_chat_ids !== undefined ? settings.telegram_allowed_chat_ids : prev.telegram_allowed_chat_ids,
     }));
@@ -63,6 +125,21 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
   const [deletingToken, setDeletingToken] = useState(false);
   const [verifyingBot, setVerifyingBot] = useState(false);
   const [botVerificationResult, setBotVerificationResult] = useState<TelegramVerificationResult | null>(null);
+  const [testingCustomGateway, setTestingCustomGateway] = useState(false);
+  const [importingModels, setImportingModels] = useState(false);
+
+  const NINEROUTER_CATALOG_STORAGE_KEY = 'zeinity_9router_catalog';
+
+  const [catalog, setCatalog] = useState<NineRouterCatalog>(() => {
+    try {
+      const cached = localStorage.getItem(NINEROUTER_CATALOG_STORAGE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && Array.isArray(parsed.combos)) return parsed;
+      }
+    } catch { /* ignore */ }
+    return DEFAULT_NINEROUTER_CATALOG;
+  });
 
   const MODELS_CACHE_KEY = 'zeinity_imported_models';
 
@@ -74,11 +151,17 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
         return {
           gemini: Array.isArray(parsed.gemini) && parsed.gemini.length > 0 ? parsed.gemini : DEFAULT_GEMINI_MODELS,
           openrouter: Array.isArray(parsed.openrouter) && parsed.openrouter.length > 0 ? parsed.openrouter : DEFAULT_OPENROUTER_MODELS,
+          custom: Array.isArray(parsed.custom) && parsed.custom.length > 0 ? parsed.custom : DEFAULT_CUSTOM_MODELS,
           ollama: Array.isArray(parsed.ollama) && parsed.ollama.length > 0 ? parsed.ollama : DEFAULT_OLLAMA_MODELS,
         };
       }
     } catch { /* ignore */ }
-    return { gemini: DEFAULT_GEMINI_MODELS, openrouter: DEFAULT_OPENROUTER_MODELS, ollama: DEFAULT_OLLAMA_MODELS };
+    return {
+      gemini: DEFAULT_GEMINI_MODELS,
+      openrouter: DEFAULT_OPENROUTER_MODELS,
+      custom: DEFAULT_CUSTOM_MODELS,
+      ollama: DEFAULT_OLLAMA_MODELS,
+    };
   });
   const [importingProvider, setImportingProvider] = useState<string | null>(null);
   const [importStatuses, setImportStatuses] = useState<Record<string, string>>({});
@@ -89,6 +172,11 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
   // F-12: Deteksi status perubahan konfigurasi (dirty state)
   const isDirty = useMemo(() => {
     const keysToCheck = [
+      'custom_gateway_endpoint',
+      'custom_gateway_api_key',
+      'custom_gateway_model_version',
+      'custom_gateway_model_mode',
+      'custom_gateway_direct_model',
       'gemini_api_key',
       'gemini_model_version',
       'openrouter_api_key',
@@ -96,6 +184,10 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
       'ollama_endpoint',
       'ollama_model_version',
       'active_provider',
+      'auto_switch_enabled',
+      'ai_request_timeout',
+      'fallback_provider_order',
+      'skip_quick_switch_confirm',
       'telegram_token',
       'telegram_allowed_chat_ids',
     ];
@@ -122,6 +214,11 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
     addLog('Menyimpan API keys, pilihan model AI, dan konfigurasi Telegram...', 30);
 
     const keysToSave = [
+      'custom_gateway_endpoint',
+      'custom_gateway_api_key',
+      'custom_gateway_model_version',
+      'custom_gateway_model_mode',
+      'custom_gateway_direct_model',
       'gemini_api_key',
       'gemini_model_version',
       'openrouter_api_key',
@@ -129,6 +226,10 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
       'ollama_endpoint',
       'ollama_model_version',
       'active_provider',
+      'auto_switch_enabled',
+      'ai_request_timeout',
+      'fallback_provider_order',
+      'skip_quick_switch_confirm',
       'telegram_token',
       'telegram_allowed_chat_ids',
     ];
@@ -136,7 +237,7 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
     try {
       let allOk = true;
       for (const k of keysToSave) {
-        const valToSave = k === 'telegram_token' ? tgVal : (values[k] || '');
+        const valToSave = k === 'telegram_token' ? tgVal : k === 'active_provider' ? 'custom' : (values[k] || '');
         const ok = await onSave(k, valToSave);
         if (ok === false) allOk = false;
       }
@@ -312,7 +413,7 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
   };
 
   const modelConfigs: Array<{
-    provider: 'gemini' | 'openrouter' | 'ollama';
+    provider: AIProvider;
     label: string;
     key: string;
     defaultModel: string;
@@ -339,6 +440,19 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
       fetchModels: () => fetchAvailableOpenRouterModels(values.openrouter_api_key || ''),
     },
     {
+      provider: 'custom',
+      label: '9Router / Custom Gateway',
+      key: 'custom_gateway_model_version',
+      defaultModel: 'openrouter/auto',
+      isConfigured: Boolean((values.custom_gateway_endpoint || 'http://localhost:20128/v1').trim()),
+      unconfiguredHint: 'Isi Gateway Endpoint terlebih dahulu untuk auto import',
+      fetchModels: () =>
+        fetchAvailableCustomGatewayModels(
+          values.custom_gateway_endpoint || 'http://localhost:20128/v1',
+          values.custom_gateway_api_key || ''
+        ),
+    },
+    {
       provider: 'ollama',
       label: 'Ollama Local',
       key: 'ollama_model_version',
@@ -348,6 +462,97 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
       fetchModels: () => fetchAvailableOllamaModels(values.ollama_endpoint || 'http://localhost:11434'),
     },
   ];
+
+  const handleTestCustomGateway = async () => {
+    const ep = (values.custom_gateway_endpoint || 'http://localhost:20128/v1').trim();
+    setTestingCustomGateway(true);
+    startActivity('9Router Gateway Test', `Menghubungkan ke ${ep}...`);
+    try {
+      const res = await fetchNineRouterCatalog(ep, values.custom_gateway_api_key);
+      setCatalog(res);
+      try {
+        localStorage.setItem(NINEROUTER_CATALOG_STORAGE_KEY, JSON.stringify(res));
+      } catch { /* ignore */ }
+      finishActivity(`Koneksi ke 9Router berhasil! Ditemukan ${res.allModels.length} model (${res.combos.length} Combos).`);
+      showAlert({
+        title: 'Koneksi 9Router Berhasil 🟢',
+        message: `Berhasil terhubung ke endpoint ${ep}. Terdeteksi ${res.combos.length} Combo Presets dan ${res.allModels.length - res.combos.length} Direct Models dari ${Object.keys(res.directModels).length} provider aktif.`,
+        type: 'success',
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errorActivity(`Koneksi 9Router gagal: ${msg}`);
+      showError('Koneksi 9Router Gagal 🔴', msg, {
+        solution: 'Pastikan 9Router proxy server sudah berjalan di komputer Anda (jalankan perintah: 9router start di terminal) dan port 20128 tidak terblokir firewall.',
+      });
+    } finally {
+      setTestingCustomGateway(false);
+    }
+  };
+
+  const handleImportNineRouterModels = async () => {
+    const ep = (values.custom_gateway_endpoint || 'http://localhost:20128/v1').trim();
+    setImportingModels(true);
+    startActivity('9Router Model Importer', `Meminta katalog model dari ${ep}...`);
+    addLog('Mengimpor Combo Presets dan Direct Models...', 40);
+    try {
+      const res = await fetchNineRouterCatalog(ep, values.custom_gateway_api_key);
+      setCatalog(res);
+      try {
+        localStorage.setItem(NINEROUTER_CATALOG_STORAGE_KEY, JSON.stringify(res));
+      } catch { /* ignore */ }
+      finishActivity(`Berhasil mengimpor ${res.allModels.length} model dari 9Router!`);
+      showAlert({
+        title: 'Import Model Berhasil ✓',
+        message: `Berhasil mengimpor ${res.allModels.length} model nyata dari 9Router (${res.combos.length} Combo Presets, ${res.allModels.length - res.combos.length} Direct Models).`,
+        type: 'success',
+      });
+      onShowToast?.(`Berhasil mengimpor ${res.allModels.length} model 9Router!`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errorActivity(`Import model gagal: ${msg}`);
+      showError('Gagal Mengimpor Model 9Router', msg, {
+        solution: 'Pastikan server 9Router aktif di terminal (perintah: 9router start) sebelum mengimpor model.',
+      });
+    } finally {
+      setImportingModels(false);
+    }
+  };
+
+  const fallbackChainList: AIProvider[] = useMemo(() => {
+    return parseFallbackChain(values.fallback_provider_order);
+  }, [values.fallback_provider_order]);
+
+  const moveFallbackItem = (index: number, direction: -1 | 1) => {
+    const current = [...fallbackChainList];
+    const target = index + direction;
+    if (target < 0 || target >= current.length) return;
+    const temp = current[index];
+    current[index] = current[target];
+    current[target] = temp;
+    const newOrderStr = current.join(',');
+    setValues((v) => ({ ...v, fallback_provider_order: newOrderStr }));
+    onSave('fallback_provider_order', newOrderStr);
+  };
+
+  function groupModelsByVendor(models: string[]): Record<string, string[]> {
+    const groups: Record<string, string[]> = {};
+    for (const m of models) {
+      let group = 'Lainnya / Umum';
+      const lower = m.toLowerCase();
+      if (lower.includes('anthropic') || lower.includes('claude')) group = 'Anthropic Claude';
+      else if (lower.includes('google') || lower.includes('gemini') || lower.includes('gemma')) group = 'Google Gemini & Gemma';
+      else if (lower.includes('deepseek')) group = 'DeepSeek';
+      else if (lower.includes('openai') || lower.includes('gpt')) group = 'OpenAI';
+      else if (lower.includes('meta') || lower.includes('llama')) group = 'Meta Llama';
+      else if (lower.includes('mistral')) group = 'Mistral AI';
+      else if (lower.includes('qwen')) group = 'Qwen';
+
+      if (!groups[group]) groups[group] = [];
+      groups[group].push(m);
+    }
+    return groups;
+  }
 
   const handleImportModelsForProvider = async (provider: string) => {
     const config = modelConfigs.find((c) => c.provider === provider);
@@ -447,217 +652,499 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
       </section>
 
       <div className="settings-grid">
-        {/* AI Provider Gateway */}
+        {/* 9Router Core AI Gateway */}
         <section className="settings-card glass">
-          <h2>AI Provider Gateway</h2>
-          <p className="subtitle">Pilih provider AI aktif untuk validasi dan generasi konten.</p>
-
-          <div style={{ display: 'grid', gap: 10 }}>
-            {[
-              { key: 'gemini', label: 'Google Gemini', desc: 'API cloud Google, kuota gratis tersedia' },
-              { key: 'openrouter', label: 'OpenRouter / Groq-Llama', desc: 'Akses beragam model via satu API' },
-              { key: 'ollama', label: 'Ollama Local', desc: 'Berjalan 100% lokal, tanpa batas kuota' },
-            ].map((p) => (
-              <div
-                key={p.key}
-                className={`provider-toggle ${activeProvider === p.key ? 'active' : ''}`}
-                onClick={() => {
-                  setValues((v) => ({ ...v, active_provider: p.key }));
-                  onSave('active_provider', p.key);
-                }}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="provider-toggle-info">
-                  <div className="provider-toggle-icon">
-                    <Bot size={20} />
-                  </div>
-                  <div>
-                    <strong style={{ fontSize: '.88rem' }}>{p.label}</strong>
-                    <div style={{ fontSize: '.72rem', color: 'var(--muted)' }}>{p.desc}</div>
-                  </div>
-                </div>
-                <div className={`toggle-switch ${activeProvider === p.key ? 'on' : ''}`} />
-              </div>
-            ))}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Zap size={20} style={{ color: 'var(--cyan)' }} />
+              9Router Core AI Gateway
+            </h2>
+            <span
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                padding: '3px 8px',
+                borderRadius: 999,
+                background: 'rgba(79, 232, 255, 0.15)',
+                border: '1px solid rgba(79, 232, 255, 0.35)',
+                color: 'var(--cyan)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+            >
+              100% Single AI Gateway
+            </span>
           </div>
-        </section>
-
-        {/* API Keys */}
-        <section className="settings-card glass">
-          <h2>API Keys</h2>
-          <p className="subtitle">Kunci sensitif disimpan aman di penyimpanan lokal peramban (localStorage) dan tidak pernah dikirim ke tabel publik database.</p>
-
-          {providers.map((p) => {
-            const Icon = p.icon;
-            const isPassword = p.key !== 'ollama_endpoint';
-            return (
-              <div key={p.key} className="field" style={{ marginTop: 14 }}>
-                <label htmlFor={p.key}>{p.label}</label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <div style={{ position: 'relative', flex: 1 }}>
-                    <Icon size={16} style={{ position: 'absolute', left: 11, top: 12, color: 'var(--muted)' }} />
-                    <input
-                      id={p.key}
-                      type={isPassword ? 'password' : 'text'}
-                      placeholder={p.placeholder}
-                      value={values[p.key] || ''}
-                      onChange={(e) => setValues((v) => ({ ...v, [p.key]: e.target.value }))}
-                      style={{ paddingLeft: 36 }}
-                    />
-                  </div>
-                  <button
-                    className="btn btn-primary"
-                    type="button"
-                    onClick={() => handleSave(p.key)}
-                    disabled={saving === p.key}
-                    style={{ whiteSpace: 'nowrap' }}
-                  >
-                    {savedKey === p.key ? <Check size={16} /> : <Save size={16} />}
-                    {saving === p.key ? 'Menyimpan…' : savedKey === p.key ? 'Tersimpan ✓' : 'Simpan'}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </section>
-
-        {/* Kustomisasi Model AI */}
-        <section className="settings-card glass">
-          <h2>Kustomisasi Model AI</h2>
           <p className="subtitle">
-            Sesuaikan versi model AI untuk masing-masing provider (Google Gemini, OpenRouter, dan Ollama).
+            Kunci sensitif disimpan aman di penyimpanan lokal peramban (localStorage) dan tidak pernah dikirim ke tabel publik database.
           </p>
 
-          <div style={{ display: 'grid', gap: 16, marginTop: 16 }}>
-            {modelConfigs.map((cfg) => {
-              const currentList = providerModels[cfg.provider] || [];
-              const isCurrentActive = activeProvider === cfg.provider;
-              const val = values[cfg.key] || cfg.defaultModel;
-              const statusMsg = importStatuses[cfg.provider];
-              const isImporting = importingProvider === cfg.provider;
+          {/* Preset Endpoint Cepat */}
+          <div style={{ marginTop: 14 }}>
+            <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>
+              Preset Endpoint Cepat:
+            </label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{
+                  fontSize: '0.78rem',
+                  padding: '6px 12px',
+                  background: (values.custom_gateway_endpoint || '').includes('localhost:20128') ? 'rgba(79, 232, 255, 0.15)' : undefined,
+                  borderColor: (values.custom_gateway_endpoint || '').includes('localhost:20128') ? 'var(--cyan)' : undefined,
+                  color: (values.custom_gateway_endpoint || '').includes('localhost:20128') ? 'var(--cyan)' : undefined,
+                }}
+                onClick={() => {
+                  setValues((v) => ({ ...v, custom_gateway_endpoint: 'http://localhost:20128/v1', active_provider: 'custom' }));
+                  onSave('custom_gateway_endpoint', 'http://localhost:20128/v1');
+                  onSave('active_provider', 'custom');
+                  onShowToast?.('Endpoint diatur ke Default Lokal (localhost:20128).');
+                }}
+              >
+                💻 Default Lokal (localhost:20128)
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{
+                  fontSize: '0.78rem',
+                  padding: '6px 12px',
+                  background: (values.custom_gateway_endpoint || '').includes('tunnel') || (values.custom_gateway_endpoint || '').includes('zeinity.com') ? 'rgba(79, 232, 255, 0.15)' : undefined,
+                  borderColor: (values.custom_gateway_endpoint || '').includes('tunnel') || (values.custom_gateway_endpoint || '').includes('zeinity.com') ? 'var(--cyan)' : undefined,
+                  color: (values.custom_gateway_endpoint || '').includes('tunnel') || (values.custom_gateway_endpoint || '').includes('zeinity.com') ? 'var(--cyan)' : undefined,
+                }}
+                onClick={() => {
+                  const tunnelUrl = 'https://ai.zeinity.com/v1';
+                  setValues((v) => ({ ...v, custom_gateway_endpoint: tunnelUrl, active_provider: 'custom' }));
+                  onSave('custom_gateway_endpoint', tunnelUrl);
+                  onSave('active_provider', 'custom');
+                  onShowToast?.('Endpoint diatur ke Cloudflare Tunnel / Remote.');
+                }}
+              >
+                🌐 Cloudflare Tunnel / Remote
+              </button>
+            </div>
+          </div>
 
-              return (
-                <div
-                  key={cfg.key}
-                  style={{
-                    padding: '14px',
-                    borderRadius: 12,
-                    background: isCurrentActive ? 'rgba(79, 232, 255, 0.05)' : 'rgba(255, 255, 255, 0.02)',
-                    border: isCurrentActive ? '1px solid rgba(79, 232, 255, 0.3)' : '1px solid var(--border)',
+          {/* Endpoint URL Field */}
+          <div className="field" style={{ marginTop: 14 }}>
+            <label htmlFor="custom_gateway_endpoint">Gateway Endpoint URL</label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative', flex: 1, minWidth: 240 }}>
+                <Zap size={16} style={{ position: 'absolute', left: 11, top: 12, color: 'var(--muted)' }} />
+                <input
+                  id="custom_gateway_endpoint"
+                  type="text"
+                  placeholder="http://localhost:20128/v1"
+                  value={values.custom_gateway_endpoint || ''}
+                  onChange={(e) => setValues((v) => ({ ...v, custom_gateway_endpoint: e.target.value }))}
+                  style={{ paddingLeft: 36 }}
+                />
+              </div>
+              <button
+                className="btn btn-secondary"
+                type="button"
+                onClick={handleTestCustomGateway}
+                disabled={testingCustomGateway}
+                style={{ whiteSpace: 'nowrap' }}
+                title="Uji koneksi ke endpoint 9Router"
+              >
+                <Zap size={15} /> {testingCustomGateway ? 'Menguji…' : 'Test Koneksi 🔌'}
+              </button>
+              <button
+                className="btn btn-secondary"
+                type="button"
+                onClick={handleImportNineRouterModels}
+                disabled={importingModels}
+                style={{ whiteSpace: 'nowrap' }}
+                title="Auto Import daftar model dan combo dari 9Router"
+              >
+                <Download size={15} /> {importingModels ? 'Mengimpor…' : 'Auto Import Models & LLM Gateway'}
+              </button>
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={() => handleSave('custom_gateway_endpoint')}
+                disabled={saving === 'custom_gateway_endpoint'}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                {savedKey === 'custom_gateway_endpoint' ? <Check size={16} /> : <Save size={16} />}
+                {saving === 'custom_gateway_endpoint' ? 'Menyimpan…' : savedKey === 'custom_gateway_endpoint' ? 'Tersimpan ✓' : 'Simpan'}
+              </button>
+            </div>
+          </div>
+
+          {/* Bearer API Key Field */}
+          <div className="field" style={{ marginTop: 14 }}>
+            <label htmlFor="custom_gateway_api_key">9Router Bearer API Key (Opsional)</label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative', flex: 1, minWidth: 240 }}>
+                <Key size={16} style={{ position: 'absolute', left: 11, top: 12, color: 'var(--muted)' }} />
+                <input
+                  id="custom_gateway_api_key"
+                  type="password"
+                  placeholder="sk-dummy… (kosongkan jika tanpa autentikasi)"
+                  value={values.custom_gateway_api_key || ''}
+                  onChange={(e) => setValues((v) => ({ ...v, custom_gateway_api_key: e.target.value }))}
+                  style={{ paddingLeft: 36 }}
+                />
+              </div>
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={() => handleSave('custom_gateway_api_key')}
+                disabled={saving === 'custom_gateway_api_key'}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                {savedKey === 'custom_gateway_api_key' ? <Check size={16} /> : <Save size={16} />}
+                {saving === 'custom_gateway_api_key' ? 'Menyimpan…' : savedKey === 'custom_gateway_api_key' ? 'Tersimpan ✓' : 'Simpan'}
+              </button>
+            </div>
+            <div style={{ fontSize: '0.74rem', color: 'var(--muted)', marginTop: 6 }}>
+              Kosongkan jika server 9Router Anda berjalan tanpa proteksi API Key di port lokal. Jika diakses via remote / Cloudflare Tunnel dengan token, masukkan bearer token di atas.
+            </div>
+          </div>
+
+          {/* Batas Waktu Permintaan (Request Timeout) */}
+          <div className="field" style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label htmlFor="ai_request_timeout" style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
+                <Clock size={16} style={{ color: 'var(--cyan)' }} />
+                Batas Waktu Permintaan (Request Timeout)
+              </label>
+              <span style={{ fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 600 }}>
+                Aktif: <span style={{ color: 'var(--cyan)' }}>{values.ai_request_timeout || '90'} Detik</span>
+              </span>
+            </div>
+            <p className="subtitle" style={{ fontSize: '0.78rem', marginBottom: 10 }}>
+              Tentukan toleransi waktu tunggu bagi 9Router untuk merespons. Beri durasi lebih tinggi jika menghasilkan naskah panjang (1.500+ kata) atau jika menggunakan combo dengan 3-tier auto-fallback.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8, marginTop: 8 }}>
+              {[
+                { sec: '60', label: '60 Detik', badge: 'Cepat', desc: 'Cocok untuk ideasi & model cloud ringan' },
+                { sec: '90', label: '90 Detik', badge: 'Rekomendasi', desc: 'Seimbang untuk naskah standar & 9Router' },
+                { sec: '120', label: '120 Detik', badge: 'Naskah Panjang', desc: 'Ideal untuk Full Script 2000 kata & failover' },
+                { sec: '180', label: '180 Detik', badge: 'Ekstra Sabar', desc: 'Untuk model penalaran tinggi / LLM lokal' },
+              ].map((opt) => {
+                const isSelected = (values.ai_request_timeout || '90') === opt.sec;
+                return (
+                  <button
+                    key={opt.sec}
+                    type="button"
+                    onClick={() => {
+                      setValues((v) => ({ ...v, ai_request_timeout: opt.sec }));
+                      onSave('ai_request_timeout', opt.sec);
+                      onShowToast?.(`Batas waktu timeout diatur ke ${opt.sec} detik.`);
+                    }}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border: isSelected ? '1px solid var(--cyan)' : '1px solid var(--border)',
+                      background: isSelected ? 'rgba(79, 232, 255, 0.12)' : 'rgba(255, 255, 255, 0.02)',
+                      color: isSelected ? 'var(--cyan)' : 'var(--foreground)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4,
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.84rem' }}>{opt.label}</span>
+                      <span
+                        style={{
+                          fontSize: '0.68rem',
+                          fontWeight: 600,
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                          background: isSelected ? 'var(--cyan)' : 'rgba(255, 255, 255, 0.08)',
+                          color: isSelected ? '#000' : 'var(--muted)',
+                        }}
+                      >
+                        {opt.badge}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.70rem', color: isSelected ? 'rgba(255, 255, 255, 0.85)' : 'var(--muted)', lineHeight: 1.3 }}>
+                      {opt.desc}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Pemilihan Model 9Router */}
+        <section className="settings-card glass">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Cpu size={20} style={{ color: 'var(--cyan)' }} />
+              Pemilihan Model 9Router
+            </h2>
+            <span
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                padding: '3px 8px',
+                borderRadius: 999,
+                background: values.custom_gateway_model_mode === 'direct' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(79, 232, 255, 0.15)',
+                border: values.custom_gateway_model_mode === 'direct' ? '1px solid rgba(168, 85, 247, 0.35)' : '1px solid rgba(79, 232, 255, 0.35)',
+                color: values.custom_gateway_model_mode === 'direct' ? 'var(--purple, #a855f7)' : 'var(--cyan)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+            >
+              {values.custom_gateway_model_mode === 'direct' ? 'Mode: Model Spesifik' : 'Mode: Combo Presets (3-Tier Auto-Fallback)'}
+            </span>
+          </div>
+          <p className="subtitle">
+            Pilih antara <strong>Combo Presets</strong> (auto-routing 3-tier cerdas di dalam proxy 9Router untuk zero downtime) atau <strong>Model Spesifik</strong> langsung dari provider upstream.
+          </p>
+
+          {/* Mode Switcher Tabs */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginTop: 14 }}>
+            <button
+              type="button"
+              onClick={() => {
+                setValues((v) => ({ ...v, custom_gateway_model_mode: 'combo' }));
+                onSave('custom_gateway_model_mode', 'combo');
+              }}
+              style={{
+                padding: '10px 14px',
+                borderRadius: 10,
+                border: values.custom_gateway_model_mode !== 'direct' ? '1px solid var(--cyan)' : '1px solid var(--border)',
+                background: values.custom_gateway_model_mode !== 'direct' ? 'rgba(79, 232, 255, 0.12)' : 'rgba(255, 255, 255, 0.02)',
+                color: values.custom_gateway_model_mode !== 'direct' ? 'var(--cyan)' : 'var(--foreground)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 3,
+              }}
+            >
+              <span style={{ fontWeight: 700, fontSize: '0.86rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Zap size={15} /> ⚡ Combo Presets (3-Tier Auto-Fallback)
+              </span>
+              <span style={{ fontSize: '0.72rem', color: values.custom_gateway_model_mode !== 'direct' ? 'var(--cyan)' : 'var(--muted)' }}>
+                Rekomendasi Utama: Otomatis failover bila kuota habis atau timeout
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setValues((v) => ({ ...v, custom_gateway_model_mode: 'direct' }));
+                onSave('custom_gateway_model_mode', 'direct');
+              }}
+              style={{
+                padding: '10px 14px',
+                borderRadius: 10,
+                border: values.custom_gateway_model_mode === 'direct' ? '1px solid var(--purple, #a855f7)' : '1px solid var(--border)',
+                background: values.custom_gateway_model_mode === 'direct' ? 'rgba(168, 85, 247, 0.12)' : 'rgba(255, 255, 255, 0.02)',
+                color: values.custom_gateway_model_mode === 'direct' ? 'var(--purple, #a855f7)' : 'var(--foreground)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 3,
+              }}
+            >
+              <span style={{ fontWeight: 700, fontSize: '0.86rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Cpu size={15} /> 🎯 Model Spesifik (Direct Model)
+              </span>
+              <span style={{ fontSize: '0.72rem', color: values.custom_gateway_model_mode === 'direct' ? 'var(--purple, #a855f7)' : 'var(--muted)' }}>
+                Kirim langsung ke satu model LLM tanpa routing combo
+              </span>
+            </button>
+          </div>
+
+          {/* TAB 1: COMBO PRESETS */}
+          {values.custom_gateway_model_mode !== 'direct' ? (
+            <div style={{ marginTop: 16 }}>
+              <label htmlFor="custom_gateway_model_version" style={{ fontWeight: 600, fontSize: '0.86rem', display: 'block', marginBottom: 8 }}>
+                Pilih Combo Preset 9Router:
+              </label>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <select
+                  id="custom_gateway_model_version"
+                  aria-label="Pilih Combo Preset 9Router"
+                  value={values.custom_gateway_model_version || 'Creator-Combo'}
+                  onChange={(e) => {
+                    const nextVal = e.target.value;
+                    setValues((v) => ({ ...v, custom_gateway_model_version: nextVal }));
                   }}
+                  style={{ flex: 1, minWidth: 220 }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <label htmlFor={cfg.key} style={{ fontWeight: 600, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Cpu size={16} style={{ color: isCurrentActive ? 'var(--cyan)' : 'var(--muted)' }} />
-                      {cfg.label}
-                      {isCurrentActive && (
-                        <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 6, background: 'rgba(79, 232, 255, 0.15)', color: 'var(--cyan)' }}>
-                          Active Provider
-                        </span>
-                      )}
-                    </label>
-                  </div>
+                  {values.custom_gateway_model_version &&
+                    !catalog.combos.includes(values.custom_gateway_model_version) && (
+                      <option value={values.custom_gateway_model_version}>
+                        {values.custom_gateway_model_version} (Terpilih / Kustom)
+                      </option>
+                    )}
+                  {catalog.combos.length > 0 ? (
+                    catalog.combos.map((m) => (
+                      <option key={m} value={m}>
+                        {m}{m === 'Creator-Combo' ? ' (Default Rekomendasi)' : ''}
+                      </option>
+                    ))
+                  ) : (
+                    DEFAULT_NINEROUTER_CATALOG.combos.map((m) => (
+                      <option key={m} value={m}>
+                        {m}{m === 'Creator-Combo' ? ' (Default Rekomendasi)' : ''}
+                      </option>
+                    ))
+                  )}
+                </select>
 
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-                    <select
-                      id={cfg.key}
-                      aria-label={`Pilih model ${cfg.label}`}
-                      value={val}
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          setValues((v) => ({ ...v, [cfg.key]: e.target.value }));
-                        }
-                      }}
-                      style={{ flex: 1, minWidth: 200 }}
-                    >
-                      {currentList.map((m) => (
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={() => handleSave('custom_gateway_model_version')}
+                  disabled={saving === 'custom_gateway_model_version'}
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  {savedKey === 'custom_gateway_model_version' ? <Check size={16} /> : <Save size={16} />}
+                  {saving === 'custom_gateway_model_version' ? 'Menyimpan…' : savedKey === 'custom_gateway_model_version' ? 'Tersimpan ✓' : 'Simpan Pilihan'}
+                </button>
+              </div>
+
+              {/* Combo Preset Quick Chips */}
+              <div className="recommendations-box" style={{ marginTop: 14 }}>
+                <div className="recommendations-header">
+                  <Sparkles size={14} style={{ color: 'var(--cyan)' }} />
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--cyan)' }}>
+                    Preset Combo Unggulan 9Router (Klik untuk Pilih Cepat):
+                  </span>
+                </div>
+                <div className="recommendation-chips">
+                  {[
+                    { id: 'Creator-Combo', name: 'Creator-Combo', badge: '3-Tier Auto-Fallback', desc: 'Prioritas Groq 70B -> Gemini Flash -> OpenRouter -> Ollama' },
+                    { id: 'Jarvis_Creator', name: 'Jarvis_Creator', badge: 'Content Creator', desc: 'Disesuaikan untuk scriptwriting dan narasi mendalam' },
+                    { id: 'Jarvis_Standard', name: 'Jarvis_Standard', badge: 'Balanced', desc: 'Keseimbangan kecepatan dan kecerdasan analisis' },
+                    { id: 'Jarvis_Analyst', name: 'Jarvis_Analyst', badge: 'Deep Reasoning', desc: 'Cocok untuk bedah fenomena dan data riset' },
+                    { id: 'Jarvis_Fast', name: 'Jarvis_Fast', badge: 'Ultra Fast', desc: 'Latensi ultra rendah untuk ideasi instan' },
+                  ].map((preset) => {
+                    const isSelected = (values.custom_gateway_model_version || 'Creator-Combo') === preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        className={`rec-chip ${isSelected ? 'selected' : ''}`}
+                        title={preset.desc}
+                        onClick={() => {
+                          setValues((v) => ({ ...v, custom_gateway_model_version: preset.id }));
+                          onSave('custom_gateway_model_version', preset.id);
+                          onShowToast?.(`Combo Preset diubah ke "${preset.id}".`);
+                        }}
+                      >
+                        <span className="rec-badge">{preset.badge}</span>
+                        <span className="rec-name">{preset.name}</span>
+                        {isSelected && <span className="rec-check">✓ Aktif</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Info Box */}
+              <div
+                style={{
+                  marginTop: 14,
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  background: 'rgba(79, 232, 255, 0.05)',
+                  border: '1px solid rgba(79, 232, 255, 0.2)',
+                  fontSize: '0.78rem',
+                  lineHeight: 1.5,
+                  color: 'var(--foreground)',
+                  display: 'flex',
+                  gap: 10,
+                  alignItems: 'flex-start',
+                }}
+              >
+                <Info size={16} style={{ color: 'var(--cyan)', flexShrink: 0, marginTop: 2 }} />
+                <div>
+                  <strong>Jaminan Zero Downtime:</strong> Model Combo di atas menjalankan failover berjenjang langsung di dalam proxy server 9Router Anda. Jika satu API kuotanya habis (HTTP 429) atau koneksi timeout, 9Router otomatis memindahkan request ke provider cadangan tanpa Anda perlu menyetel apa pun di frontend.
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* TAB 2: DIRECT MODELS */
+            <div style={{ marginTop: 16 }}>
+              <label htmlFor="custom_gateway_direct_model" style={{ fontWeight: 600, fontSize: '0.86rem', display: 'block', marginBottom: 8 }}>
+                Pilih Model Spesifik (Dikelompokkan per Vendor Upstream):
+              </label>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <select
+                  id="custom_gateway_direct_model"
+                  aria-label="Pilih Model Spesifik 9Router"
+                  value={values.custom_gateway_direct_model || 'groq/llama-3.3-70b-versatile'}
+                  onChange={(e) => {
+                    const nextVal = e.target.value;
+                    setValues((v) => ({ ...v, custom_gateway_direct_model: nextVal }));
+                  }}
+                  style={{ flex: 1, minWidth: 220 }}
+                >
+                  {values.custom_gateway_direct_model && (
+                    <option value={values.custom_gateway_direct_model}>
+                      {values.custom_gateway_direct_model} (Terpilih / Kustom)
+                    </option>
+                  )}
+                  {Object.entries(
+                    Object.keys(catalog.directModels).length > 0
+                      ? catalog.directModels
+                      : DEFAULT_NINEROUTER_CATALOG.directModels
+                  ).map(([vendor, list]) => (
+                    <optgroup key={vendor} label={vendor}>
+                      {list.map((m) => (
                         <option key={m} value={m}>
-                          {m}{m === cfg.defaultModel ? ' (Default)' : ''}
+                          {m}
                         </option>
                       ))}
-                    </select>
+                    </optgroup>
+                  ))}
+                </select>
 
-                    <button
-                      className="btn btn-secondary"
-                      type="button"
-                      onClick={() => handleImportModelsForProvider(cfg.provider)}
-                      disabled={!cfg.isConfigured || isImporting}
-                      title={!cfg.isConfigured ? cfg.unconfiguredHint : `Import daftar model ${cfg.label}`}
-                      style={{ whiteSpace: 'nowrap' }}
-                    >
-                      <Download size={16} /> {isImporting ? 'Mengambil…' : 'Auto Import Models'}
-                    </button>
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={() => handleSave('custom_gateway_direct_model')}
+                  disabled={saving === 'custom_gateway_direct_model'}
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  {savedKey === 'custom_gateway_direct_model' ? <Check size={16} /> : <Save size={16} />}
+                  {saving === 'custom_gateway_direct_model' ? 'Menyimpan…' : savedKey === 'custom_gateway_direct_model' ? 'Tersimpan ✓' : 'Simpan Pilihan'}
+                </button>
+              </div>
 
-                    <button
-                      className="btn btn-primary"
-                      type="button"
-                      onClick={() => handleSave(cfg.key)}
-                      disabled={saving === cfg.key}
-                      style={{ whiteSpace: 'nowrap' }}
-                    >
-                      {savedKey === cfg.key ? <Check size={16} /> : <Save size={16} />}
-                      {saving === cfg.key ? 'Menyimpan…' : savedKey === cfg.key ? 'Tersimpan ✓' : 'Simpan'}
-                    </button>
-                  </div>
-
-                  {/* Dynamic Free Model Recommendations */}
-                  {(() => {
-                    const recs = getDynamicRecommendations(cfg.provider, currentList);
-                    if (recs.length === 0) return null;
-                    return (
-                      <div className="recommendations-box">
-                        <div className="recommendations-header">
-                          <Sparkles size={14} style={{ color: 'var(--cyan)' }} />
-                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--cyan)' }}>
-                            Rekomendasi Model Terbaik & Gratis (Klik untuk Pilih):
-                          </span>
-                        </div>
-                        <div className="recommendation-chips">
-                          {recs.map((rec) => {
-                            const isSelected = val === rec.id;
-                            return (
-                              <button
-                                key={rec.id}
-                                type="button"
-                                className={`rec-chip ${isSelected ? 'selected' : ''}`}
-                                title={rec.desc || rec.name}
-                                onClick={() => {
-                                  setValues((v) => ({ ...v, [cfg.key]: rec.id }));
-                                  if (!currentList.includes(rec.id)) {
-                                    const updated = [rec.id, ...currentList];
-                                    setProviderModels((prev) => ({
-                                      ...prev,
-                                      [cfg.provider]: updated,
-                                    }));
-                                    try {
-                                      localStorage.setItem(
-                                        MODELS_CACHE_KEY,
-                                        JSON.stringify({ ...providerModels, [cfg.provider]: updated })
-                                      );
-                                    } catch { /* ignore */ }
-                                  }
-                                }}
-                              >
-                                <span className="rec-badge">{rec.badge}</span>
-                                <span className="rec-name">{rec.name}</span>
-                                {isSelected && <span className="rec-check">✓ Terpilih</span>}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {statusMsg && (
-                    <div style={{ marginTop: 8, fontSize: '0.78rem', color: statusMsg.includes('Berhasil') ? 'var(--green)' : 'var(--amber)' }}>
-                      {statusMsg}
-                    </div>
-                  )}
+              {/* Info Box Direct */}
+              <div
+                style={{
+                  marginTop: 14,
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  background: 'rgba(168, 85, 247, 0.05)',
+                  border: '1px solid rgba(168, 85, 247, 0.2)',
+                  fontSize: '0.78rem',
+                  lineHeight: 1.5,
+                  color: 'var(--foreground)',
+                  display: 'flex',
+                  gap: 10,
+                  alignItems: 'flex-start',
+                }}
+              >
+                <Info size={16} style={{ color: 'var(--purple, #a855f7)', flexShrink: 0, marginTop: 2 }} />
+                <div>
+                  <strong>Mode Model Langsung:</strong> Permintaan diarahkan langsung ke model spesifik yang Anda tentukan tanpa auto-routing combo. Pastikan kredensial vendor tersebut sudah aktif di Dashboard 9Router Anda (<code>http://localhost:20128/dashboard/providers</code>).
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Telegram Bot */}
@@ -668,21 +1155,21 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
               style={{
                 fontSize: '0.72rem',
                 fontWeight: 600,
-                padding: '3px 8px',
+                padding: '3px 10px',
                 borderRadius: 999,
-                background: 'rgba(249, 199, 79, 0.15)',
-                border: '1px solid rgba(249, 199, 79, 0.35)',
-                color: 'var(--amber, #ffd984)',
+                background: 'rgba(34, 197, 94, 0.15)',
+                border: '1px solid rgba(34, 197, 94, 0.35)',
+                color: 'var(--green, #22c55e)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 4,
               }}
             >
-              ⭐ Roadmap / Segera Hadir
+              ⚡ Siap Digunakan / Production Ready
             </span>
           </div>
           <p className="subtitle">
-            Sambungkan bot Telegram untuk menerima ide langsung dari chat. Token bot disimpan aman di peramban lokal (localStorage).
+            Sambungkan bot Telegram untuk menerima ide langsung dari chat ke Content Pipeline. Token bot disimpan aman di peramban lokal (localStorage).
           </p>
 
           <div
@@ -703,7 +1190,7 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
               <Info size={16} style={{ color: 'var(--cyan)', flexShrink: 0, marginTop: 2 }} />
               <div>
-                <strong style={{ color: 'var(--foreground)' }}>Status Integrasi:</strong> Roadmap &amp; Arsitektur Telegram (F-010). Token ini disimpan dengan aman di penyimpanan lokal peramban Anda (localStorage) untuk integrasi webhook dan automated polling di masa mendatang. Anda dapat menguji validitas token secara langsung menggunakan tombol <em>&quot;Uji Koneksi Bot&quot;</em>.
+                <strong style={{ color: 'var(--foreground)' }}>Status Integrasi:</strong> Aktif &amp; Siap Digunakan. Arsitektur webhook Telegram telah selesai diimplementasikan. Token disimpan secara aman di penyimpanan peramban lokal (localStorage), dan Supabase Edge Function siap menerima kiriman ide secara langsung. Anda dapat menguji validitas koneksi bot secara langsung menggunakan tombol <em>&quot;Uji Koneksi Bot&quot;</em>.
               </div>
             </div>
             <div
@@ -716,21 +1203,21 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
               }}
             >
               <div style={{ fontWeight: 600, color: 'var(--cyan)', marginBottom: 4 }}>
-                Transparansi Arsitektur Masa Depan:
+                Arsitektur Sistem &amp; Kapabilitas Aktif:
               </div>
               <ul style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 4 }}>
                 <li>
-                  <strong>Edge Function Webhook:</strong> Supabase Edge Function untuk menerima payload pesan/audio Telegram secara real-time via HTTPS webhook.
+                  <strong>Edge Function Webhook:</strong> Supabase Edge Function (<code>telegram-webhook</code>) aktif memproses payload pesan via HTTPS webhook dengan pengamanan Secret Token &amp; verifikasi Whitelist.
                 </li>
                 <li>
-                  <strong>Auto-Polling Engine:</strong> Mekanisme polling terjadwal otomatis sebagai alternatif fallback pada infrastruktur tanpa domain publik.
+                  <strong>Auto-Polling Engine / Direct Fallback:</strong> Mendukung mekanisme polling terjadwal otomatis serta input langsung sebagai alternatif fallback fleksibel.
                 </li>
                 <li>
-                  <strong>Direct Pipeline Handoff:</strong> Ide dari chat langsung diekstraksi menjadi kartu draft terstruktur pada 5 pilar konten Zeinity.
+                  <strong>Direct Pipeline Handoff:</strong> Ide dari chat langsung diekstraksi judul dan catatannya, diklasifikasikan ke 5 pilar konten Zeinity, serta ditandai dengan badge <em>Verified Bot</em>.
                 </li>
               </ul>
-              <div style={{ marginTop: 6, fontSize: '0.72rem', color: 'var(--amber, #ffd984)' }}>
-                ℹ️ Saat ini, ide dari Telegram tetap dapat dicatat manual melalui pilihan sumber &quot;Telegram&quot; di Content Pipeline.
+              <div style={{ marginTop: 6, fontSize: '0.72rem', color: 'var(--cyan)' }}>
+                💡 <em>Tips: Pesan dari bot Telegram akan langsung muncul secara realtime di Content Pipeline dengan label &quot;Telegram (Bot)&quot;.</em>
               </div>
             </div>
           </div>

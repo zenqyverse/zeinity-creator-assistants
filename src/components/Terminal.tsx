@@ -21,6 +21,47 @@ interface TerminalViewProps {
   onClear?: () => void;
 }
 
+function formatLogTime(timestamp: number): string {
+  const d = new Date(timestamp);
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const s = String(d.getSeconds()).padStart(2, '0');
+  return `[${h}:${m}:${s}]`;
+}
+
+function getLogStyle(log: LogEntry): { color: string; prefixColor: string } {
+  const msg = log.message;
+  if (
+    log.severity === 'error' ||
+    msg.includes('⚠️') ||
+    msg.includes('TIMEOUT') ||
+    msg.includes('Gagal') ||
+    msg.toLowerCase().includes('error')
+  ) {
+    if (msg.includes('TIMEOUT') || msg.toLowerCase().includes('timeout')) {
+      return { color: '#ff7694', prefixColor: '#ff7694' };
+    }
+    return { color: '#ffd5df', prefixColor: '#ff7694' };
+  }
+  if (
+    log.severity === 'warn' ||
+    msg.includes('🔄') ||
+    msg.includes('Auto-Switch') ||
+    msg.includes('Mengalihkan')
+  ) {
+    return { color: '#f9c74f', prefixColor: '#f9c74f' };
+  }
+  if (
+    log.severity === 'success' ||
+    msg.includes('✓') ||
+    msg.includes('Berhasil') ||
+    msg.includes('siap')
+  ) {
+    return { color: '#53f2ad', prefixColor: '#53f2ad' };
+  }
+  return { color: 'var(--text)', prefixColor: 'var(--cyan)' };
+}
+
 export function TerminalView({
   open,
   title = 'AI Activity Log',
@@ -301,12 +342,41 @@ export function TerminalView({
             Belum ada aktivitas yang tercatat.
           </div>
         ) : (
-          logs.map((log, i) => (
-            <div key={i} className="log-line">
-              <span style={{ color: 'var(--cyan)', marginRight: 6 }}>›</span>
-              {log.message}
-            </div>
-          ))
+          logs.map((log, i) => {
+            const timeStr = log.timestamp ? formatLogTime(log.timestamp) : '';
+            const { color, prefixColor } = getLogStyle(log);
+            return (
+              <div
+                key={i}
+                className="log-line"
+                style={{
+                  color,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 6,
+                  lineHeight: 1.45,
+                  fontSize: '0.8rem',
+                }}
+              >
+                {timeStr && (
+                  <span
+                    style={{
+                      color: '#5e7ca3',
+                      fontSize: '0.72rem',
+                      fontFamily: 'monospace',
+                      flexShrink: 0,
+                      marginTop: 1,
+                      userSelect: 'none',
+                    }}
+                  >
+                    {timeStr}
+                  </span>
+                )}
+                <span style={{ color: prefixColor, marginRight: 2, flexShrink: 0 }}>›</span>
+                <span style={{ flex: 1, wordBreak: 'break-word' }}>{log.message}</span>
+              </div>
+            );
+          })
         )}
       </div>
       <div className="terminal-progress">
@@ -376,23 +446,32 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
     setIsOpen(true);
   }, []);
 
-  const addLog = useCallback((message: string, nextProgress?: number) => {
-    setLogs((prev) => [...prev, { message, timestamp: Date.now() }]);
-    if (typeof nextProgress === 'number') {
-      setProgress(nextProgress);
-    }
-  }, []);
+  const addLog = useCallback(
+    (message: string, nextProgress?: number, severity?: 'info' | 'warn' | 'error' | 'success') => {
+      setLogs((prev) => [...prev, { message, timestamp: Date.now(), severity }]);
+      if (typeof nextProgress === 'number') {
+        setProgress(nextProgress);
+      }
+    },
+    []
+  );
 
   const finishActivity = useCallback((completionMessage?: string) => {
     if (completionMessage) {
-      setLogs((prev) => [...prev, { message: completionMessage, timestamp: Date.now() }]);
+      setLogs((prev) => [
+        ...prev,
+        { message: completionMessage, timestamp: Date.now(), severity: 'success' },
+      ]);
     }
     setProgress(100);
     setStatus('DONE');
   }, []);
 
   const errorActivity = useCallback((errorMessage: string) => {
-    setLogs((prev) => [...prev, { message: `ERROR: ${errorMessage}`, timestamp: Date.now() }]);
+    setLogs((prev) => [
+      ...prev,
+      { message: `ERROR: ${errorMessage}`, timestamp: Date.now(), severity: 'error' },
+    ]);
     setProgress(100);
     setStatus('ERROR');
   }, []);

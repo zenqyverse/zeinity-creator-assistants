@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase.ts';
+import type { AIProvider } from '../types.ts';
 
 export const SETTINGS_STORAGE_KEY = 'zeinity_settings';
 export const CHANNEL_IDENTITY_STORAGE_KEY = 'zeinity_channel_identity';
 export const SENSITIVE_STORAGE_KEY = 'zeinity_secure_keys';
 
 // Kunci API sensitif yang HANYA disimpan di peramban lokal (localStorage) dan DILARANG disimpan ke tabel publik Supabase
-export const SENSITIVE_SETTINGS_KEYS = ['gemini_api_key', 'openrouter_api_key', 'telegram_token'] as const;
+export const SENSITIVE_SETTINGS_KEYS = ['gemini_api_key', 'openrouter_api_key', 'custom_gateway_api_key', 'telegram_token'] as const;
 export const SENSITIVE_KEYS_SET = new Set<string>(SENSITIVE_SETTINGS_KEYS);
 
 // Format standar Telegram Bot API: ID bot 7-10 digit : 35 karakter acak [A-Za-z0-9_-]
@@ -242,14 +243,37 @@ export function isChatIdAllowed(
   });
 }
 
+export function parseFallbackChain(rawChain?: string | null): AIProvider[] {
+  const defaultChain: AIProvider[] = ['gemini', 'openrouter', 'custom', 'ollama'];
+  if (!rawChain || typeof rawChain !== 'string') return defaultChain;
+  const parts = rawChain.split(',').map((p) => p.trim() as AIProvider);
+  const valid = parts.filter((p): p is AIProvider =>
+    ['gemini', 'openrouter', 'custom', 'ollama'].includes(p)
+  );
+  const result: AIProvider[] = [...valid];
+  for (const p of defaultChain) {
+    if (!result.includes(p)) result.push(p);
+  }
+  return result;
+}
+
 export const DEFAULT_SETTINGS: Record<string, string> = {
-  active_provider: 'gemini',
+  active_provider: 'custom',
   gemini_api_key: initialGeminiApiKey,
   gemini_model_version: 'gemini-1.5-flash',
   openrouter_api_key: '',
   openrouter_model_version: 'openrouter/free',
   ollama_endpoint: 'http://localhost:11434',
   ollama_model_version: 'llama3',
+  custom_gateway_endpoint: 'http://localhost:20128/v1',
+  custom_gateway_api_key: '',
+  custom_gateway_model_version: 'Creator-Combo',
+  custom_gateway_model_mode: 'combo',
+  custom_gateway_direct_model: 'groq/llama-3.3-70b-versatile',
+  auto_switch_enabled: 'true',
+  ai_request_timeout: '90',
+  fallback_provider_order: 'custom,gemini,openrouter,ollama',
+  skip_quick_switch_confirm: 'false',
   telegram_token: '',
   telegram_allowed_chat_ids: '',
   channel_identity: DEFAULT_CHANNEL_IDENTITY,

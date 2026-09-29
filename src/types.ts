@@ -125,7 +125,31 @@ export type ViewKey =
   | 'analytics'
   | 'settings';
 
+export type AIProvider = 'gemini' | 'openrouter' | 'ollama' | 'custom';
+
+export interface CallAIResult {
+  text: string;
+  usedProvider: AIProvider;
+  usedModel: string;
+  originalProvider: AIProvider;
+  wasSwitched: boolean;
+  switchReason?: string;
+}
+
 export interface LogEntry {
   message: string;
   timestamp: number;
+  severity?: 'info' | 'warn' | 'error' | 'success';
 }
+
+export interface NineRouterModelItem {
+  id: string;
+  owned_by: string; // 'combo' | 'groq' | 'gemini' | 'openrouter' | 'ollama-local' | string
+}
+
+export interface NineRouterCatalog {
+  combos: string[];
+  directModels: Record<string, string[]>;
+  allModels: string[];
+}
+

@@ -1,5 +1,6 @@
 import { LayoutDashboard, Lightbulb, Sparkles, FileText, CheckCircle, FolderOpen, BarChart3, Settings, X } from 'lucide-react';
 import type { ViewKey } from '@/types';
+import zeinityLogo from '@/assets/zeinity-logo.png';
 
 interface SidebarProps {
   open: boolean;
@@ -31,7 +32,7 @@ export default function Sidebar({ open, activeView, onNavigate, onClose, activeP
       <aside className={`sidebar glass ${open ? 'sidebar-open' : ''}`} aria-label="Navigasi utama">
         <div className="sidebar-header">
           <div className="brand">
-            <span className="brand-mark" />
+            <img src={zeinityLogo} alt="Zeinity Logo" className="brand-mark" />
             <strong className="brand-name">ZEINITY</strong>
           </div>
           <button className="icon-btn" type="button" aria-label="Tutup navigasi" onClick={onClose}>

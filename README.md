@@ -1,10 +1,13 @@
 <div align="center">
 
+<img src="public/zeinity-banner.png" alt="Zeinity Creator Assistant Banner" width="100%" style="border-radius: 12px; margin-bottom: 16px;" />
+
 # 🎬 Zeinity Creator Assistant
 
 **AI-Powered Spoken-First Narrative & Video Production Studio for YouTube Creators**
 
 [![Status: In Active Development](https://img.shields.io/badge/Status-In%20Active%20Development-amber?style=for-the-badge&logo=git)](https://github.com/zenqyverse/zeinity-creator-assistants)
+[![Tests Passing](https://img.shields.io/badge/Tests-146%20Passing%20%7C%2024%20Suites-brightgreen?style=for-the-badge&logo=node.js)](test/)
 [![React](https://img.shields.io/badge/React-18.3.1-61dafb?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-3178c6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.4.8-646cff?style=for-the-badge&logo=vite)](https://vitejs.dev/)
@@ -28,12 +31,68 @@
 
 **Zeinity Creator Assistant** is a specialized content engineering studio built specifically for high-impact YouTube creators. It bridges the gap between raw idea capture, rigorous narrative structuring, and complete production-ready scripts following the **Zeinity Spoken-First Narrative System**.
 
-### Why It Is Not Just Another "Prompt Generator"
-Most AI writing tools act as mere text generators that output generic, predictable prose full of robotic AI clichés ("delve", "testament", "tapestry"). Zeinity Creator Assistant is built with an uncompromising **Human-in-the-Loop (HITL)** philosophy:
-1. **Curated Narrative Boundaries**: AI operates within rigid structural constraints (5-Section Escalation, Obvious Answer Deconstruction, 10 Narrative Assets).
-2. **Audio-First / Voiceover Rules**: Voiceover scripts enforce 14 spoken-first rules—banning em dashes (`—`), colons (`:`), and convoluted parentheticals that disrupt conversational pacing and TTS naturalness.
-3. **Dual-Track Workflow**: Creators can draft directly in the In-App Studio or export instant zero-token prompt handoffs for external LLMs (Claude 3.5 Sonnet, ChatGPT, DeepSeek).
-4. **Draft Versioning & Snapshot History**: Every AI revision is isolated, allowing instant one-click revert to prevent work loss.
+---
+
+## 🔄 The Transformation: From "Prompt Generator" to "AI Content Studio"
+
+During early development, an architectural diagnosis revealed that the application functioned merely as a static prompt middleman:
+```
+Creator ➔ App ➔ (Copy Prompt) ➔ External LLM ➔ (Paste Result) ➔ App ➔ (Copy Prompt) ➔ External LLM...
+```
+This created heavy cognitive friction—creators felt like manual data-entry clerks rather than content directors. To eliminate this bottleneck, the system underwent a **massive 4-phase architectural transformation**, evolving from an instruction generator into a full **Human-in-the-Loop AI Orchestrator & Co-Creation Studio**:
+
+| Aspect | Legacy State (Prompt Generator) | Current State (Zeinity Studio Orchestrator) |
+|---|---|---|
+| **Core Identity** | Instruction factory / Prompt output | End-to-end video production studio |
+| **User Effort** | Tedious back-and-forth copy-pasting | 1-Click AI actions with in-app review & approval |
+| **Output Type** | Raw prompt text strings | Live drafts, structured audits, in-app revisions |
+| **Scripting Flow** | External notepad or Docs | Dual-Track Studio with real-time word counting & auto-save |
+| **Audio Quality** | Generic written prose full of AI tropes | Strict 14 Spoken-First voiceover rules & TTS audit |
+| **Safety & History** | Overwrites destroyed previous work | Snapshot history modal with 1-click version rollback |
+| **UI Terminology** | "Prompts", "Generator", "Output" | **"Pipeline Naskah" (Script Pipeline)** & **"Draft Studio"** |
+| **Model Control** | Static API dropdown | **Interactive Topbar Switcher & 4-Tier Auto-Fallback Chain** |
+
+---
+
+## 🏗️ The 4 Major Engineering Transformation Phases
+
+### Phase 1: Data Stability & Permanent Loss Prevention
+- **Isolated Component State**: Complete state isolation within `ScriptDetail.tsx` to prevent cross-content contamination when switching between ideas.
+- **Destructive Action Guards**: All delete actions (deleting ideas in `ContentTable`, files in `FileManager`, or API tokens in `Settings`) are safeguarded by modal confirmation barriers (`AlertModal`).
+- **Dynamic Filter Resilience**: Eliminated filter collision bugs in `ContentTable.tsx` that previously caused temporary data "blackouts".
+- **Offline Resilience**: Introduced offline fallbacks in `useFiles.ts` with local memory caching.
+
+### Phase 2: Script Continuity, AI Engine & In-App Studio
+- **Unbroken Script Continuity**: Written drafts remain accessible and synchronized across all pipeline stages (Draft Studio ➔ Thumbnailing ➔ Published Detail) without losing edits.
+- **Draft Snapshot Versioning**: Integrated a snapshot timeline allowing creators to review previous AI iterations and instantly trigger "Undo Revisi AI".
+- **Dual-Title Engine (Mode A & Mode B)**: Formulates two distinct title angles complying with YouTube community standards (Curiosity & High Stakes vs Direct Transformation).
+- **Bulk Ingestion Engine**: Support for bulk importing ideas from CSV, Markdown, and plain text with automatic delimiter detection and selective checkboxes.
+- **Deep Context Preservation**: Creator's original idea notes (`research_text`) are automatically piped into all downstream AI prompt contexts.
+- **Native Document Support**: Browser-native `.docx` parsing via Mammoth.js alongside `.md`, `.txt`, and `.csv`.
+- **Local Ollama Optimization**: Adaptive context-window chunking preventing memory overflow or truncated responses on local models.
+
+### Phase 3: Ergonomics, Production Metrics & UI Rebranding
+- **UI Framing Rebrand**: Eradicated obsolete "Prompt Generator" labels. Re-framed workspace into **"Pipeline Naskah" (Script Pipeline)** and **"Draft Studio"**.
+- **Synchronized Revert Navigation**: Fixed navigation router and history stack so reverting an item's status updates both the UI view and database synchronously.
+- **Interactive Inline Title & Auto-Expanding Textareas**: Double-click inline title renaming and auto-resizing textareas eliminating text clipping.
+- **Realistic Production Analytics**: Production duration metrics re-engineered to accurately track turnaround times from Ideation to Final Publication.
+
+### Phase 4: Enterprise Telegram Bot Webhook & Cloud Sync
+- **Serverless Deno Webhook**: Supabase Edge Function (`telegram-webhook`) with secret token header authentication (`X-Telegram-Bot-Api-Secret-Token`).
+- **Access Whitelisting**: Strict authorization filter via `telegram_allowed_chat_ids`.
+- **Realtime Table Ingestion**: Supabase Realtime subscriptions immediately toast incoming ideas and append rows without page reloads.
+- **Interactive Slash Commands**: Full command suite (`/start`, `/help`, `/pillars`, `/id`, `/pipeline`, `/latest`).
+
+### 🛡️ AI Router Resilience & 100% 9Router Gateway
+- **9Router Gateway Integration**: Full native support for local OpenAI-compatible gateway (`http://localhost:20128/v1`).
+- **Combo Presets vs Specific Models**: Switch between curated multi-model blends (e.g., `Creator-Combo`, `Jarvis_Creator`) and grouped individual models (Groq Llama 3.3 70B, Google Gemini 2.0 Flash, DeepSeek, etc.).
+- **Multi-Provider Auto-Fallback Chain**: Dynamic 4-tier failover (`9Router Gateway` ➔ `Google Gemini` ➔ `OpenRouter` ➔ `Local Ollama`). If any provider hits rate-limits or network failure, the engine automatically rolls over to the next provider while streaming progress logs to the Terminal drawer.
+- **Topbar 1-Click AI Switcher**: Interactive header widget providing instant model switching, provider latency status, and direct shortcut to Settings without leaving your writing flow.
+
+### 🔍 Frontend Button Audit Resolution
+A complete audit of **128 button elements** across the frontend was executed:
+- **Zero Zombie UI**: All non-functional placeholder elements were either connected to live state or gracefully removed.
+- **Accidental Submit Prevention**: Explicit `type="button"` attributes applied across all buttons, preventing inadvertent form submission and sudden page reloads.
 
 ---
 
@@ -41,7 +100,7 @@ Most AI writing tools act as mere text generators that output generic, predictab
 
 - **🚀 Dual-Track Scriptwriter Studio**:
   - *Track A (In-App AI Studio)*: Configure target word counts (preset 8–12 min, ~1,300–1,950 words or custom), generate section-by-section narrative outlines, approve outlines through a human gate, and draft full scripts directly inside the application.
-  - *Track B (External Handoff)*: 1-click zero-token prompt generator packaged for external frontier models.
+  - *Track B (External Handoff)*: 1-click zero-token prompt generator packaged for external frontier models (Claude 3.5 Sonnet, ChatGPT, DeepSeek).
 - **🧠 6 Specialized Prompt & Scripting Engines**:
   1. *Research Brief Prompt*: Extracts 10 Narrative Assets, claims, and verification boundaries from uploaded source documents.
   2. *Script Outline Prompt*: Formulates 5 distinct narrative stages with clear escalation arcs.
@@ -49,7 +108,8 @@ Most AI writing tools act as mere text generators that output generic, predictab
   4. *Spoken & TTS Audio Audit*: Analyzes drafted scripts across 4 dimensions with a structured audit report (`ORIGINAL -> ISSUE -> REVISION -> REASON`).
   5. *Visual Cue Annotator*: Tags narration with functional production cues (`[BUKTI]`, `[JELASKAN]`, `[KONTEKS]`, `[TEKANKAN]`, `[RITME]`).
   6. *Thumbnail & Hook Copy Engine*: Produces 3 high-CTR concepts, stakes vs. question framing, and 2–4 word high-contrast visual text.
-- **🔄 Multi-AI Provider Gateway**:
+- **🔄 Multi-AI Provider Gateway & Fallback**:
+  - **9Router Gateway (`custom`)**: Local gateway (`http://localhost:20128/v1`) with Combo presets and Direct models.
   - **Google Gemini**: Native API integration (`gemini-1.5-flash`, `gemini-1.5-pro`).
   - **OpenRouter**: Access Claude 3.5 Sonnet, DeepSeek V3/R1, Llama 3, and more.
   - **Local Ollama**: 100% offline, zero-cost, private local inference (`http://localhost:11434`) with automatic context-window optimization.
@@ -62,8 +122,8 @@ Most AI writing tools act as mere text generators that output generic, predictab
 - **📂 Document Parsing & File Dropzone**:
   - In-browser parsing of `.docx` (via Mammoth), `.md`, `.txt`, and `.csv` files.
   - Permanent file repository and research attachment support.
-- **🎨 Premium Glassmorphism UI**:
-  - Cyberpunk-inspired indigo and deep-space blue gradients, blurred glass overlays, responsive data table, and collapsible floating terminal drawer for real-time AI logs.
+- **🎨 Premium Glassmorphism UI & Official Branding**:
+  - Cyberpunk-inspired indigo and deep-space blue gradients, blurred glass overlays, responsive data table, collapsible floating terminal drawer for real-time AI logs, and official Zeinity branding assets.
 
 ---
 
@@ -102,14 +162,15 @@ flowchart LR
 
 ### Phase 4: Outline Drafting & Dual-Track Scriptwriting
 1. In the **Scripting** tab, select a target word count preset (e.g., `8-12 Menit (~1,300 - 1,950 kata)`).
-2. Click **Generate Outline** to generate 5 escalating narrative sections:
+2. Choose your active AI model directly from the **Topbar Switcher** (e.g., `Creator-Combo` or `Google Gemini`).
+3. Click **Generate Outline** to generate 5 escalating narrative sections:
    - *Hook & Premise Deconstruction*
    - *The Conventional (Wrong) Assumption*
    - *The Core Revelation / Mechanism*
    - *Tactical Implementation & Nuance*
    - *Philosophical Conclusion & Action Step*
-3. Review and edit the outline directly in the text editor. Once satisfied, click **Setujui Outline (Approve)**.
-4. Choose your drafting track:
+4. Review and edit the outline directly in the text editor. Once satisfied, click **Setujui Outline (Approve Gate)**.
+5. Choose your drafting track:
    - **In-App Studio**: Click **Tulis Naskah via AI** to draft section by section with live word count tracking and auto-save.
    - **External Handoff**: Click **Salin Prompt Scriptwriter** to copy the full zero-token prompt into Claude 3.5 Sonnet or ChatGPT.
 
@@ -145,8 +206,8 @@ flowchart LR
 | **Document Processing** | Mammoth.js (`.docx` parser), FileReader API |
 | **State & Offline Storage** | Browser LocalStorage, In-memory reactive state |
 | **Backend & Realtime** | Supabase (PostgreSQL 15, Row Level Security, Edge Functions) |
-| **AI Inference** | Google Generative AI SDK, OpenRouter REST API, Local Ollama API |
-| **Testing** | Node.js native test runner (`node:test`, `node:assert/strict`) |
+| **AI Inference & Routing** | 9Router Gateway (`http://localhost:20128/v1`), Google Gemini SDK, OpenRouter REST API, Local Ollama API |
+| **Testing** | Node.js native test runner (`node:test`, `node:assert/strict`) — **146 Tests / 24 Suites** |
 
 ---
 
@@ -157,7 +218,7 @@ Ensure you have the following installed on your machine:
 - **Node.js**: v18.0.0 or higher ([Download Node.js](https://nodejs.org/))
 - **npm** (bundled with Node) or **pnpm** / **yarn**
 - **Git** ([Download Git](https://git-scm.com/))
-- *(Optional)* **Ollama** ([Download Ollama](https://ollama.com/)) if you plan to run local AI models.
+- *(Optional)* **9Router** or **Ollama** ([Download Ollama](https://ollama.com/)) for local AI execution.
 
 ### 2. Clone the Repository
 ```bash
@@ -187,7 +248,7 @@ VITE_GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 > [!TIP]
-> **API Key Security**: You do not have to write your API keys to `.env`. You can securely enter your Google Gemini API Key, OpenRouter Key, or Ollama endpoint directly inside the in-app **Settings** page. Keys saved via the Settings UI are isolated to your local browser storage and never transmitted to public servers.
+> **API Key Security**: You do not have to write your API keys to `.env`. You can securely enter your 9Router Gateway key, Google Gemini API Key, OpenRouter Key, or Ollama endpoint directly inside the in-app **Settings** page. Keys saved via the Settings UI are isolated to your local browser storage and never transmitted to public servers.
 
 ### 5. Start the Development Server
 ```bash
@@ -196,7 +257,7 @@ npm run dev
 Open your browser and navigate to `http://localhost:5173`.
 
 ### 6. Run Automated Tests
-Execute the 141+ built-in verification tests:
+Execute the 146 verification tests across 24 test suites:
 ```bash
 npm test
 ```
@@ -209,9 +270,16 @@ npm run preview
 
 ---
 
-## 🤖 Optional: Local AI Setup (Ollama)
+## 🤖 Optional: Local AI Setup (9Router & Ollama)
 
-For 100% private, free, and offline script generation:
+### A. 9Router Gateway (Recommended Default)
+1. Launch your 9Router server locally on port `20128`:
+   ```bash
+   # Default endpoint: http://localhost:20128/v1
+   ```
+2. The application automatically selects **`custom` (9Router Gateway)** as the default active provider with model `Creator-Combo`.
+
+### B. Ollama (100% Offline & Free)
 1. Install Ollama from [ollama.com](https://ollama.com/).
 2. Pull a recommended model:
    ```bash
@@ -232,13 +300,14 @@ zeinity-creator-assistants/
 │   ├── blueprints/                     # Multi-AI blueprints & prompt plans
 │   ├── reports/                        # Executive audit reports & diagnosis
 │   └── strategy/                       # YouTube channel strategy & spoken-first rules
-├── public/                             # Static assets
+├── public/                             # Static assets (official logo, banner, favicons)
 ├── scripts/                            # Maintenance & audit utilities
 ├── src/                                # React application source code
+│   ├── assets/                         # Application branding assets
 │   ├── components/                     # Reusable UI components (Sidebar, Topbar, Modals)
 │   ├── hooks/                          # Custom hooks (useContent, useSettings, useFiles)
 │   ├── lib/                            # AI engine (gemini.ts), Supabase client, parser
-│   ├── views/                          # Main views (Overview, ContentTable, ScriptDetail, etc.)
+│   ├── views/                          # Main views (Overview, ContentTable, ScriptDetail, Settings)
 │   ├── App.tsx                         # App entry & routing
 │   ├── index.css                       # Glassmorphism styling & animations
 │   ├── main.tsx                        # DOM mount
@@ -246,7 +315,7 @@ zeinity-creator-assistants/
 ├── supabase/                           # Supabase configurations
 │   ├── functions/                      # Deno Edge Functions (telegram-webhook)
 │   └── migrations/                     # SQL migration scripts & RLS policies
-├── test/                               # Automated test suites (141+ tests)
+├── test/                               # Automated test suites (146 tests in 24 suites)
 ├── .env.example                        # Example environment template
 ├── .gitignore                          # Ignored directories & files
 ├── package.json                        # Project metadata & scripts
@@ -262,8 +331,13 @@ zeinity-creator-assistants/
 - [x] Dual-Track In-App AI Scriptwriter & External Handoff
 - [x] 14 Spoken-First Voiceover & TTS Rules Enforcement
 - [x] Telegram Bot Real-time Ingestion & Webhook
-- [x] Multi-AI Provider Gateway (Gemini, OpenRouter, Ollama)
+- [x] 9Router Multi-Model Gateway & 4-Tier Auto-Fallback Resilience Chain
+- [x] Topbar 1-Click Interactive AI Model Switcher
 - [x] Safe Offline Mode (LocalStorage Fallback)
+- [x] Snapshot History & Undo Revisi AI
+- [x] Bulk Ingestion (CSV, Markdown, Plain Text)
+- [x] Comprehensive 128-Button Audit Resolution
+- [x] Official Zeinity Visual Branding (Banners, Logos, Favicons)
 - [ ] Direct YouTube Data API integration for auto-publishing metadata
 - [ ] ElevenLabs / Edge-TTS audio preview synthesis directly inside Studio
 - [ ] Export to Teleprompter / Final Draft `.fdx` format

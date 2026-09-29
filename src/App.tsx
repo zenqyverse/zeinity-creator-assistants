@@ -1,10 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { ContentItem, ContentSource, ContentStatus, ViewKey } from '@/types';
+import type { ContentItem, ContentSource, ContentStatus, ViewKey, AIProvider } from '@/types';
 import { useContent } from '@/hooks/useContent';
-import { useSettings, setChannelIdentity, getChannelIdentity } from '@/hooks/useSettings';
+import { useSettings, setChannelIdentity, getChannelIdentity, parseFallbackChain } from '@/hooks/useSettings';
 import { useFiles, isChannelIdentityFile } from '@/hooks/useFiles';
 import { extractDocxText, extractTextFromFile } from '@/lib/docx';
-import { generateResearchBriefPrompt, type ProviderConfig } from '@/lib/gemini';
+import { generateResearchBriefPrompt, getProviderLabel, type ProviderConfig } from '@/lib/gemini';
 import { useAlert, parseAIError } from '@/components/AlertModal';
 import Sidebar from '@/components/Sidebar';
 import Topbar from '@/components/Topbar';
@@ -30,6 +30,39 @@ import {
   STORAGE_KEY_SCRIPT_ID,
   STORAGE_KEY_PUBLISHED_ID,
 } from '@/lib/navigation';
+
+export const getProviderConfig = (settings: Record<string, string>): ProviderConfig => {
+  const activeProvider = (settings.active_provider || 'custom') as AIProvider;
+  const isDirect = settings.custom_gateway_model_mode === 'direct';
+  const customModel = isDirect
+    ? (settings.custom_gateway_direct_model || 'groq/llama-3.3-70b-versatile')
+    : (settings.custom_gateway_model_version || 'Creator-Combo');
+
+  return {
+    provider: activeProvider,
+    apiKey: activeProvider === 'gemini'
+      ? settings.gemini_api_key
+      : activeProvider === 'openrouter'
+      ? settings.openrouter_api_key
+      : activeProvider === 'custom'
+      ? settings.custom_gateway_api_key
+      : undefined,
+    modelVersion: activeProvider === 'custom'
+      ? customModel
+      : activeProvider === 'gemini'
+      ? settings.gemini_model_version
+      : activeProvider === 'openrouter'
+      ? settings.openrouter_model_version
+      : settings.ollama_model_version,
+    modelMode: isDirect ? 'direct' : 'combo',
+    ollamaEndpoint: settings.ollama_endpoint,
+    customEndpoint: settings.custom_gateway_endpoint || 'http://localhost:20128/v1',
+    timeoutSeconds: Number(settings.ai_request_timeout || 90),
+    autoSwitchEnabled: settings.auto_switch_enabled !== 'false',
+    fallbackChain: parseFallbackChain(settings.fallback_provider_order),
+    allSettings: settings,
+  };
+};
 
 export default function App() {
   const { showError, showWarning } = useAlert();
@@ -67,6 +100,38 @@ export default function App() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToastShow(false), 2800);
   }, []);
+
+  // 9Router Gateway Online probe
+  const [isNineRouterOnline, setIsNineRouterOnline] = useState<boolean>(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const probeGateway = async () => {
+      try {
+        const ep = (settings.custom_gateway_endpoint || 'http://localhost:20128/v1').trim().replace(/\/+$/, '');
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 2500);
+        const headers: Record<string, string> = {};
+        if (settings.custom_gateway_api_key?.trim()) {
+          headers.Authorization = `Bearer ${settings.custom_gateway_api_key.trim()}`;
+        }
+        const res = await fetch(`${ep}/models`, {
+          headers,
+          signal: controller.signal,
+        });
+        clearTimeout(t);
+        if (isMounted) setIsNineRouterOnline(res.ok);
+      } catch {
+        if (isMounted) setIsNineRouterOnline(false);
+      }
+    };
+    probeGateway();
+    const interval = setInterval(probeGateway, 20000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [settings.custom_gateway_endpoint, settings.custom_gateway_api_key]);
 
   // Daftarkan callback untuk notifikasi realtime ide baru dari Telegram Bot
   useEffect(() => {
@@ -373,28 +438,13 @@ export default function App() {
     setValidatingId(item.id);
     await updateItem(item.id, { status: 'Validating', ai_output: 'Membuat Research Brief...' });
 
-    const activeProvider = (settings.active_provider || 'gemini') as ProviderConfig['provider'];
-    const providerLabel = activeProvider === 'gemini' ? 'Gemini' : activeProvider === 'openrouter' ? 'OpenRouter' : 'Ollama';
+    const providerConfig = getProviderConfig(settings);
+    const providerLabel = getProviderLabel(providerConfig.provider);
 
     startActivity('AI Validation Log', `Menghubungkan ke ${providerLabel} untuk membuat Research Brief...`);
 
     try {
       const identityText = getChannelIdentity();
-
-      const providerConfig: ProviderConfig = {
-        provider: activeProvider,
-        apiKey: activeProvider === 'gemini'
-          ? settings.gemini_api_key
-          : activeProvider === 'openrouter'
-          ? settings.openrouter_api_key
-          : undefined,
-        modelVersion: activeProvider === 'gemini'
-          ? settings.gemini_model_version
-          : activeProvider === 'openrouter'
-          ? settings.openrouter_model_version
-          : settings.ollama_model_version,
-        ollamaEndpoint: settings.ollama_endpoint,
-      };
 
       addLog('Menyusun prompt berdasarkan identitas channel & 10 Narrative Assets...', 60);
 
@@ -452,6 +502,7 @@ export default function App() {
   const providers = [
     { name: 'Google Gemini', state: settings.active_provider === 'gemini' ? 'Active' : 'Available', keyMask: settings.gemini_api_key ? `AIza••••••••••${settings.gemini_api_key.slice(-3)}` : 'Not configured' },
     { name: 'OpenRouter / Groq-Llama', state: settings.active_provider === 'openrouter' ? 'Active' : 'Available', keyMask: settings.openrouter_api_key ? `sk-or-••••••••••••` : 'Not configured' },
+    { name: '9Router / Custom Gateway', state: settings.active_provider === 'custom' ? 'Active' : 'Available', keyMask: settings.custom_gateway_endpoint || 'http://localhost:20128/v1' },
     { name: 'Ollama Local', state: settings.active_provider === 'ollama' ? 'Active' : 'Available', keyMask: settings.ollama_endpoint || 'http://localhost:11434' },
   ];
 
@@ -469,21 +520,7 @@ export default function App() {
       );
     }
 
-    const activeProvider = (settings.active_provider || 'gemini') as ProviderConfig['provider'];
-    const providerConfig: ProviderConfig = {
-      provider: activeProvider,
-      apiKey: activeProvider === 'gemini'
-        ? settings.gemini_api_key
-        : activeProvider === 'openrouter'
-        ? settings.openrouter_api_key
-        : undefined,
-      modelVersion: activeProvider === 'gemini'
-        ? settings.gemini_model_version
-        : activeProvider === 'openrouter'
-        ? settings.openrouter_model_version
-        : settings.ollama_model_version,
-      ollamaEndpoint: settings.ollama_endpoint,
-    };
+    const providerConfig = getProviderConfig(settings);
 
     if (activeScriptItem) {
       return (
@@ -690,13 +727,21 @@ export default function App() {
           searchPlaceholder={isTableActive ? "Cari ide, judul, atau sumber…" : "Cari ide (ketik untuk cari di tabel)…"}
           isSearchable={isTableActive}
           isGatewayOnline={(() => {
-            const provider = settings.active_provider || 'gemini';
+            const provider = settings.active_provider || 'custom';
+            if (provider === 'custom') return isNineRouterOnline && Boolean(settings.custom_gateway_endpoint?.trim());
             if (provider === 'gemini') return Boolean(settings.gemini_api_key?.trim());
             if (provider === 'openrouter') return Boolean(settings.openrouter_api_key?.trim());
             if (provider === 'ollama') return Boolean(settings.ollama_endpoint?.trim());
             return false;
           })()}
           isBotConfigured={Boolean(settings.telegram_token?.trim())}
+          settings={settings}
+          onSelectProvider={(p) => {
+            upsertSetting('active_provider', p);
+            showToast(`Provider AI aktif dialihkan ke ${getProviderLabel(p)}`);
+          }}
+          onSaveSetting={(k, v) => upsertSetting(k, v)}
+          onNavigateSettings={() => handleNavigate('settings')}
         />
         {renderView()}
       </div>

@@ -13,7 +13,7 @@ export interface TerminalContextType {
   closeTerminal: () => void;
   clearLogs: () => void;
   startActivity: (title: string, initialMessage?: string) => void;
-  addLog: (message: string, progress?: number) => void;
+  addLog: (message: string, progress?: number, severity?: 'info' | 'warn' | 'error' | 'success') => void;
   finishActivity: (completionMessage?: string) => void;
   errorActivity: (errorMessage: string) => void;
   setProgress: Dispatch<SetStateAction<number>>;

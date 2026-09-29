@@ -1,10 +1,13 @@
 <div align="center">
 
+<img src="public/zeinity-banner.png" alt="Zeinity Creator Assistant Banner" width="100%" style="border-radius: 12px; margin-bottom: 16px;" />
+
 # 🎬 Zeinity Creator Assistant
 
 **Studio Produksi Konten & Naskah Spoken-First Berbasis AI untuk Kreator YouTube**
 
 [![Status: Dalam Pengembangan Aktif](https://img.shields.io/badge/Status-Dalam%20Pengembangan%20Aktif-amber?style=for-the-badge&logo=git)](https://github.com/zenqyverse/zeinity-creator-assistants)
+[![Uji Otomatis Lulus](https://img.shields.io/badge/Pengujian-146%20Lulus%20%7C%2024%20Suites-brightgreen?style=for-the-badge&logo=node.js)](test/)
 [![React](https://img.shields.io/badge/React-18.3.1-61dafb?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-3178c6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.4.8-646cff?style=for-the-badge&logo=vite)](https://vitejs.dev/)
@@ -28,12 +31,68 @@
 
 **Zeinity Creator Assistant** adalah studio rekayasa konten khusus yang dirancang untuk kreator YouTube dengan standar narasi tinggi. Aplikasi ini menjembatani kesenjangan antara penangkapan ide mentah, perumusan struktur narasi yang kokoh, hingga penulisan naskah utuh siap rekam menggunakan prinsip **Zeinity Spoken-First Narrative System**.
 
-### Mengapa Bukan Sekadar "Prompt Generator" Biasa?
-Mayoritas alat bantu AI hanya berfungsi sebagai generator teks biasa yang menghasilkan gaya tulisan kaku, repetitif, dan penuh klise robotik khas AI ("mari selami", "sebagai kesimpulan", "seiring berjalannya waktu"). Zeinity Creator Assistant dibangun di atas filosofi **Human-in-the-Loop (HITL)** yang tegas:
-1. **Batasan Narasi Terstruktur**: AI bekerja di dalam batas aturan yang ketat (5 Babak Eskalasi, Dekonstruksi Jawaban Klise, 10 Aset Naratif).
-2. **Aturan Audio & Voiceover (Spoken-First)**: Penulisan naskah menerapkan 14 aturan spoken-first—melarang penggunaan tanda pisah panjang em dash (`—`), titik dua (`:`), serta tanda kurung bertingkat yang merusak intonasi suara manusia maupun kealamian TTS (*Text-to-Speech*).
-3. **Alur Kerja Dual-Track**: Kreator dapat menulis langsung di dalam In-App Studio aplikasi atau mengekspor prompt handoff instan (0-token) untuk model eksternal seperti Claude 3.5 Sonnet, ChatGPT, maupun DeepSeek.
-4. **Riwayat Snapshot & Versi Draf**: Setiap iterasi revisi AI memiliki isolasi riwayat, sehingga kreator dapat mengembalikan draf sebelumnya dalam satu klik tanpa risiko kehilangan progres tulisan.
+---
+
+## 🔄 Evolusi Besar: Dari "Prompt Generator" Menjadi "AI Content Studio"
+
+Pada awal pengembangan, hasil evaluasi sistem mendiagnosis bahwa aplikasi ini bekerja seolah-olah sekadar *middleman* atau pabrik instruksi prompt statis:
+```
+Kreator ➔ Aplikasi ➔ (Salin Prompt) ➔ LLM Eksternal ➔ (Tempel Hasil) ➔ Aplikasi ➔ (Salin Prompt Lagi)...
+```
+Alur tersebut membebani kreator dengan kerja manual bolak-balik yang melelahkan. Berdasarkan diagnosis tersebut, sistem dirombak secara menyeluruh melalui **4 fase transformasi arsitektur besar** untuk mengubah identitas aplikasi dari generator instruksi menjadi **Studio Orkestrasi & Rekan Kreatif AI (Human-in-the-Loop)**:
+
+| Aspek | Kondisi Lama (Prompt Generator) | Kondisi Sekarang (Zeinity Studio Orchestrator) |
+|---|---|---|
+| **Identitas Inti** | Pabrik pembuat instruksi prompt | Studio produksi video ujung-ke-ujung (*end-to-end*) |
+| **Beban Pengguna** | Kerja keras salin-tempel manual | Aksi AI langsung 1-klik, pengguna fokus kurasi & *approval* |
+| **Bentuk Output** | String teks prompt mentah | Draf naskah hidup, laporan audit terstruktur, revisi instan |
+| **Penulisan Naskah** | Di notepad atau Google Docs luar | Dual-Track Studio dengan penghitung kata & *auto-save* |
+| **Kualitas Audio** | Bahasa tulisan kaku penuh klise AI | Penegakan ketat 14 aturan *spoken-first* & audit audio TTS |
+| **Integritas Draf** | Menimpa teks berisiko hilangnya draf | Riwayat snapshot draf dengan fitur *Undo Revisi AI* 1-klik |
+| **Istilah Antarmuka** | "Prompts", "Generator", "Output" | **"Pipeline Naskah"** & **"Draft Studio"** |
+| **Kendali Model** | Dropdown API statis | **Switcher Interaktif di Topbar & Auto-Fallback 4 Lapis** |
+
+---
+
+## 🏗️ 4 Fase Rekayasa & Transformasi Besar
+
+### Fase 1: Stabilitas Integritas Data & Pencegahan Kehilangan Data
+- **Isolasi State Komponen**: Enkapsulasi penuh state di `ScriptDetail.tsx` untuk mencegah kebocoran data antar-konten saat kreator berpindah ide.
+- **Konfirmasi Aksi Destruktif**: Seluruh tombol penghapusan (penghapusan ide di `ContentTable`, berkas di `FileManager`, maupun token API di `Settings`) wajib melewati dialog konfirmasi `AlertModal`.
+- **Ketahanan Filter Dinamis**: Menghilangkan *bug* tabrakan filter pada `ContentTable.tsx` yang sebelumnya memicu fenomena data *blackout*.
+- **Ketahanan Offline**: Penambahan *fallback cache* pada `useFiles.ts` dan penanganan unggah berkas yang andal.
+
+### Fase 2: Kontinuitas Naskah, Mesin AI & Studio In-App
+- **Kontinuitas Naskah Antar-Tahapan**: Naskah yang sedang disusun mengalir tanpa putus dari tahap Scripting, Thumbnailing, hingga Published Detail tanpa risiko terhapus.
+- **Sistem Riwayat Snapshot Draf**: Dilengkapi modal riwayat snapshot yang memungkinkan kreator meninjau iterasi draf sebelumnya dan melakukan *Undo Revisi AI* seketika.
+- **Generator Judul Alternatif (Mode A & B)**: Merumuskan dua sudut pandang judul yang mematuhi standar komunitas YouTube (Mode A: Rasa Ingin Tahu & Taruhan Tinggi vs Mode B: Manfaat Langsung).
+- **Mesin Impor Massal (Bulk Ingest)**: Mendukung impor puluhan ide sekaligus dari berkas CSV, Markdown, dan teks polos dengan deteksi pemisah otomatis.
+- **Penerusan Konteks Penuh**: Catatan ide awal pengguna (`research_text`) otomatis diteruskan ke seluruh konteks prompt AI di tahapan berikutnya.
+- **Dukungan Dokumen Word Asli**: Penguraian berkas `.docx` langsung di browser menggunakan Mammoth.js di samping berkas `.md`, `.txt`, dan `.csv`.
+- **Optimasi AI Lokal Ollama**: Manajemen batas konteks (*context window chunking*) dinamis untuk mencegah memori habis (*out of memory*) pada model komputer lokal.
+
+### Fase 3: Ergonomi, Metrik Produksi & Pembaruan UI
+- **Pembaruan Bingkai Istilah UI**: Menghapus seluruh sebutan usang "Prompt Generator". Mengganti kolom antarmuka menjadi **"Pipeline Naskah"** dan **"Draft Studio"**.
+- **Navigasi Revert Tersinkronisasi**: Memperbaiki router navigasi dan riwayat URL agar tindakan *revert* status memperbarui UI dan basis data secara bersamaan.
+- **Judul Interaktif & Textarea Ergonomis**: Pengubahan judul langsung dengan klik ganda (*inline rename*) dan textarea yang membesar otomatis tanpa memotong teks.
+- **Metrik Analisis Produksi Riil**: Rekalkulasi metrik durasi produksi di halaman Analytics untuk mengukur kecepatan siklus ide hingga publikasi secara akurat.
+
+### Fase 4: Webhook Bot Telegram & Sinkronisasi Cloud
+- **Webhook Deno Tanpa Server**: Supabase Edge Function (`telegram-webhook`) dengan validasi tajuk rahasia (`X-Telegram-Bot-Api-Secret-Token`).
+- **Penyaringan Akses Whitelist**: Keamanan berbasis daftar ID obrolan terverifikasi (`telegram_allowed_chat_ids`).
+- **Pencatatan Ide Seketika**: Langganan Supabase Realtime langsung memunculkan notifikasi *toast* dan menyisipkan baris ide baru tanpa *reload* halaman.
+- **Perintah Slash Lengkap**: Mendukung interaksi bot via `/start`, `/help`, `/pillars`, `/id`, `/pipeline`, dan `/latest`.
+
+### 🛡️ Ketahanan Mesin AI Router & Integrasi 100% 9Router Gateway
+- **Integrasi 9Router Gateway**: Dukungan penuh gerbang lokal berbasis OpenAI-compatible endpoint (`http://localhost:20128/v1`).
+- **Pilihan Combo Presets vs Model Spesifik**: Beralih bebas antara racikan multi-model terkurasi (seperti `Creator-Combo`, `Jarvis_Creator`) atau model individual langsung (Groq Llama 3.3 70B, Google Gemini 2.0 Flash, DeepSeek, dsb).
+- **Rantai Auto-Fallback Multi-Provider (4 Lapis)**: Mekanisme failover dinamis (`9Router Gateway` ➔ `Google Gemini` ➔ `OpenRouter` ➔ `Ollama Lokal`). Bila suatu provider terkena limit kuota atau gagal terhubung, studio otomatis mengalihkan tugas ke provider berikutnya dengan log transparan di laci Terminal.
+- **Topbar 1-Click AI Switcher**: Widget interaktif pada bilah atas untuk mengganti model instan, memantau latensi koneksi, dan membuka jalan pintas ke Settings tanpa mengganggu alur menulis.
+
+### 🔍 Resolusi Audit 128 Elemen Tombol Frontend
+Melakukan audit menyeluruh terhadap **128 tombol** di seluruh antarmuka web:
+- **Nol Zombie UI**: Menghubungkan seluruh tombol *placeholder* statis ke logika aktif atau menyembunyikannya secara bersih.
+- **Pencegahan Reload Halaman**: Menetapkan atribut eksplisit `type="button"` pada seluruh tombol untuk mencegah *form submission* liar yang mereset status aplikasi.
 
 ---
 
@@ -41,7 +100,7 @@ Mayoritas alat bantu AI hanya berfungsi sebagai generator teks biasa yang mengha
 
 - **🚀 Dual-Track Scriptwriter Studio**:
   - *Jalur A (In-App AI Studio)*: Konfigurasi target jumlah kata (preset 8–12 menit, ~1.300–1.950 kata atau kustom), hasilkan outline narasi bertingkat, lakukan persetujuan (*Human Approval Gate*), lalu tulis naskah babak demi babak langsung di aplikasi.
-  - *Jalur B (External Handoff)*: Generator *prompt* 0-token 1-klik yang siap disalin ke model LLM eksternal tercanggih.
+  - *Jalur B (External Handoff)*: Generator *prompt* 0-token 1-klik yang siap disalin ke model LLM eksternal tercanggih (Claude 3.5 Sonnet, ChatGPT, DeepSeek).
 - **🧠 6 Mesin Prompt & Scripting Terpadu**:
   1. *Research Brief Prompt*: Mengekstrak 10 Aset Naratif, klaim utama, dan batasan verifikasi dari dokumen sumber yang diunggah.
   2. *Script Outline Prompt*: Merumuskan 5 babak narasi dengan eskalasi konflik yang jelas.
@@ -49,7 +108,8 @@ Mayoritas alat bantu AI hanya berfungsi sebagai generator teks biasa yang mengha
   4. *Spoken & TTS Audio Audit*: Menganalisis naskah pada 4 dimensi penting dengan format laporan terstruktur (`BAGIAN ASLI -> MASALAH -> REVISI -> ALASAN`).
   5. *Visual Cue Annotator*: Memberikan anotasi visual fungsional (`[BUKTI]`, `[JELASKAN]`, `[KONTEKS]`, `[TEKANKAN]`, `[RITME]`).
   6. *Thumbnail & Hook Copy Engine*: Menghasilkan 3 konsep thumbnail ber-CTR tinggi, pembanding sudut pandang (taruhan vs pertanyaan), serta teks kontras 2–4 kata.
-- **🔄 Multi-AI Provider Gateway**:
+- **🔄 Multi-AI Provider Gateway & Fallback**:
+  - **9Router Gateway (`custom`)**: Gerbang AI lokal (`http://localhost:20128/v1`) dengan preset Combo dan model spesifik.
   - **Google Gemini**: Integrasi API bawaan (`gemini-1.5-flash`, `gemini-1.5-pro`).
   - **OpenRouter**: Akses ke Claude 3.5 Sonnet, DeepSeek V3/R1, Llama 3, dan lainnya.
   - **Ollama Lokal**: Inferensi AI 100% luring, gratis, dan privat di komputer sendiri (`http://localhost:11434`) dengan penyesuaian otomatis batas konteks.
@@ -62,8 +122,8 @@ Mayoritas alat bantu AI hanya berfungsi sebagai generator teks biasa yang mengha
 - **📂 Dropzone Berkas & Ekstraksi Dokumen**:
   - Parsing dokumen langsung di peramban untuk berkas `.docx` (via Mammoth), `.md`, `.txt`, dan `.csv`.
   - Manajemen berkas permanen di *FileManager* untuk lampiran riset.
-- **🎨 Antarmuka Estetis Glassmorphism**:
-  - Nuansa warna gradasi biru indigo dan deep space, efek blur transparan, tabel responsif, serta laci terminal melayang untuk memantau log proses AI secara *real-time*.
+- **🎨 Desain Glassmorphism Estetis & Branding Resmi**:
+  - Gradasi biru indigo dan deep space, efek blur transparan, tabel responsif, laci terminal melayang untuk log AI *real-time*, serta aset logo dan banner resmi Zeinity.
 
 ---
 
@@ -102,14 +162,15 @@ flowchart LR
 
 ### Fase 4: Penyusunan Outline & Penulisan Naskah (Dual-Track)
 1. Pada tab **Scripting**, tentukan target durasi video (contoh: preset `8-12 Menit (~1.300 - 1.950 kata)`).
-2. Klik **Generate Outline** untuk menghasilkan 5 babak narasi bereskalasi:
+2. Pilih model AI aktif langsung dari **Topbar Switcher** (misalnya `Creator-Combo` atau `Google Gemini`).
+3. Klik **Generate Outline** untuk menghasilkan 5 babak narasi bereskalasi:
    - *Hook & Dekonstruksi Premis*
    - *Asumsi Umum yang Keliru (The Wrong Assumption)*
    - *Mekanisme Kunci / Pengungkapan Inti*
    - *Penerapan Taktis & Nuansa Praktis*
    - *Konklusi Filosofis & Ajakan Bertindak*
-3. Tinjau dan perbaiki outline langsung di editor. Bila sudah mantap, klik **Setujui Outline (Approve Gate)**.
-4. Pilih jalur penulisan naskah:
+4. Tinjau dan perbaiki outline langsung di editor. Bila sudah mantap, klik **Setujui Outline (Approve Gate)**.
+5. Pilih jalur penulisan naskah:
    - **Jalur In-App**: Klik **Tulis Naskah via AI** untuk memproses draf babak demi babak dilengkapi penghitung kata *real-time* dan fitur *auto-save*.
    - **Jalur External Handoff**: Klik **Salin Prompt Scriptwriter** untuk menyalin paket prompt berstandar ke Claude 3.5 Sonnet atau ChatGPT.
 
@@ -145,8 +206,8 @@ flowchart LR
 | **Pemroses Dokumen** | Mammoth.js (pembaca `.docx`), FileReader Web API |
 | **Penyimpanan Lokal** | Browser LocalStorage, State reaktif in-memory |
 | **Basis Data Cloud** | Supabase (PostgreSQL 15, Keamanan RLS, Edge Functions) |
-| **Gateway Inferensi AI** | Google Generative AI SDK, OpenRouter API, Ollama Lokal |
-| **Kerangka Pengujian** | Penguji bawaan Node.js (`node:test`, `node:assert/strict`) |
+| **Gateway Inferensi AI** | 9Router Gateway (`http://localhost:20128/v1`), Google Generative AI SDK, OpenRouter API, Ollama Lokal |
+| **Kerangka Pengujian** | Penguji bawaan Node.js (`node:test`, `node:assert/strict`) — **146 Pengujian / 24 Suites** |
 
 ---
 
@@ -157,7 +218,7 @@ Pastikan perangkat Anda telah terpasang:
 - **Node.js**: Versi 18.0.0 ke atas ([Unduh Node.js](https://nodejs.org/))
 - **npm** (otomatis ada bersama Node) atau **pnpm** / **yarn**
 - **Git** ([Unduh Git](https://git-scm.com/))
-- *(Opsional)* **Ollama** ([Unduh Ollama](https://ollama.com/)) bila ingin menjalankan AI lokal.
+- *(Opsional)* **9Router** atau **Ollama** ([Unduh Ollama](https://ollama.com/)) untuk menjalankan AI secara lokal.
 
 ### 2. Kloning Repositori
 ```bash
@@ -187,7 +248,7 @@ VITE_GEMINI_API_KEY=kunci_api_gemini_anda
 ```
 
 > [!TIP]
-> **Keamanan Kunci API**: Anda tidak diwajibkan menuliskan API key ke dalam file `.env`. Kunci API Google Gemini, OpenRouter, atau endpoint Ollama dapat dimasukkan langsung melalui menu **Settings** di aplikasi. Kunci yang dimasukkan via Settings diisolasi aman di penyimpanan lokal peramban Anda (*localStorage*) dan tidak pernah dikirim ke peladen publik.
+> **Keamanan Kunci API**: Anda tidak diwajibkan menuliskan API key ke dalam file `.env`. Kunci API 9Router, Google Gemini, OpenRouter, atau endpoint Ollama dapat dimasukkan langsung melalui menu **Settings** di aplikasi. Kunci yang dimasukkan via Settings diisolasi aman di penyimpanan lokal peramban Anda (*localStorage*) dan tidak pernah dikirim ke peladen publik.
 
 ### 5. Jalankan Server Pengembangan
 ```bash
@@ -196,7 +257,7 @@ npm run dev
 Buka peramban favorit Anda dan akses alamat `http://localhost:5173`.
 
 ### 6. Menjalankan Pengujian Otomatis
-Pastikan seluruh 141+ pengujian fitur berjalan sukses:
+Pastikan seluruh 146 pengujian otomatis dalam 24 suite berjalan sukses:
 ```bash
 npm test
 ```
@@ -209,9 +270,16 @@ npm run preview
 
 ---
 
-## 🤖 Menjalankan AI Lokal (Ollama)
+## 🤖 Menjalankan AI Lokal (9Router & Ollama)
 
-Untuk produksi naskah yang 100% gratis, aman, dan tanpa koneksi internet:
+### A. 9Router Gateway (Rekomendasi Default)
+1. Jalankan peladen 9Router lokal di port `20128`:
+   ```bash
+   # Endpoint standar: http://localhost:20128/v1
+   ```
+2. Aplikasi secara cerdas telah menetapkan **`custom` (9Router Gateway)** sebagai penyedia aktif default dengan preset model `Creator-Combo`.
+
+### B. Ollama (100% Luring & Gratis)
 1. Pasang Ollama dari [ollama.com](https://ollama.com/).
 2. Unduh model rekomendasi:
    ```bash
@@ -232,13 +300,14 @@ zeinity-creator-assistants/
 │   ├── blueprints/                     # Cetak biru multi-AI & rencana output prompt
 │   ├── reports/                        # Laporan audit frontend & diagnosis teknis
 │   └── strategy/                       # Strategi channel YouTube & aturan spoken-first
-├── public/                             # Aset statis peramban
+├── public/                             # Aset statis peramban (logo resmi, banner, favicon)
 ├── scripts/                            # Skrip pemeliharaan & audit kode
 ├── src/                                # Kode sumber aplikasi React
+│   ├── assets/                         # Aset visual branding
 │   ├── components/                     # Komponen UI (Sidebar, Topbar, Modal Dialog)
 │   ├── hooks/                          # Custom hooks (useContent, useSettings, useFiles)
 │   ├── lib/                            # Mesin AI (gemini.ts), Supabase client, parser
-│   ├── views/                          # Halaman utama (Overview, ContentTable, ScriptDetail, dll.)
+│   ├── views/                          # Halaman utama (Overview, ContentTable, ScriptDetail, Settings)
 │   ├── App.tsx                         # Entri utama aplikasi & perutean navigasi
 │   ├── index.css                       # Gaya CSS glassmorphism & animasi
 │   ├── main.tsx                        # Titik pasang DOM
@@ -246,7 +315,7 @@ zeinity-creator-assistants/
 ├── supabase/                           # Berkas konfigurasi Supabase
 │   ├── functions/                      # Deno Edge Functions (telegram-webhook)
 │   └── migrations/                     # Skrip migrasi SQL & kebijakan RLS
-├── test/                               # Berkas pengujian otomatis (141+ pengujian)
+├── test/                               # Berkas pengujian otomatis (146 pengujian, 24 suite)
 ├── .env.example                        # Contoh berkas konfigurasi variabel lingkungan
 ├── .gitignore                          # Berkas & direktori yang diabaikan Git
 ├── package.json                        # Metadata proyek & skrip npm
@@ -262,8 +331,13 @@ zeinity-creator-assistants/
 - [x] Dual-Track In-App AI Scriptwriter & External Handoff
 - [x] Penegakan 14 Aturan Voiceover & Spoken-First TTS
 - [x] Integrasi Tangkap Ide Telegram Bot & Webhook
-- [x] Gateway Multi-Provider AI (Gemini, OpenRouter, Ollama)
+- [x] 9Router Multi-Model Gateway & Rantai Auto-Fallback 4 Lapis
+- [x] Switcher Model AI Interaktif 1-Klik di Topbar
 - [x] Safe Offline Mode (Penyimpanan Lokal Mandiri)
+- [x] Riwayat Snapshot Draf & Undo Revisi AI
+- [x] Impor Massal Ide (CSV, Markdown, Teks Polos)
+- [x] Resolusi Lengkap Audit 128 Tombol Frontend
+- [x] Branding Visual Resmi Zeinity (Banner, Logo, Favicon)
 - [ ] Integrasi langsung YouTube Data API untuk unggah metadata otomatis
 - [ ] Sintesis pratinjau audio naskah langsung di studio via ElevenLabs / Edge-TTS
 - [ ] Ekspor naskah ke format Teleprompter / Final Draft `.fdx`

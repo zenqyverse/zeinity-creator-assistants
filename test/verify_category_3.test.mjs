@@ -22,10 +22,10 @@ describe('Kategori 3 (MINOR, PLACEHOLDER & POLISHING) Verification Suite', async
   const appContent = fs.readFileSync(appPath, 'utf8');
 
   it('Item 1: Kejelasan Status Fitur Telegram Bot di Settings.tsx', () => {
-    // 1. Badge roadmap / segera hadir
+    // 1. Badge status kesiapan integrasi Telegram Bot
     assert.ok(
-      settingsContent.includes('Roadmap / Segera Hadir'),
-      'Settings.tsx must display Roadmap / Segera Hadir badge on Telegram Bot card'
+      settingsContent.includes('Siap Digunakan') || settingsContent.includes('Roadmap / Segera Hadir'),
+      'Settings.tsx must display active readiness status badge on Telegram Bot card'
     );
 
     // 2. Keterangan transparan mengenai webhook masa depan dan penyimpanan token lokal

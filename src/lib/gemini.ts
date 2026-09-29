@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import type { AIProvider, CallAIResult, NineRouterCatalog, NineRouterModelItem } from '@/types';
 
 export const DEFAULT_GEMINI_MODELS = [
   'gemini-1.5-flash',
@@ -31,6 +32,45 @@ export const DEFAULT_OLLAMA_MODELS = [
   'deepseek-coder-v2',
 ];
 
+export const DEFAULT_CUSTOM_MODELS = [
+  'Creator-Combo',
+  'Jarvis_Standard',
+  'Jarvis_Creator',
+  'Jarvis_Analyst',
+  'Jarvis_Fast',
+  'groq/llama-3.3-70b-versatile',
+  'google/gemini-2.0-flash-exp',
+  'openrouter/auto',
+  'llama3',
+];
+
+export const DEFAULT_NINEROUTER_CATALOG: NineRouterCatalog = {
+  combos: [
+    'Creator-Combo',
+    'Jarvis_Standard',
+    'Jarvis_Creator',
+    'Jarvis_Analyst',
+    'Jarvis_Fast',
+  ],
+  directModels: {
+    'Groq': ['groq/llama-3.3-70b-versatile'],
+    'Google Gemini': ['google/gemini-2.0-flash-exp'],
+    'OpenRouter': ['openrouter/auto'],
+    'Ollama Local': ['llama3'],
+  },
+  allModels: [
+    'Creator-Combo',
+    'Jarvis_Standard',
+    'Jarvis_Creator',
+    'Jarvis_Analyst',
+    'Jarvis_Fast',
+    'groq/llama-3.3-70b-versatile',
+    'google/gemini-2.0-flash-exp',
+    'openrouter/auto',
+    'llama3',
+  ],
+};
+
 export interface ModelRecommendation {
   id: string;
   name: string;
@@ -44,7 +84,7 @@ export interface ModelRecommendation {
  * berdasarkan provider yang dipilih dan model yang tersedia di sistem/API.
  */
 export function getDynamicRecommendations(
-  provider: 'gemini' | 'openrouter' | 'ollama',
+  provider: AIProvider,
   currentModels: string[]
 ): ModelRecommendation[] {
   if (provider === 'openrouter') {
@@ -189,6 +229,66 @@ export function getDynamicRecommendations(
     });
   }
 
+  if (provider === 'custom') {
+    const baseRecs: ModelRecommendation[] = [
+      {
+        id: 'Creator-Combo',
+        name: 'Creator-Combo',
+        badge: '⚡ 3-Tier Auto-Fallback',
+        isFree: true,
+        desc: 'Model combo rekomendasi utama: failover multi-tier tanpa downtime',
+      },
+      {
+        id: 'Jarvis_Creator',
+        name: 'Jarvis Creator',
+        badge: '⚡ Jarvis Creative',
+        isFree: true,
+        desc: 'Diformulasikan khusus untuk pembuatan naskah dan alur cerita',
+      },
+      {
+        id: 'Jarvis_Standard',
+        name: 'Jarvis Standard',
+        badge: '⚡ Jarvis General',
+        isFree: true,
+        desc: 'Penalaran seimbang untuk riset dan ringkasan',
+      },
+      {
+        id: 'Jarvis_Analyst',
+        name: 'Jarvis Analyst',
+        badge: '⚡ Analisis Kritis',
+        isFree: true,
+        desc: 'Analisis data mendalam dan penalaran logis',
+      },
+      {
+        id: 'Jarvis_Fast',
+        name: 'Jarvis Fast',
+        badge: '⚡ Kilat & Ringkas',
+        isFree: true,
+        desc: 'Ekstraksi cepat dan respon dengan latensi terendah',
+      },
+    ];
+
+    const seen = new Set(baseRecs.map((r) => r.id));
+    const dynamicExtras: ModelRecommendation[] = [];
+
+    for (const modelId of currentModels) {
+      if (!seen.has(modelId)) {
+        seen.add(modelId);
+        const parts = modelId.split('/');
+        const cleanName = (parts[1] || parts[0]).toUpperCase();
+        dynamicExtras.push({
+          id: modelId,
+          name: cleanName,
+          badge: '⚡ 9Router Model',
+          isFree: modelId.includes(':free') || modelId.includes('free'),
+          desc: 'Terdeteksi dari endpoint 9Router /v1/models',
+        });
+      }
+    }
+
+    return [...baseRecs, ...dynamicExtras].slice(0, 6);
+  }
+
   return [];
 }
 
@@ -314,26 +414,149 @@ export async function fetchAvailableOllamaModels(endpoint = 'http://localhost:11
   return DEFAULT_OLLAMA_MODELS;
 }
 
+export function normalizeGatewayEndpoint(endpoint?: string): string {
+  if (!endpoint || !endpoint.trim()) return 'http://localhost:20128/v1';
+  const clean = endpoint.trim().replace(/\/+$/, '');
+  if (!clean.endsWith('/v1') && !clean.includes('/v1/')) {
+    return `${clean}/v1`;
+  }
+  return clean;
+}
+
+// ─── 9Router / Custom Gateway Discovery & Provider Helpers ────────────────────
+
+export function parseNineRouterModels(
+  data?: Array<NineRouterModelItem | { id?: string; owned_by?: string } | string> | null
+): NineRouterCatalog {
+  if (!data || !Array.isArray(data)) {
+    return {
+      combos: [],
+      directModels: {},
+      allModels: [],
+    };
+  }
+
+  const combos: string[] = [];
+  const directModels: Record<string, string[]> = {};
+  const allModels: string[] = [];
+
+  for (const item of data) {
+    if (!item) continue;
+    const id = typeof item === 'string' ? item.trim() : (item.id || '').trim();
+    if (!id) continue;
+    allModels.push(id);
+
+    const ownedBy = typeof item === 'object' && item.owned_by ? item.owned_by.trim() : '';
+    if (ownedBy.toLowerCase() === 'combo') {
+      combos.push(id);
+    } else {
+      let vendor = ownedBy;
+      if (!vendor) {
+        const lowerId = id.toLowerCase();
+        if (lowerId.startsWith('groq/')) vendor = 'Groq';
+        else if (lowerId.startsWith('google/') || lowerId.includes('gemini')) vendor = 'Google Gemini';
+        else if (lowerId.startsWith('openrouter/') || lowerId.includes('anthropic') || lowerId.includes('openai')) vendor = 'OpenRouter';
+        else if (lowerId.includes('llama') || lowerId.includes('mistral') || lowerId.includes('qwen')) vendor = 'Ollama Local';
+        else vendor = 'Direct Models';
+      }
+      if (!directModels[vendor]) {
+        directModels[vendor] = [];
+      }
+      directModels[vendor].push(id);
+    }
+  }
+
+  return {
+    combos,
+    directModels,
+    allModels,
+  };
+}
+
+export async function fetchNineRouterCatalog(
+  endpoint = 'http://localhost:20128/v1',
+  apiKey?: string
+): Promise<NineRouterCatalog> {
+  const cleanEndpoint = normalizeGatewayEndpoint(endpoint);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const headers: Record<string, string> = {};
+    if (apiKey?.trim()) {
+      headers.Authorization = `Bearer ${apiKey.trim()}`;
+    }
+    const res = await fetch(`${cleanEndpoint}/models`, {
+      headers,
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    if (Array.isArray(data?.data)) {
+      return parseNineRouterModels(data.data);
+    } else if (Array.isArray(data)) {
+      return parseNineRouterModels(data);
+    }
+    return { combos: [], directModels: {}, allModels: [] };
+  } catch {
+    throw new Error(
+      `Gagal terhubung ke 9Router di ${endpoint}. Pastikan 9Router sudah dijalankan di terminal Anda (perintah: 9router start).`
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function fetchAvailableCustomGatewayModels(
+  endpoint = 'http://localhost:20128/v1',
+  apiKey?: string
+): Promise<string[]> {
+  const catalog = await fetchNineRouterCatalog(endpoint, apiKey);
+  return catalog.allModels;
+}
+
+export function getProviderLabel(provider: AIProvider): string {
+  switch (provider) {
+    case 'gemini':
+      return 'Google Gemini';
+    case 'openrouter':
+      return 'OpenRouter';
+    case 'custom':
+      return '9Router Gateway';
+    case 'ollama':
+      return 'Ollama Local';
+    default:
+      return provider;
+  }
+}
+
 // ─── Universal AI Router ─────────────────────────────────────────────────────
 
 export interface ProviderConfig {
-  provider: 'gemini' | 'openrouter' | 'ollama';
+  provider: AIProvider;
   apiKey?: string;
   modelVersion?: string;
+  modelMode?: 'combo' | 'direct';
+  endpoint?: string;
   ollamaEndpoint?: string;
+  customEndpoint?: string;
+  timeoutSeconds?: number;
+  autoSwitchEnabled?: boolean;
+  fallbackChain?: AIProvider[];
+  allSettings?: Record<string, string>;
+  onLog?: (message: string, severity?: 'info' | 'warn' | 'error' | 'success') => void;
 }
 
 /**
- * Memanggil model AI sesuai provider yang dipilih user.
- * Mendukung: Google Gemini, OpenRouter (OpenAI-compat), dan Ollama (lokal).
- * Dilengkapi AbortController & batas waktu timeout (default 60 detik) untuk mencegah UI hang.
+ * Mengeksekusi permintaan ke satu provider spesifik tanpa fallback chaining.
  */
-export async function callAI(
+export async function callSingleProvider(
   prompt: string,
   config: ProviderConfig,
-  timeoutMs: number = 60000
+  timeoutMs: number = 45000
 ): Promise<string> {
-  const { provider, apiKey, modelVersion, ollamaEndpoint } = config;
+  const { provider, apiKey, modelVersion, ollamaEndpoint, customEndpoint } = config;
   const timeoutSeconds = Math.round(timeoutMs / 1000);
 
   if (provider === 'gemini') {
@@ -429,6 +652,53 @@ export async function callAI(
     }
   }
 
+  if (provider === 'custom') {
+    const endpoint = (customEndpoint?.trim() || 'http://localhost:20128/v1').replace(/\/+$/, '');
+    const model = modelVersion?.trim() || 'openrouter/auto';
+    const controller = new AbortController();
+    let didTimeout = false;
+    const timer = setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, timeoutMs);
+
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (apiKey?.trim()) {
+        headers['Authorization'] = `Bearer ${apiKey.trim()}`;
+      }
+
+      const res = await fetch(`${endpoint}/chat/completions`, {
+        method: 'POST',
+        signal: controller.signal,
+        headers,
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.7,
+        }),
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`9Router/Gateway error (${res.status}): ${errText.slice(0, 120)}`);
+      }
+      const data = await res.json();
+      return (data.choices?.[0]?.message?.content ?? '').trim();
+    } catch (err: unknown) {
+      const isAbort = err instanceof Error && err.name === 'AbortError';
+      if (didTimeout || controller.signal.aborted || isAbort) {
+        throw new Error(
+          `Batas waktu habis (${timeoutSeconds} detik): Server 9Router/Gateway di "${endpoint}" tidak merespons. Pastikan gateway aktif di port tersebut.`
+        );
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   if (provider === 'ollama') {
     const endpoint = (ollamaEndpoint?.trim() || 'http://localhost:11434').replace(/\/+$/, '');
     const model = modelVersion?.trim() || 'llama3';
@@ -472,6 +742,139 @@ export async function callAI(
   }
 
   throw new Error(`Provider tidak dikenal: ${provider}`);
+}
+
+export async function callAIWithFallback(
+  prompt: string,
+  config: ProviderConfig
+): Promise<CallAIResult> {
+  const isDirect = config.modelMode === 'direct' || config.allSettings?.custom_gateway_model_mode === 'direct';
+  const model =
+    config.modelVersion?.trim() ||
+    (isDirect
+      ? config.allSettings?.custom_gateway_direct_model?.trim()
+      : config.allSettings?.custom_gateway_model_version?.trim()) ||
+    'Creator-Combo';
+
+  const text = await callAI(prompt, config);
+  return {
+    text,
+    usedProvider: 'custom',
+    usedModel: model,
+    originalProvider: 'custom',
+    wasSwitched: false,
+  };
+}
+
+/**
+ * Universal 9Router AI Client:
+ * Mengalirkan pemrosesan prompt ke endpoint OpenAI-compatible /chat/completions di 9Router.
+ */
+export async function callAI(
+  prompt: string,
+  config: ProviderConfig,
+  timeoutMs: number = 60000
+): Promise<string> {
+  const effectiveTimeoutMs =
+    config.timeoutSeconds !== undefined
+      ? config.timeoutSeconds * 1000
+      : timeoutMs;
+
+  if (config.provider && config.provider !== 'custom') {
+    return callSingleProvider(prompt, config, effectiveTimeoutMs);
+  }
+
+  const endpoint = normalizeGatewayEndpoint(
+    config.endpoint ||
+    config.customEndpoint ||
+    config.allSettings?.custom_gateway_endpoint ||
+    'http://localhost:20128/v1'
+  );
+
+  const isDirect = config.modelMode === 'direct' || config.allSettings?.custom_gateway_model_mode === 'direct';
+  const model =
+    config.modelVersion?.trim() ||
+    (isDirect
+      ? config.allSettings?.custom_gateway_direct_model?.trim()
+      : config.allSettings?.custom_gateway_model_version?.trim()) ||
+    'Creator-Combo';
+
+  const apiKey = (
+    config.apiKey ||
+    config.allSettings?.custom_gateway_api_key ||
+    ''
+  ).trim();
+
+  const effectiveTimeoutSeconds = Math.max(1, Math.round(effectiveTimeoutMs / 1000));
+
+  const controller = new AbortController();
+  let didTimeout = false;
+  const timer = setTimeout(() => {
+    didTimeout = true;
+    controller.abort();
+  }, effectiveTimeoutMs);
+
+  config.onLog?.(`🚀 Mengirim permintaan ke 9Router Gateway (${model}) di ${endpoint}...`, 'info');
+
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    const res = await fetch(`${endpoint}/chat/completions`, {
+      method: 'POST',
+      signal: controller.signal,
+      headers,
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`9Router Gateway error (${res.status}): ${errText.slice(0, 160)}`);
+    }
+
+    const rawText = await res.text();
+    let data: { choices?: Array<{ message?: { content?: string } }>; error?: { message?: string } | string };
+    try {
+      data = JSON.parse(rawText.trim());
+    } catch {
+      const match = rawText.match(/\{[\s\S]*\}/);
+      if (match) {
+        data = JSON.parse(match[0]);
+      } else {
+        throw new Error(`Format respons tidak valid dari 9Router: ${rawText.slice(0, 120)}`);
+      }
+    }
+
+    if (data?.error) {
+      const errorMsg = typeof data.error === 'object' ? (data.error.message || JSON.stringify(data.error)) : String(data.error);
+      throw new Error(`9Router error: ${errorMsg}`);
+    }
+
+    const msgObj = data.choices?.[0]?.message;
+    const content = (msgObj?.content && msgObj.content.trim()) ? msgObj.content : (msgObj?.reasoning ?? '');
+    config.onLog?.(`✓ Berhasil menerima respon dari 9Router (${model})!`, 'success');
+    return content.trim();
+  } catch (err: unknown) {
+    const isAbort = err instanceof Error && err.name === 'AbortError';
+    if (didTimeout || controller.signal.aborted || isAbort) {
+      const msg = `Batas waktu habis (${effectiveTimeoutSeconds} detik): Server 9Router di "${endpoint}" tidak merespons. Pastikan gateway aktif dan responsif.`;
+      config.onLog?.(`⏱️ ${msg}`, 'error');
+      throw new Error(msg);
+    }
+    const errMsg = err instanceof Error ? err.message : String(err);
+    config.onLog?.(`❌ Error 9Router: ${errMsg}`, 'error');
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**
