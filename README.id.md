@@ -7,7 +7,7 @@
 **Studio Produksi Konten & Naskah Spoken-First Berbasis AI untuk Kreator YouTube**
 
 [![Status: Dalam Pengembangan Aktif](https://img.shields.io/badge/Status-Dalam%20Pengembangan%20Aktif-amber?style=for-the-badge&logo=git)](https://github.com/zenqyverse/zeinity-creator-assistants)
-[![Uji Otomatis Lulus](https://img.shields.io/badge/Pengujian-214%20Lulus%20%7C%2033%20Suites-brightgreen?style=for-the-badge&logo=node.js)](test/)
+[![Uji Otomatis Lulus](https://img.shields.io/badge/Pengujian-215%20Lulus%20%7C%2033%20Suites-brightgreen?style=for-the-badge&logo=node.js)](test/)
 [![React](https://img.shields.io/badge/React-18.3.1-61dafb?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-3178c6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.4.8-646cff?style=for-the-badge&logo=vite)](https://vitejs.dev/)

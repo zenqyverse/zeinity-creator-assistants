@@ -7,7 +7,7 @@
 **AI-Powered Spoken-First Narrative & Video Production Studio for YouTube Creators**
 
 [![Status: In Active Development](https://img.shields.io/badge/Status-In%20Active%20Development-amber?style=for-the-badge&logo=git)](https://github.com/zenqyverse/zeinity-creator-assistants)
-[![Tests Passing](https://img.shields.io/badge/Tests-214%20Passing%20%7C%2033%20Suites-brightgreen?style=for-the-badge&logo=node.js)](test/)
+[![Tests Passing](https://img.shields.io/badge/Tests-215%20Passing%20%7C%2033%20Suites-brightgreen?style=for-the-badge&logo=node.js)](test/)
 [![React](https://img.shields.io/badge/React-18.3.1-61dafb?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-3178c6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.4.8-646cff?style=for-the-badge&logo=vite)](https://vitejs.dev/)

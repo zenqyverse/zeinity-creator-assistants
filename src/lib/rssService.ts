@@ -85,6 +85,7 @@ export const PRESET_RSS_SOURCES: RSSSource[] = [
 ];
 
 const STORAGE_KEY_SOURCES = 'zeinity_rss_sources';
+const STORAGE_KEY_INITIALIZED = 'zeinity_rss_sources_initialized';
 const STORAGE_KEY_READ_IDS = 'zeinity_rss_read_ids';
 const STORAGE_KEY_BOOKMARKS = 'zeinity_rss_bookmarks';
 
@@ -679,45 +680,28 @@ export async function loadMultipleSourceItems(
 
 // ==================== RSS SOURCE PERSISTENCE ====================
 
-/**
- * Retrieves list of RSS sources from Supabase or localStorage fallback.
- */
-export async function getRssSources(): Promise<RSSSource[]> {
-  // 1. Try Supabase if configured
-  if (isSupabaseConfigured) {
-    try {
-      const { data, error } = await supabase
-        .from('rss_sources')
-        .select('*')
-        .order('created_at', { ascending: true });
-
-      if (!error && Array.isArray(data) && data.length > 0) {
-        const sources = data as RSSSource[];
-        saveLocalSources(sources);
-        return sources;
-      }
-    } catch {
-      // Fallback to localStorage
-    }
+export function isSourcesInitialized(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEY_INITIALIZED) === 'true';
+  } catch {
+    return false;
   }
+}
 
-  // 2. Try localStorage
-  const local = getLocalSources();
-  if (local.length > 0) {
-    return local;
+export function markSourcesInitialized(): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_INITIALIZED, 'true');
+  } catch {
+    // Ignore storage quota errors
   }
-
-  // 3. Fallback to default presets
-  saveLocalSources(PRESET_RSS_SOURCES);
-  return PRESET_RSS_SOURCES;
 }
 
 export function getLocalSources(): RSSSource[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_SOURCES);
-    if (raw) {
+    if (raw !== null) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed;
       }
     }
@@ -736,6 +720,63 @@ export function saveLocalSources(sources: RSSSource[]): void {
 }
 
 /**
+ * Retrieves list of RSS sources from Supabase or localStorage fallback.
+ * Guarantees that user deletions are respected and never re-seeded.
+ */
+export async function getRssSources(): Promise<RSSSource[]> {
+  // 1. Try Supabase if configured
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('rss_sources')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (!error && Array.isArray(data)) {
+        // If records exist in Supabase, sync locally and mark initialized
+        if (data.length > 0) {
+          const sources = data as RSSSource[];
+          saveLocalSources(sources);
+          markSourcesInitialized();
+          return sources;
+        }
+
+        // If table exists but is empty (0 rows):
+        // If already initialized before, respect the empty state (user deleted all feeds)
+        if (isSourcesInitialized()) {
+          saveLocalSources([]);
+          return [];
+        }
+
+        // First-time initialization on empty Supabase table: seed presets once
+        try {
+          await supabase.from('rss_sources').upsert(PRESET_RSS_SOURCES, { onConflict: 'id' });
+        } catch (upsertErr) {
+          console.warn('⚠️ Gagal seeding awal preset ke Supabase:', upsertErr);
+        }
+        saveLocalSources(PRESET_RSS_SOURCES);
+        markSourcesInitialized();
+        return PRESET_RSS_SOURCES;
+      } else if (error) {
+        console.warn('⚠️ Supabase error membaca rss_sources:', error.message);
+      }
+    } catch (err) {
+      console.warn('⚠️ Gagal terhubung ke Supabase rss_sources:', err);
+    }
+  }
+
+  // 2. LocalStorage: check if already initialized
+  if (isSourcesInitialized()) {
+    return getLocalSources();
+  }
+
+  // 3. First-time initialization fallback
+  saveLocalSources(PRESET_RSS_SOURCES);
+  markSourcesInitialized();
+  return PRESET_RSS_SOURCES;
+}
+
+/**
  * Adds a new custom RSS source.
  */
 export async function addRssSource(
@@ -746,15 +787,19 @@ export async function addRssSource(
     id: `src-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
   };
 
-  const current = getLocalSources().length > 0 ? getLocalSources() : [...PRESET_RSS_SOURCES];
+  const current = getLocalSources();
   const updated = [newSource, ...current];
   saveLocalSources(updated);
+  markSourcesInitialized();
 
   if (isSupabaseConfigured) {
     try {
-      await supabase.from('rss_sources').insert([newSource]);
-    } catch {
-      // Ignore Supabase write errors in offline mode
+      const { error } = await supabase.from('rss_sources').insert([newSource]);
+      if (error) {
+        console.warn('⚠️ Supabase gagal menambahkan rss_source:', error.message);
+      }
+    } catch (err) {
+      console.warn('⚠️ Supabase offline saat insert:', err);
     }
   }
 
@@ -762,18 +807,22 @@ export async function addRssSource(
 }
 
 /**
- * Deletes an RSS source by ID.
+ * Deletes an RSS source by ID permanently from both local storage and Supabase database.
  */
 export async function deleteRssSource(id: string): Promise<void> {
-  const current = getLocalSources().length > 0 ? getLocalSources() : [...PRESET_RSS_SOURCES];
+  const current = getLocalSources();
   const updated = current.filter((s) => s.id !== id);
   saveLocalSources(updated);
+  markSourcesInitialized();
 
   if (isSupabaseConfigured) {
     try {
-      await supabase.from('rss_sources').delete().eq('id', id);
-    } catch {
-      // Ignore offline mode
+      const { error } = await supabase.from('rss_sources').delete().eq('id', id);
+      if (error) {
+        console.warn('⚠️ Supabase gagal menghapus rss_source:', error.message);
+      }
+    } catch (err) {
+      console.warn('⚠️ Supabase offline saat delete:', err);
     }
   }
 }
@@ -782,15 +831,19 @@ export async function deleteRssSource(id: string): Promise<void> {
  * Toggles the is_active status of an RSS source.
  */
 export async function toggleRssSourceActive(id: string, is_active: boolean): Promise<void> {
-  const current = getLocalSources().length > 0 ? getLocalSources() : [...PRESET_RSS_SOURCES];
+  const current = getLocalSources();
   const updated = current.map((s) => (s.id === id ? { ...s, is_active } : s));
   saveLocalSources(updated);
+  markSourcesInitialized();
 
   if (isSupabaseConfigured) {
     try {
-      await supabase.from('rss_sources').update({ is_active }).eq('id', id);
-    } catch {
-      // Ignore offline mode
+      const { error } = await supabase.from('rss_sources').update({ is_active }).eq('id', id);
+      if (error) {
+        console.warn('⚠️ Supabase gagal update status aktif rss_source:', error.message);
+      }
+    } catch (err) {
+      console.warn('⚠️ Supabase offline saat update:', err);
     }
   }
 }
@@ -802,18 +855,23 @@ export async function updateRssSource(
   id: string,
   patch: Pick<RSSSource, 'title' | 'url' | 'category' | 'pillar'>
 ): Promise<void> {
-  const current = getLocalSources().length > 0 ? getLocalSources() : [...PRESET_RSS_SOURCES];
+  const current = getLocalSources();
   const updated = current.map((s) => (s.id === id ? { ...s, ...patch } : s));
   saveLocalSources(updated);
+  markSourcesInitialized();
 
   if (isSupabaseConfigured) {
     try {
-      await supabase.from('rss_sources').update(patch).eq('id', id);
-    } catch {
-      // Ignore offline mode
+      const { error } = await supabase.from('rss_sources').update(patch).eq('id', id);
+      if (error) {
+        console.warn('⚠️ Supabase gagal update data rss_source:', error.message);
+      }
+    } catch (err) {
+      console.warn('⚠️ Supabase offline saat update:', err);
     }
   }
 }
+
 
 // ==================== READ STATUS & BOOKMARKS ====================
 

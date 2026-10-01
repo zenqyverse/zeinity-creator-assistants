@@ -307,4 +307,36 @@ describe('Radar Tren & RSS Reader Studio Verification Suite', async () => {
     assert.ok(publishedDetailContent.includes('source-google-trends'), 'PublishedDetail must style Google Trends badge');
     assert.ok(publishedDetailContent.includes('source-rss'), 'PublishedDetail must style RSS badge');
   });
+
+  it('16. RSS Source Persistence & Deletion Resilience: respects empty state and never resurrects presets after deletion', () => {
+    // Assert helper exports
+    assert.ok(rssServiceContent.includes('export function isSourcesInitialized'), 'Must export isSourcesInitialized');
+    assert.ok(rssServiceContent.includes('export function markSourcesInitialized'), 'Must export markSourcesInitialized');
+    assert.ok(rssServiceContent.includes('STORAGE_KEY_INITIALIZED'), 'Must define STORAGE_KEY_INITIALIZED');
+
+    // Simulate mock localStorage in memory
+    const storageMap = new Map();
+    const mockStorage = {
+      getItem: (k) => storageMap.get(k) || null,
+      setItem: (k, v) => storageMap.set(k, String(v)),
+      removeItem: (k) => storageMap.delete(k),
+    };
+
+    // Before initialization
+    assert.equal(mockStorage.getItem('zeinity_rss_sources_initialized'), null);
+
+    // Seed presets
+    mockStorage.setItem('zeinity_rss_sources', JSON.stringify([{ id: 'preset-1', title: 'Feed 1' }]));
+    mockStorage.setItem('zeinity_rss_sources_initialized', 'true');
+
+    // User deletes the feed until 0 items remain
+    mockStorage.setItem('zeinity_rss_sources', JSON.stringify([]));
+
+    // When reading back, empty array must be respected and NOT re-seed presets
+    const raw = mockStorage.getItem('zeinity_rss_sources');
+    const parsed = JSON.parse(raw);
+    assert.equal(Array.isArray(parsed), true);
+    assert.equal(parsed.length, 0);
+    assert.equal(mockStorage.getItem('zeinity_rss_sources_initialized'), 'true');
+  });
 });

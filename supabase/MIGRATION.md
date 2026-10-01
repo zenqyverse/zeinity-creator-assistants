@@ -14,7 +14,8 @@ Dokumen ini menjelaskan cara menerapkan file migrasi SQL ke database remote Supa
 | `20260928120000_secure_rls_policies.sql` | 2026-09-28 | Kebijakan RLS yang diperketat |
 | `20260928130000_add_telegram_metadata_to_content.sql` | 2026-09-28 | Kolom metadata Telegram (`telegram_message_id`, `telegram_chat_id`, `telegram_sender_username`) |
 | `20260929200000_restore_anon_delete_policies.sql` | 2026-09-29 | Pemulihan hak DELETE untuk role `anon` |
-| **`20261001120000_add_scripting_and_thumbnail_columns.sql`** | **2026-10-01** | **8 kolom Scripting & Thumbnail yang sebelumnya hanya ada di localStorage** |
+| `20261001120000_add_scripting_and_thumbnail_columns.sql` | 2026-10-01 | 8 kolom Scripting & Thumbnail yang sebelumnya hanya ada di localStorage |
+| **`20261001223000_create_rss_sources_table.sql`** | **2026-10-01** | **Tabel `rss_sources` + RLS anon CRUD + 10 seed presets non-destructive** |
 
 ---
 
