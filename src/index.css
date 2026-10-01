@@ -591,6 +591,29 @@ tbody tr:hover {
   border: 1px solid rgba(142, 114, 255, .2);
 }
 
+.source.youtube-trends,
+.source-youtube-trends,
+.source.youtube {
+  color: #ff6b6b;
+  background: rgba(239, 68, 68, .12);
+  border: 1px solid rgba(239, 68, 68, .25);
+}
+
+.source.google-trends,
+.source-google-trends,
+.source.google {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, .12);
+  border: 1px solid rgba(56, 189, 248, .25);
+}
+
+.source.rss,
+.source-rss {
+  color: #fb923c;
+  background: rgba(249, 115, 22, .12);
+  border: 1px solid rgba(249, 115, 22, .25);
+}
+
 .source-verified-bot {
   display: inline-flex;
   align-items: center;

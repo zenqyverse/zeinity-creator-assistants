@@ -1,4 +1,4 @@
-import { LayoutDashboard, Lightbulb, Sparkles, FileText, CheckCircle, FolderOpen, BarChart3, Settings, X } from 'lucide-react';
+import { LayoutDashboard, Lightbulb, Sparkles, FileText, CheckCircle, FolderOpen, BarChart3, Settings, X, Flame, Rss } from 'lucide-react';
 import type { ViewKey } from '@/types';
 import zeinityLogo from '@/assets/zeinity-logo.png';
 
@@ -13,6 +13,8 @@ interface SidebarProps {
 
 const navItems: { key: ViewKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { key: 'trends', label: 'Radar Tren', icon: Flame },
+  { key: 'rss', label: 'RSS Reader', icon: Rss },
   { key: 'ideas', label: 'Content Ideas', icon: Lightbulb },
   { key: 'research', label: 'AI Research', icon: Sparkles },
   { key: 'scripts', label: 'Scripts', icon: FileText },

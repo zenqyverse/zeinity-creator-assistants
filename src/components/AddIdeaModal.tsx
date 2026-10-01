@@ -154,6 +154,9 @@ export default function AddIdeaModal({ open, onClose, onAdd, initialData }: AddI
           >
             <option value="Web">Web</option>
             <option value="Telegram">Telegram</option>
+            <option value="YouTube Trends">YouTube Trends</option>
+            <option value="Google Trends">Google Trends</option>
+            <option value="RSS">RSS</option>
           </select>
         </div>
         <div className="field">

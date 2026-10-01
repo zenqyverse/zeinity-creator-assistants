@@ -42,3 +42,5 @@ scratch/
 
 # Legacy directory placeholder
 project/
+
+.vercel

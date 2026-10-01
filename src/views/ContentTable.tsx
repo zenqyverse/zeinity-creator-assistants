@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Upload, Filter, Pencil, Trash2, Zap, FileText, Image, ExternalLink, Loader2, Bot } from 'lucide-react';
+import { Plus, Upload, Filter, Pencil, Trash2, Zap, FileText, Image, ExternalLink, Loader2, Bot, Flame, TrendingUp, Rss } from 'lucide-react';
 import {
   CONTENT_PILLARS,
   CONTENT_STATUSES,
@@ -75,6 +75,9 @@ export default function ContentTable({
         { key: 'all', label: 'All Published' },
         { key: 'Telegram', label: 'Telegram' },
         { key: 'Web', label: 'Web' },
+        { key: 'YouTube Trends', label: 'YouTube' },
+        { key: 'Google Trends', label: 'Google' },
+        { key: 'RSS', label: 'RSS' },
       ];
     }
     if (isScriptsView) {
@@ -84,6 +87,9 @@ export default function ContentTable({
         { key: 'Thumbnailing', label: 'Thumbnailing' },
         { key: 'Telegram', label: 'Telegram' },
         { key: 'Web', label: 'Web' },
+        { key: 'YouTube Trends', label: 'YouTube' },
+        { key: 'Google Trends', label: 'Google' },
+        { key: 'RSS', label: 'RSS' },
       ];
     }
     if (isResearchView) {
@@ -93,12 +99,18 @@ export default function ContentTable({
         { key: 'all', label: 'All Items' },
         { key: 'Telegram', label: 'Telegram' },
         { key: 'Web', label: 'Web' },
+        { key: 'YouTube Trends', label: 'YouTube' },
+        { key: 'Google Trends', label: 'Google' },
+        { key: 'RSS', label: 'RSS' },
       ];
     }
     return [
       { key: 'all', label: 'All Ideas' },
       { key: 'Telegram', label: 'Telegram' },
       { key: 'Web', label: 'Web' },
+      { key: 'YouTube Trends', label: 'YouTube' },
+      { key: 'Google Trends', label: 'Google' },
+      { key: 'RSS', label: 'RSS' },
       { key: 'validation', label: 'Needs Validation' },
       { key: 'production', label: 'In Production' },
     ];
@@ -442,6 +454,51 @@ export default function ContentTable({
                                 Telegram (Manual)
                               </span>
                             )
+                          ) : item.source === 'YouTube Trends' ? (
+                            <span
+                              className="source source-youtube-trends"
+                              title="YouTube Trends"
+                              style={{
+                                color: '#ff6b6b',
+                                background: 'rgba(239, 68, 68, 0.12)',
+                                border: '1px solid rgba(239, 68, 68, 0.25)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                              }}
+                            >
+                              <Flame size={11} /> YouTube Trends
+                            </span>
+                          ) : item.source === 'Google Trends' ? (
+                            <span
+                              className="source source-google-trends"
+                              title="Google Trends"
+                              style={{
+                                color: '#38bdf8',
+                                background: 'rgba(56, 189, 248, 0.12)',
+                                border: '1px solid rgba(56, 189, 248, 0.25)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                              }}
+                            >
+                              <TrendingUp size={11} /> Google Trends
+                            </span>
+                          ) : item.source === 'RSS' ? (
+                            <span
+                              className="source source-rss"
+                              title="RSS Reader"
+                              style={{
+                                color: '#fb923c',
+                                background: 'rgba(249, 115, 22, 0.12)',
+                                border: '1px solid rgba(249, 115, 22, 0.25)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                              }}
+                            >
+                              <Rss size={11} /> RSS
+                            </span>
                           ) : (
                             <span className={`source ${item.source.toLowerCase()}`}>{item.source}</span>
                           )}

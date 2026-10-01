@@ -1,15 +1,37 @@
-import { Lightbulb, Clock, FileText, CheckCircle, Plus, Upload, Bot } from 'lucide-react';
-import type { ContentItem } from '@/types';
+import { useState, useEffect } from 'react';
+import {
+  Lightbulb,
+  Clock,
+  FileText,
+  CheckCircle,
+  Plus,
+  Upload,
+  Bot,
+  Flame,
+  ArrowRight,
+  Zap,
+  TrendingUp,
+  Rss,
+  Check,
+} from 'lucide-react';
+import type { ContentItem, ContentSource, GoogleTrendItem, ViewKey } from '@/types';
 import { formatDate } from '@/lib/date';
+import { fetchGoogleTrends } from '@/lib/trendsService';
 
 interface OverviewProps {
   items: ContentItem[];
   onAddIdea: () => void;
   onImportFile: () => void;
-  onNavigate: (view: 'ideas' | 'research' | 'scripts' | 'published' | 'analytics') => void;
+  onNavigate: (view: ViewKey) => void;
   onViewScript?: (item: ContentItem) => void;
   onViewPublished?: (item: ContentItem) => void;
   onEditIdea?: (item: ContentItem) => void;
+  onAddIdeaFromTrend?: (data: {
+    title: string;
+    source: ContentSource;
+    category: string;
+    research_text: string | null;
+  }) => void;
 }
 
 export default function Overview({
@@ -20,7 +42,31 @@ export default function Overview({
   onViewScript,
   onViewPublished,
   onEditIdea,
+  onAddIdeaFromTrend,
 }: OverviewProps) {
+  const [topTrends, setTopTrends] = useState<GoogleTrendItem[]>([]);
+  const [trendsLoading, setTrendsLoading] = useState(false);
+  const [addedTrendIds, setAddedTrendIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    let isMounted = true;
+    setTrendsLoading(true);
+    fetchGoogleTrends({ regionCode: 'ID' })
+      .then((res) => {
+        if (isMounted && res.items.length > 0) {
+          setTopTrends(res.items.slice(0, 3));
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setTrendsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handleTitleClick = (item: ContentItem) => {
     if (item.status === 'Published') {
       if (onViewPublished) {
@@ -42,6 +88,88 @@ export default function Overview({
       }
     }
   };
+
+function detectPillarFromKeywords(text: string, fallbackPillar = 'Internet & Social Media Culture'): string {
+  const lower = text.toLowerCase();
+  if (
+    lower.includes('ai') ||
+    lower.includes('chatgpt') ||
+    lower.includes('robot') ||
+    lower.includes('teknologi') ||
+    lower.includes('gadget') ||
+    lower.includes('software') ||
+    lower.includes('coding') ||
+    lower.includes('chip') ||
+    lower.includes('nvidia') ||
+    lower.includes('apple') ||
+    lower.includes('google')
+  ) {
+    return 'AI & Technology Impact';
+  }
+  if (
+    lower.includes('game') ||
+    lower.includes('gaming') ||
+    lower.includes('playstation') ||
+    lower.includes('xbox') ||
+    lower.includes('nintendo') ||
+    lower.includes('esport') ||
+    lower.includes('steam') ||
+    lower.includes('anime') ||
+    lower.includes('film') ||
+    lower.includes('bioskop') ||
+    lower.includes('movie')
+  ) {
+    return 'Gaming & Digital Entertainment';
+  }
+  if (
+    lower.includes('ekonomi') ||
+    lower.includes('saham') ||
+    lower.includes('crypto') ||
+    lower.includes('bitcoin') ||
+    lower.includes('bisnis') ||
+    lower.includes('finansial') ||
+    lower.includes('uang') ||
+    lower.includes('cuan') ||
+    lower.includes('investasi') ||
+    lower.includes('creator') ||
+    lower.includes('monetisasi')
+  ) {
+    return 'Digital Economy & Creator Economy';
+  }
+  if (
+    lower.includes('mental') ||
+    lower.includes('psikologi') ||
+    lower.includes('kesehatan') ||
+    lower.includes('kebiasaan') ||
+    lower.includes('tidur') ||
+    lower.includes('stress') ||
+    lower.includes('gaya hidup') ||
+    lower.includes('relasi') ||
+    lower.includes('kerja') ||
+    lower.includes('burnout')
+  ) {
+    return 'Modern Life & Digital Psychology';
+  }
+  return fallbackPillar;
+}
+
+  const handleAddTopTrend = (trend: GoogleTrendItem) => {
+    const pillar = detectPillarFromKeywords(`${trend.title} ${trend.newsTitle || ''}`);
+    if (onAddIdeaFromTrend) {
+      onAddIdeaFromTrend({
+        title: trend.title,
+        source: 'Google Trends',
+        category: pillar,
+        research_text: `[Google Trends (ID)]\nVolume Pencarian: ${trend.approxTraffic}\nTrend URL: ${trend.trendUrl}${
+          trend.newsTitle ? `\n\nBerita Pemicu:\n"${trend.newsTitle}" (${trend.newsSource || 'Media'})` : ''
+        }`,
+      });
+    } else {
+      onAddIdea();
+    }
+    setAddedTrendIds((prev) => new Set(prev).add(trend.id));
+  };
+
   const now = new Date();
   const nowMs = now.getTime();
   const oneDayMs = 24 * 60 * 60 * 1000;
@@ -56,13 +184,13 @@ export default function Overview({
   const ideasThisWeek = items.filter((i) => {
     if (!i.created_at) return false;
     const t = new Date(i.created_at).getTime();
-    return (nowMs - t) <= sevenDaysMs && (nowMs - t) >= 0;
+    return nowMs - t <= sevenDaysMs && nowMs - t >= 0;
   }).length;
 
   const ideasToday = items.filter((i) => {
     if (!i.created_at) return false;
     const t = new Date(i.created_at).getTime();
-    return (nowMs - t) <= oneDayMs && (nowMs - t) >= 0;
+    return nowMs - t <= oneDayMs && nowMs - t >= 0;
   }).length;
 
   const scriptsInProduction = items.filter(
@@ -134,6 +262,192 @@ export default function Overview({
         </article>
       </section>
 
+      {/* Radar Sinyal Terhangat (Compact Trends Widget) */}
+      <section
+        className="pipeline-panel glass"
+        style={{
+          marginTop: 18,
+          padding: '16px 20px',
+          background: 'linear-gradient(180deg, rgba(13, 21, 38, 0.7) 0%, rgba(10, 16, 30, 0.85) 100%)',
+          border: '1px solid rgba(79, 232, 255, 0.12)',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 14,
+            flexWrap: 'wrap',
+            gap: 10,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div
+              style={{
+                background: 'rgba(239, 68, 68, 0.15)',
+                color: '#ff5c5c',
+                padding: '6px 8px',
+                borderRadius: 8,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+              }}
+            >
+              <Flame size={18} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '0.98rem', margin: 0, color: '#f1f5f9', fontWeight: 700 }}>
+                Radar Sinyal Terhangat
+              </h2>
+              <p style={{ margin: 0, fontSize: '0.74rem', color: 'var(--muted)' }}>
+                Topik pencarian teratas di Indonesia siap dijadikan ide konten seketika
+              </p>
+            </div>
+          </div>
+          <button
+            className="small-btn"
+            type="button"
+            onClick={() => onNavigate('trends')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              color: 'var(--cyan)',
+              borderColor: 'rgba(79, 232, 255, 0.3)',
+              fontSize: '0.76rem',
+              padding: '5px 12px',
+            }}
+          >
+            Buka Radar Tren <ArrowRight size={13} />
+          </button>
+        </div>
+
+        {trendsLoading && topTrends.length === 0 ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
+            {[1, 2, 3].map((n) => (
+              <div
+                key={n}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  borderRadius: 8,
+                  height: 68,
+                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                  animation: 'pulse 1.5s infinite',
+                }}
+              />
+            ))}
+          </div>
+        ) : topTrends.length > 0 ? (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: 12,
+            }}
+          >
+            {topTrends.map((t, idx) => {
+              const isAdded =
+                addedTrendIds.has(t.id) ||
+                items.some((i) => i.title.toLowerCase().trim() === t.title.toLowerCase().trim());
+              return (
+                <article
+                  key={t.id}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.025)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: 8,
+                    padding: '10px 14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                    <span
+                      style={{
+                        background: 'rgba(56, 189, 248, 0.15)',
+                        color: '#38bdf8',
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.75rem',
+                        fontWeight: 800,
+                        flexShrink: 0,
+                      }}
+                    >
+                      #{idx + 1}
+                    </span>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <h4
+                        style={{
+                          margin: 0,
+                          fontSize: '0.86rem',
+                          color: '#e2edff',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                        title={t.title}
+                      >
+                        {t.title}
+                      </h4>
+                      <span
+                        style={{
+                          fontSize: '0.7rem',
+                          color: '#fb923c',
+                          fontWeight: 600,
+                        }}
+                      >
+                        🔥 {t.approxTraffic}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={isAdded ? 'small-btn' : 'small-btn primary'}
+                    onClick={() => handleAddTopTrend(t)}
+                    disabled={isAdded}
+                    style={{
+                      fontSize: '0.72rem',
+                      padding: '4px 8px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      flexShrink: 0,
+                      background: isAdded ? 'rgba(34, 197, 94, 0.15)' : undefined,
+                      color: isAdded ? '#4ade80' : undefined,
+                      borderColor: isAdded ? 'rgba(34, 197, 94, 0.35)' : undefined,
+                    }}
+                    title="Tambah topik ke pipeline ide"
+                  >
+                    {isAdded ? <Check size={12} /> : <Zap size={12} />}
+                    {isAdded ? 'Masuk' : '+ Ide'}
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div
+            style={{
+              padding: '12px 14px',
+              fontSize: '0.82rem',
+              color: 'var(--muted)',
+              textAlign: 'center',
+            }}
+          >
+            Sinyal tren sedang diperbarui. Klik "Buka Radar Tren" untuk eksplorasi lebih lanjut.
+          </div>
+        )}
+      </section>
+
       <section className="pipeline-panel glass" style={{ marginTop: 18 }}>
         <div className="table-head">
           <h2>Aktivitas Terbaru</h2>
@@ -192,6 +506,51 @@ export default function Overview({
                               Telegram (Manual)
                             </span>
                           )
+                        ) : item.source === 'YouTube Trends' ? (
+                          <span
+                            className="source source-youtube-trends"
+                            title="YouTube Trends"
+                            style={{
+                              color: '#ff6b6b',
+                              background: 'rgba(239, 68, 68, 0.12)',
+                              border: '1px solid rgba(239, 68, 68, 0.25)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                          >
+                            <Flame size={11} /> YouTube Trends
+                          </span>
+                        ) : item.source === 'Google Trends' ? (
+                          <span
+                            className="source source-google-trends"
+                            title="Google Trends"
+                            style={{
+                              color: '#38bdf8',
+                              background: 'rgba(56, 189, 248, 0.12)',
+                              border: '1px solid rgba(56, 189, 248, 0.25)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                          >
+                            <TrendingUp size={11} /> Google Trends
+                          </span>
+                        ) : item.source === 'RSS' ? (
+                          <span
+                            className="source source-rss"
+                            title="RSS Reader"
+                            style={{
+                              color: '#fb923c',
+                              background: 'rgba(249, 115, 22, 0.12)',
+                              border: '1px solid rgba(249, 115, 22, 0.25)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                          >
+                            <Rss size={11} /> RSS
+                          </span>
                         ) : (
                           <span className={`source ${item.source.toLowerCase()}`}>{item.source}</span>
                         )}

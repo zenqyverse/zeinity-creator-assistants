@@ -25,9 +25,12 @@ export default function Analytics({ items }: AnalyticsProps) {
     byCategory[cat] = (byCategory[cat] || 0) + 1;
   });
 
-  const bySource = {
+  const bySource: Record<string, number> = {
     Web: items.filter((i) => i.source === 'Web').length,
     Telegram: items.filter((i) => i.source === 'Telegram').length,
+    'YouTube Trends': items.filter((i) => i.source === 'YouTube Trends').length,
+    'Google Trends': items.filter((i) => i.source === 'Google Trends').length,
+    RSS: items.filter((i) => i.source === 'RSS').length,
   };
 
   const maxCat = Math.max(...Object.values(byCategory), 1);
@@ -279,7 +282,14 @@ export default function Analytics({ items }: AnalyticsProps) {
           <div style={{ display: 'grid', gap: 16, marginTop: 16 }}>
             {Object.entries(bySource).map(([source, count]) => {
               const pct = total > 0 ? (count / total) * 100 : 0;
-              const color = source === 'Web' ? '#4fe8ff' : '#9985ff';
+              const sourceColors: Record<string, string> = {
+                Web: '#4fe8ff',
+                Telegram: '#baa8ff',
+                'YouTube Trends': '#ff6b6b',
+                'Google Trends': '#38bdf8',
+                RSS: '#fb923c',
+              };
+              const color = sourceColors[source] || '#4fe8ff';
               return (
                 <div key={source}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.82rem', marginBottom: 8 }}>

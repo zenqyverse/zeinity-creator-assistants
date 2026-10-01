@@ -7,7 +7,7 @@
 **Studio Produksi Konten & Naskah Spoken-First Berbasis AI untuk Kreator YouTube**
 
 [![Status: Dalam Pengembangan Aktif](https://img.shields.io/badge/Status-Dalam%20Pengembangan%20Aktif-amber?style=for-the-badge&logo=git)](https://github.com/zenqyverse/zeinity-creator-assistants)
-[![Uji Otomatis Lulus](https://img.shields.io/badge/Pengujian-199%20Lulus%20%7C%2032%20Suites-brightgreen?style=for-the-badge&logo=node.js)](test/)
+[![Uji Otomatis Lulus](https://img.shields.io/badge/Pengujian-214%20Lulus%20%7C%2033%20Suites-brightgreen?style=for-the-badge&logo=node.js)](test/)
 [![React](https://img.shields.io/badge/React-18.3.1-61dafb?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-3178c6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.4.8-646cff?style=for-the-badge&logo=vite)](https://vitejs.dev/)
@@ -123,6 +123,17 @@ Melakukan audit menyeluruh terhadap **128 tombol** di seluruh antarmuka web:
 - **📂 Dropzone Berkas & Ekstraksi Dokumen**:
   - Parsing dokumen langsung di peramban untuk berkas `.docx` (via Mammoth), `.md`, `.txt`, dan `.csv`.
   - Manajemen berkas permanen di *FileManager* untuk lampiran riset.
+- **🔥 Radar Tren & Sinyal Konten (YouTube & Google Trends)**:
+  - Pemantauan real-time tren YouTube (*Most Popular*) via YouTube Data API v3 dan Google Daily Search Trends via XML RSS.
+  - Filter regional (`ID` Indonesia & `US` Global) serta kategori YouTube.
+  - Tangkap ide instan 1-klik **⚡ Tambah ke Ide** langsung ke pipeline konten dengan deteksi duplikasi dan umpan balik toast.
+  - Widget dashboard **Radar Sinyal Terhangat** di Overview menampilkan 3 topik terhangat secara ringkas.
+- **📰 RSS Reader Studio & Agregator Kurasi**:
+  - Agregator berita multi-sumber dalam 4 kategori (*Media & Berita*, *Blog Teknologi & AI*, *Forum & Komunitas*, *Koleksi Saya*) yang terpetakan ke 5 Pilar Konten Zeinity.
+  - Pemuatan bertahap (*Muat 10 Artikel Lagi*) dan pemuatan malas (*lazy fetch per kategori*) untuk performa lancar tanpa beban lag.
+  - Manajer Sumber Feed Lengkap (CRUD): Tambah, **Edit (✏️)** langsung di baris, **Hapus Permanen (🗑️)**, dan toggle **Aktif/Nonaktif** untuk semua feed.
+  - Penanganan CORS multi-lapis: Vite dev-server proxy (`/api/feed-proxy`), Vercel serverless proxy, dan proxy publik cadangan.
+  - Panduan lengkap tersedia di [📡 Panduan Praktis: Menemukan & Menggunakan Link RSS Feed](docs/PANDUAN_MENCARI_RSS.md).
 - **🎨 Desain Glassmorphism Estetis & Branding Resmi**:
   - Gradasi biru indigo dan deep space, efek blur transparan, tabel responsif, laci terminal melayang untuk log AI *real-time*, serta aset logo dan banner resmi Zeinity.
 

@@ -9,6 +9,8 @@ export const VALID_VIEWS: ViewKey[] = [
   'files',
   'analytics',
   'settings',
+  'trends',
+  'rss',
 ];
 
 export const STORAGE_KEY_VIEW = 'zeinity_active_view';

@@ -21,6 +21,9 @@ import {
   Bot,
   FileDown,
   AlertTriangle,
+  Flame,
+  TrendingUp,
+  Rss,
 } from 'lucide-react';
 import {
   generateAlternativeTitles,
@@ -345,6 +348,51 @@ export default function PublishedDetail({
                     Telegram (Manual)
                   </span>
                 )
+              ) : item.source === 'YouTube Trends' ? (
+                <span
+                  className="source source-youtube-trends"
+                  title="YouTube Trends"
+                  style={{
+                    color: '#ff6b6b',
+                    background: 'rgba(239, 68, 68, 0.12)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  <Flame size={11} /> YouTube Trends
+                </span>
+              ) : item.source === 'Google Trends' ? (
+                <span
+                  className="source source-google-trends"
+                  title="Google Trends"
+                  style={{
+                    color: '#38bdf8',
+                    background: 'rgba(56, 189, 248, 0.12)',
+                    border: '1px solid rgba(56, 189, 248, 0.25)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  <TrendingUp size={11} /> Google Trends
+                </span>
+              ) : item.source === 'RSS' ? (
+                <span
+                  className="source source-rss"
+                  title="RSS Reader"
+                  style={{
+                    color: '#fb923c',
+                    background: 'rgba(249, 115, 22, 0.12)',
+                    border: '1px solid rgba(249, 115, 22, 0.25)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  <Rss size={11} /> RSS
+                </span>
               ) : (
                 <span className={`source ${item.source.toLowerCase()}`}>{item.source}</span>
               )}

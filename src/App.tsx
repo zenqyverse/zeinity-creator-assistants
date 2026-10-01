@@ -23,6 +23,8 @@ import ContentTable from '@/views/ContentTable';
 import Settings from '@/views/Settings';
 import FileManager from '@/views/FileManager';
 import Analytics from '@/views/Analytics';
+import TrendRadar from '@/views/TrendRadar';
+import RSSReader from '@/views/RSSReader';
 import { Loader2 } from 'lucide-react';
 import ScriptDetail from '@/views/ScriptDetail';
 import PublishedDetail from '@/views/PublishedDetail';
@@ -604,6 +606,31 @@ export default function App() {
             onViewScript={handleViewScript}
             onViewPublished={handleViewPublished}
             onEditIdea={(item) => { setEditItem(item); setAddIdeaOpen(true); }}
+            onAddIdeaFromTrend={async (data) => {
+              await handleAddIdea(data);
+              showToast(`Ide "${data.title.slice(0, 32)}..." berhasil ditambahkan dari ${data.source}!`);
+            }}
+          />
+        );
+      case 'trends':
+        return (
+          <TrendRadar
+            onAddIdeaFromTrend={async (data) => {
+              await handleAddIdea(data);
+              showToast(`Ide "${data.title.slice(0, 32)}..." berhasil ditambahkan dari ${data.source}!`);
+            }}
+            onNavigateSettings={() => handleNavigate('settings')}
+            existingTitles={new Set(items.map((i) => i.title.toLowerCase().trim()))}
+          />
+        );
+      case 'rss':
+        return (
+          <RSSReader
+            onAddIdeaFromRSS={async (data) => {
+              await handleAddIdea(data);
+              showToast(`Ide "${data.title.slice(0, 32)}..." berhasil ditambahkan dari RSS!`);
+            }}
+            existingTitles={new Set(items.map((i) => i.title.toLowerCase().trim()))}
           />
         );
       case 'ideas':

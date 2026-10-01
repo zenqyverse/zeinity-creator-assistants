@@ -7,7 +7,7 @@
 **AI-Powered Spoken-First Narrative & Video Production Studio for YouTube Creators**
 
 [![Status: In Active Development](https://img.shields.io/badge/Status-In%20Active%20Development-amber?style=for-the-badge&logo=git)](https://github.com/zenqyverse/zeinity-creator-assistants)
-[![Tests Passing](https://img.shields.io/badge/Tests-199%20Passing%20%7C%2032%20Suites-brightgreen?style=for-the-badge&logo=node.js)](test/)
+[![Tests Passing](https://img.shields.io/badge/Tests-214%20Passing%20%7C%2033%20Suites-brightgreen?style=for-the-badge&logo=node.js)](test/)
 [![React](https://img.shields.io/badge/React-18.3.1-61dafb?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-3178c6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.4.8-646cff?style=for-the-badge&logo=vite)](https://vitejs.dev/)
@@ -123,6 +123,17 @@ A complete audit of **128 button elements** across the frontend was executed:
 - **📂 Document Parsing & File Dropzone**:
   - In-browser parsing of `.docx` (via Mammoth), `.md`, `.txt`, and `.csv` files.
   - Permanent file repository and research attachment support.
+- **🔥 Radar Tren & Sinyal Konten (YouTube & Google Trends)**:
+  - Real-time monitoring of YouTube Most Popular trends via YouTube Data API v3 and Google Daily Search Trends via RSS XML.
+  - Regional filtering (`ID` Indonesia & `US` Global) and YouTube category filters.
+  - 1-click **⚡ Tambah ke Ide** instant capture directly into the content pipeline with duplicate detection and toast feedback.
+  - Overview Dashboard widget **Radar Sinyal Terhangat** showing top 3 trending topics at a glance.
+- **📰 RSS Reader Studio & Agregator Kurasi**:
+  - News aggregator across 4 category tabs (*Media & Berita*, *Blog Teknologi & AI*, *Forum & Komunitas*, *Koleksi Saya*) mapped to Zeinity's 5 Content Pillars.
+  - Progressive loading (*Muat Lebih Banyak* +10 items) and lazy category fetching for high performance.
+  - Full RSS Feed Manager (CRUD): Add, inline **Edit (✏️)**, permanent **Delete (🗑️)**, and **Aktif/Nonaktif** toggling for all feeds.
+  - Multi-tier CORS handling: Vite dev-server proxy (`/api/feed-proxy`), Vercel serverless function, and public fallback ladder.
+  - Comprehensive guide available in [📡 Panduan Mencari & Menggunakan Link RSS Feed](docs/PANDUAN_MENCARI_RSS.md).
 - **🎨 Premium Glassmorphism UI & Official Branding**:
   - Cyberpunk-inspired indigo and deep-space blue gradients, blurred glass overlays, responsive data table, collapsible floating terminal drawer for real-time AI logs, and official Zeinity branding assets.
 

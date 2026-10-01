@@ -1,5 +1,54 @@
 export type ContentStatus = 'Idea' | 'Validating' | 'Researching' | 'Scripting' | 'Thumbnailing' | 'Published';
-export type ContentSource = 'Web' | 'Telegram';
+export type ContentSource = 'Web' | 'Telegram' | 'YouTube Trends' | 'Google Trends' | 'RSS';
+
+export interface YouTubeTrendItem {
+  id: string;
+  title: string;
+  channelTitle: string;
+  channelId: string;
+  publishedAt: string;
+  description: string;
+  thumbnailUrl: string;
+  viewCount: number;
+  likeCount?: number;
+  videoUrl: string;
+}
+
+export interface GoogleTrendItem {
+  id: string;
+  title: string;
+  approxTraffic: string;
+  pubDate: string;
+  newsTitle?: string;
+  newsSource?: string;
+  newsUrl?: string;
+  imageUrl?: string;
+  trendUrl: string;
+}
+
+export interface RSSSource {
+  id: string;
+  title: string;
+  url: string;
+  category: 'media' | 'tech' | 'forum' | 'custom';
+  pillar: ContentPillar;
+  is_active: boolean;
+}
+
+export interface RSSItem {
+  id: string;
+  source_id: string;
+  source_name: string;
+  title: string;
+  link: string;
+  pubDate: string;
+  author?: string;
+  contentSnippet: string;
+  thumbnail?: string;
+  pillar?: ContentPillar;
+  isRead?: boolean;
+  isBookmarked?: boolean;
+}
 
 export const CONTENT_PILLARS = [
   'Internet & Social Media Culture',
@@ -146,7 +195,9 @@ export type ViewKey =
   | 'published'
   | 'files'
   | 'analytics'
-  | 'settings';
+  | 'settings'
+  | 'trends'
+  | 'rss';
 
 export type AIProvider = 'gemini' | 'openrouter' | 'ollama' | 'custom';
 
