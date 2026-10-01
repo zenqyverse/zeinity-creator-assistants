@@ -447,12 +447,12 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
             <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
               Target: ~{computedTargetWords.toLocaleString('id-ID')} Kata • 0 Token halusinasi • Mempertahankan fakta riset.
             </div>
-            <div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               <button
                 type="button"
                 className="btn btn-primary"
                 onClick={() => onGenerateOutline(false)}
-                disabled={generatingOutline}
+                disabled={generatingOutline || !selectedHookType}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -460,7 +460,18 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                   padding: '8px 16px',
                   fontSize: '0.84rem',
                   fontWeight: 700,
+                  opacity: !selectedHookType ? 0.6 : 1,
+                  cursor: !selectedHookType ? 'not-allowed' : 'pointer',
+                  background: !selectedHookType ? '#1a293f' : undefined,
+                  borderColor: !selectedHookType ? '#294368' : undefined,
+                  color: !selectedHookType ? '#7e93af' : undefined,
+                  transition: 'all 0.2s ease',
                 }}
+                title={
+                  !selectedHookType
+                    ? 'Pilih salah satu formula hook di Tahap 1 terlebih dahulu'
+                    : 'Susun kerangka 5 babak berpusat pada premis hook terpilih'
+                }
               >
                 {generatingOutline ? (
                   <>
@@ -472,6 +483,12 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                   </>
                 )}
               </button>
+
+              {!selectedHookType && (
+                <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontStyle: 'italic', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  * Pilih salah satu formula hook di Tahap 1 terlebih dahulu
+                </span>
+              )}
             </div>
           </div>
 

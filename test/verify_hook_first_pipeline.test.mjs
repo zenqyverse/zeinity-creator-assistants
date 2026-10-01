@@ -245,9 +245,11 @@ Dalam 30 detik ke depan, kita bongkar anomalinya.`;
     assert.ok(outlineWorkspaceContent.includes('Rekomendasikan Hook'), 'Must render AI recommendation CTA');
     assert.ok(outlineWorkspaceContent.includes('Terapkan ke Kerangka'), 'Must render apply to outline CTA');
 
-    // Gatekeeper enforcement on Setujui & Tulis Naskah button
+    // Gatekeeper enforcement on Setujui & Tulis Naskah button and Generate Outline button
     assert.ok(outlineWorkspaceContent.includes('!selectedHookType'), 'Must check selectedHookType for gatekeeper');
     assert.ok(outlineWorkspaceContent.includes('Pilih salah satu jenis Hook di Tahap 1 terlebih dahulu'), 'Must show gatekeeper tooltip');
+    assert.ok(outlineWorkspaceContent.includes('disabled={generatingOutline || !selectedHookType}'), 'Generate Outline button must be disabled when hook is not selected');
+    assert.ok(outlineWorkspaceContent.includes('* Pilih salah satu formula hook di Tahap 1 terlebih dahulu'), 'Must display helper hint next to Generate Outline button');
   });
 
   it('8. ScriptDetail.tsx: wires all hook states, handlers, and gatekeeper alerts', () => {
@@ -269,10 +271,14 @@ Dalam 30 detik ke depan, kita bongkar anomalinya.`;
     assert.ok(scriptDetailContent.includes('handleGenerateHook'), 'Must declare handleGenerateHook');
     assert.ok(scriptDetailContent.includes('handleApplyHookToOutline'), 'Must declare handleApplyHookToOutline');
 
-    // Gatekeeper validation in approve CTA
+    // Gatekeeper validation in approve CTA and outline generate CTA
     assert.ok(
       scriptDetailContent.includes("showWarning(\n        'Varian Hook Belum Dipilih'"),
       'Must warn user when approving script without selected hook'
+    );
+    assert.ok(
+      scriptDetailContent.includes("showWarning(\n        'Formula Hook Belum Dipilih'"),
+      'Must warn user when generating outline without selected hook'
     );
 
     // Props passed to OutlineWorkspace

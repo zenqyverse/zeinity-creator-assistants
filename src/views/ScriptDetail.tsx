@@ -1491,6 +1491,14 @@ export default function ScriptDetail({
       return;
     }
 
+    if (!selectedHookType) {
+      showWarning(
+        'Formula Hook Belum Dipilih',
+        'Silakan pilih salah satu formula Hook di Tahap 1 terlebih dahulu agar kerangka 5 babak tersusun berpusat pada premis Hook tersebut.'
+      );
+      return;
+    }
+
     const targetConfig = resolveTargetModelForTask('script', providerConfig);
     const modelLabel = targetConfig.modelVersion || targetConfig.provider.toUpperCase();
     setGeneratingOutline(true);
