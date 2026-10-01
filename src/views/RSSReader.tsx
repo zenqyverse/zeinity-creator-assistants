@@ -1001,42 +1001,51 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
                         paddingTop: 10,
                         borderTop: '1px solid rgba(255, 255, 255, 0.05)',
                         marginTop: 'auto',
+                        gap: 8,
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap' }}>
                           <Clock size={12} /> {estimateReadingTime(item.contentSnippet)}
                         </span>
-                        <span>{formatRelativeTime(item.pubDate)}</span>
+                        <span style={{ opacity: 0.4 }}>•</span>
+                        <span style={{ whiteSpace: 'nowrap' }}>{formatRelativeTime(item.pubDate)}</span>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                         <button
                           type="button"
                           onClick={(e) => handleToggleRead(item, e)}
-                          title={item.isRead ? 'Ubah status menjadi Belum Dibaca' : 'Tandai artikel sebagai Sudah Dibaca'}
+                          title={item.isRead ? 'Belum Dibaca (Klik untuk batalkan status baca)' : 'Tandai Dibaca (Klik untuk tandai sudah dibaca)'}
+                          aria-label={item.isRead ? 'Belum Dibaca' : 'Tandai Dibaca'}
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 4,
-                            fontSize: '0.74rem',
-                            padding: '4px 8px',
-                            borderRadius: 4,
+                            justifyContent: 'center',
+                            width: 28,
+                            height: 28,
+                            padding: 0,
+                            borderRadius: 6,
                             background: item.isRead ? 'rgba(255, 255, 255, 0.04)' : 'rgba(79, 232, 255, 0.08)',
                             border: item.isRead ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(79, 232, 255, 0.25)',
                             color: item.isRead ? 'var(--muted)' : '#94eaff',
                             cursor: 'pointer',
+                            flexShrink: 0,
                             transition: 'all 0.2s ease',
                           }}
                         >
                           {item.isRead ? (
-                            <>
-                              <RotateCcw size={11} /> Belum Dibaca
-                            </>
+                            <RotateCcw size={12} />
                           ) : (
-                            <>
-                              <Check size={11} /> Tandai Dibaca
-                            </>
+                            <Check size={13} />
                           )}
                         </button>
                         <a
@@ -1052,8 +1061,10 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
                             fontSize: '0.75rem',
                             textDecoration: 'none',
                             padding: '4px 8px',
-                            borderRadius: 4,
+                            borderRadius: 6,
                             background: 'rgba(79, 232, 255, 0.08)',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
                           }}
                         >
                           <ExternalLink size={12} /> Buka
@@ -1069,6 +1080,8 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: 4,
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
                             background: isAdded ? 'rgba(34, 197, 94, 0.15)' : undefined,
                             color: isAdded ? '#4ade80' : undefined,
                             borderColor: isAdded ? 'rgba(34, 197, 94, 0.35)' : undefined,
