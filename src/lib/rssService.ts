@@ -999,6 +999,30 @@ export function markItemAsRead(id: string): void {
   }
 }
 
+export function markItemAsUnread(id: string): void {
+  const current = getReadItemIds();
+  if (current.has(id)) {
+    current.delete(id);
+    try {
+      const arr = Array.from(current);
+      localStorage.setItem(STORAGE_KEY_READ_IDS, JSON.stringify(arr));
+    } catch {
+      // Ignore
+    }
+  }
+}
+
+export function toggleItemRead(id: string): boolean {
+  const current = getReadItemIds();
+  const willBeRead = !current.has(id);
+  if (willBeRead) {
+    markItemAsRead(id);
+  } else {
+    markItemAsUnread(id);
+  }
+  return willBeRead;
+}
+
 export function isItemRead(id: string): boolean {
   return getReadItemIds().has(id);
 }

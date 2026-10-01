@@ -339,4 +339,12 @@ describe('Radar Tren & RSS Reader Studio Verification Suite', async () => {
     assert.equal(parsed.length, 0);
     assert.equal(mockStorage.getItem('zeinity_rss_sources_initialized'), 'true');
   });
+
+  it('17. RSS Read Status Toggle: exports markItemAsUnread and toggleItemRead', () => {
+    assert.ok(rssServiceContent.includes('export function markItemAsUnread'), 'Must export markItemAsUnread');
+    assert.ok(rssServiceContent.includes('export function toggleItemRead'), 'Must export toggleItemRead');
+    assert.ok(rssReaderContent.includes('handleToggleRead'), 'RSSReader must implement handleToggleRead');
+    assert.ok(rssReaderContent.includes('Tandai Dibaca'), 'RSSReader must render Tandai Dibaca label');
+    assert.ok(rssReaderContent.includes('Belum Dibaca'), 'RSSReader must render Belum Dibaca label');
+  });
 });

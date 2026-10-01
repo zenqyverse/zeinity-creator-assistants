@@ -20,6 +20,7 @@ import {
   Pencil,
   Save,
   XCircle,
+  RotateCcw,
 } from 'lucide-react';
 import {
   CONTENT_PILLARS,
@@ -33,6 +34,7 @@ import {
   loadMultipleSourceItems,
   loadSourceItems,
   markItemAsRead,
+  markItemAsUnread,
   toggleBookmarkItem,
   getBookmarkedItems,
   addRssSource,
@@ -263,6 +265,20 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
     markItemAsRead(item.id);
     setItems((prev) =>
       prev.map((i) => (i.id === item.id ? { ...i, isRead: true } : i))
+    );
+  };
+
+  // Handle Toggle Read / Unread Status
+  const handleToggleRead = (item: RSSItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const nextReadStatus = !item.isRead;
+    if (nextReadStatus) {
+      markItemAsRead(item.id);
+    } else {
+      markItemAsUnread(item.id);
+    }
+    setItems((prev) =>
+      prev.map((i) => (i.id === item.id ? { ...i, isRead: nextReadStatus } : i))
     );
   };
 
@@ -995,6 +1011,34 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggleRead(item, e)}
+                          title={item.isRead ? 'Ubah status menjadi Belum Dibaca' : 'Tandai artikel sebagai Sudah Dibaca'}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            fontSize: '0.74rem',
+                            padding: '4px 8px',
+                            borderRadius: 4,
+                            background: item.isRead ? 'rgba(255, 255, 255, 0.04)' : 'rgba(79, 232, 255, 0.08)',
+                            border: item.isRead ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(79, 232, 255, 0.25)',
+                            color: item.isRead ? 'var(--muted)' : '#94eaff',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          {item.isRead ? (
+                            <>
+                              <RotateCcw size={11} /> Belum Dibaca
+                            </>
+                          ) : (
+                            <>
+                              <Check size={11} /> Tandai Dibaca
+                            </>
+                          )}
+                        </button>
                         <a
                           href={item.link}
                           target="_blank"
