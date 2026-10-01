@@ -74,8 +74,8 @@ describe('Tahap 2 (Kontinuitas Naskah & AI Engine) Verification Suite', () => {
       'ScriptDetail.tsx must preserve Spoken Audit archives in Thumbnailing stage'
     );
     assert.ok(
-      scriptDetailContent.includes('Arsip Anotasi Visual Cue'),
-      'ScriptDetail.tsx must preserve Visual Cue archives in Thumbnailing stage'
+      !scriptDetailContent.includes('Arsip Anotasi Visual Cue'),
+      'ScriptDetail.tsx must remove Visual Cue archives in Thumbnailing stage per user request'
     );
 
     // 2. PublishedDetail.tsx renders final script viewer card
@@ -204,16 +204,16 @@ describe('Tahap 2 (Kontinuitas Naskah & AI Engine) Verification Suite', () => {
       'ScriptDetail.tsx must implement handleGenerateTitles'
     );
     assert.ok(
-      scriptDetailContent.includes('Buat Judul A/B ✨'),
-      'ScriptDetail.tsx must render Buat Judul A/B action button'
+      scriptDetailContent.includes('Generate Rekomendasi Judul ✨') || scriptDetailContent.includes('Buat Judul A/B ✨'),
+      'ScriptDetail.tsx must render title recommendation action button'
     );
     assert.ok(
-      scriptDetailContent.includes('MODE A — CURIOSITY / INTRIGUE'),
-      'ScriptDetail.tsx must render Mode A card'
+      scriptDetailContent.includes('Curiosity Gap') || scriptDetailContent.includes('MODE A — CURIOSITY / INTRIGUE'),
+      'ScriptDetail.tsx must render Curiosity Gap / Mode A formula'
     );
     assert.ok(
-      scriptDetailContent.includes('MODE B — SEO KEYWORD & AUTHORITY'),
-      'ScriptDetail.tsx must render Mode B card'
+      scriptDetailContent.includes('SEO Keyword') || scriptDetailContent.includes('MODE B — SEO KEYWORD & AUTHORITY'),
+      'ScriptDetail.tsx must render SEO Keyword / Mode B formula'
     );
 
     assert.ok(

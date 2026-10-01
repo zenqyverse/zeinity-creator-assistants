@@ -71,8 +71,8 @@ describe('Collapsible Cards in Pipeline Naskah & Draft Studio Verification Suite
       'ScriptDetail must define isAuditResultsCollapsed state'
     );
     assert.ok(
-      scriptDetailContent.includes('const [isVisualCueResultsCollapsed, setIsVisualCueResultsCollapsed] = useState'),
-      'ScriptDetail must define isVisualCueResultsCollapsed state'
+      scriptDetailContent.includes('const [isTitlesCollapsed, setIsTitlesCollapsed] = useState'),
+      'ScriptDetail must define isTitlesCollapsed state'
     );
   });
 
@@ -91,17 +91,11 @@ describe('Collapsible Cards in Pipeline Naskah & Draft Studio Verification Suite
     );
   });
 
-  it('Draft Studio: smart priority and coordination on audit, visual cue, and apply to draft', () => {
-    // When audit completes: input collapses, audit opens, visual collapses
+  it('Draft Studio: smart priority and coordination on audit and apply to draft', () => {
+    // When audit completes: input collapses, audit opens
     assert.ok(
-      scriptDetailContent.includes('setIsScriptInputCollapsed(true);\n      setIsAuditResultsCollapsed(false);\n      setIsVisualCueResultsCollapsed(true);'),
-      'Running audit must open audit, collapse input, and collapse visual cue'
-    );
-
-    // When visual cue completes: input collapses, visual opens, audit collapses
-    assert.ok(
-      scriptDetailContent.includes('setIsScriptInputCollapsed(true);\n      setIsVisualCueResultsCollapsed(false);\n      setIsAuditResultsCollapsed(true);'),
-      'Running visual cue must open visual cue, collapse input, and collapse audit'
+      scriptDetailContent.includes('setIsScriptInputCollapsed(true);\n      setIsAuditResultsCollapsed(false);'),
+      'Running audit must open audit and collapse input'
     );
 
     // When applying to draft: input opens, source result collapses
@@ -114,8 +108,8 @@ describe('Collapsible Cards in Pipeline Naskah & Draft Studio Verification Suite
       'handleApplyToDraft must collapse audit results when applied'
     );
     assert.ok(
-      scriptDetailContent.includes("else if (key === 'visual') {\n      setIsVisualCueResultsCollapsed(true);"),
-      'handleApplyToDraft must collapse visual cue results when applied'
+      !scriptDetailContent.includes('setIsVisualCueResultsCollapsed'),
+      'Visual cue results collapsed state must be removed per user request'
     );
   });
 
@@ -129,12 +123,12 @@ describe('Collapsible Cards in Pipeline Naskah & Draft Studio Verification Suite
       'Audit results card must have Buka / Susut button'
     );
     assert.ok(
-      scriptDetailContent.includes('onDoubleClick={() => setIsVisualCueResultsCollapsed'),
-      'Visual cue results card must support double click to toggle collapse'
+      scriptDetailContent.includes('onDoubleClick={() => setIsTitlesCollapsed'),
+      'Titles recommendation card must support double click to toggle collapse'
     );
     assert.ok(
-      scriptDetailContent.includes("isVisualCueResultsCollapsed ? 'Buka' : 'Susut'"),
-      'Visual cue results card must have Buka / Susut button'
+      scriptDetailContent.includes("isTitlesCollapsed ? 'Buka' : 'Susut'"),
+      'Titles recommendation card must have Buka / Susut button'
     );
   });
 

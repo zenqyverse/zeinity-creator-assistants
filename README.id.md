@@ -7,7 +7,7 @@
 **Studio Produksi Konten & Naskah Spoken-First Berbasis AI untuk Kreator YouTube**
 
 [![Status: Dalam Pengembangan Aktif](https://img.shields.io/badge/Status-Dalam%20Pengembangan%20Aktif-amber?style=for-the-badge&logo=git)](https://github.com/zenqyverse/zeinity-creator-assistants)
-[![Uji Otomatis Lulus](https://img.shields.io/badge/Pengujian-146%20Lulus%20%7C%2024%20Suites-brightgreen?style=for-the-badge&logo=node.js)](test/)
+[![Uji Otomatis Lulus](https://img.shields.io/badge/Pengujian-199%20Lulus%20%7C%2032%20Suites-brightgreen?style=for-the-badge&logo=node.js)](test/)
 [![React](https://img.shields.io/badge/React-18.3.1-61dafb?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-3178c6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.4.8-646cff?style=for-the-badge&logo=vite)](https://vitejs.dev/)
@@ -77,14 +77,15 @@ Alur tersebut membebani kreator dengan kerja manual bolak-balik yang melelahkan.
 - **Judul Interaktif & Textarea Ergonomis**: Pengubahan judul langsung dengan klik ganda (*inline rename*) dan textarea yang membesar otomatis tanpa memotong teks.
 - **Metrik Analisis Produksi Riil**: Rekalkulasi metrik durasi produksi di halaman Analytics untuk mengukur kecepatan siklus ide hingga publikasi secara akurat.
 
-### Fase 4: Webhook Bot Telegram & Sinkronisasi Cloud
-- **Webhook Deno Tanpa Server**: Supabase Edge Function (`telegram-webhook`) dengan validasi tajuk rahasia (`X-Telegram-Bot-Api-Secret-Token`).
+### Fase 4: Blueprint Webhook Bot Telegram *(Edge Function — Perlu Di-deploy Manual)*
+- **Webhook Deno Tanpa Server (Blueprint Siap Pakai)**: Supabase Edge Function (`telegram-webhook`) dengan validasi tajuk rahasia (`X-Telegram-Bot-Api-Secret-Token`). Kode fungsi sudah lengkap di `supabase/functions/telegram-webhook/` namun memerlukan deployment manual via `supabase functions deploy telegram-webhook`.
 - **Penyaringan Akses Whitelist**: Keamanan berbasis daftar ID obrolan terverifikasi (`telegram_allowed_chat_ids`).
-- **Pencatatan Ide Seketika**: Langganan Supabase Realtime langsung memunculkan notifikasi *toast* dan menyisipkan baris ide baru tanpa *reload* halaman.
+- **Pencatatan Ide Seketika**: Setelah di-deploy, langganan Supabase Realtime langsung memunculkan notifikasi *toast* dan menyisipkan baris ide baru tanpa *reload* halaman. Listener Realtime di frontend sudah aktif di `useContent.ts`.
 - **Perintah Slash Lengkap**: Mendukung interaksi bot via `/start`, `/help`, `/pillars`, `/id`, `/pipeline`, dan `/latest`.
 
 ### 🛡️ Ketahanan Mesin AI Router & Integrasi 100% 9Router Gateway
 - **Integrasi 9Router Gateway**: Dukungan penuh gerbang lokal berbasis OpenAI-compatible endpoint (`http://localhost:20128/v1`).
+- **Dukungan 9Remote & Deployment Cloud**: Dukungan penuh untuk web app yang di-deploy ke cloud (Vercel, Netlify, Cloudflare Pages) agar dapat tersambung ke 9Router lokal melalui tunnel publik aman CORS (`abc-tunnel.us` atau Cloudflare tunnel). Memiliki deteksi otomatis remote origin (`window.location.hostname !== 'localhost'`) yang secara cerdas beralih dari URL localhost usang ke endpoint tunnel publik dari environment variables.
 - **Pilihan Combo Presets vs Model Spesifik**: Beralih bebas antara racikan multi-model terkurasi (seperti `Creator-Combo`, `Jarvis_Creator`) atau model individual langsung (Groq Llama 3.3 70B, Google Gemini 2.0 Flash, DeepSeek, dsb).
 - **Rantai Auto-Fallback Multi-Provider (4 Lapis)**: Mekanisme failover dinamis (`9Router Gateway` ➔ `Google Gemini` ➔ `OpenRouter` ➔ `Ollama Lokal`). Bila suatu provider terkena limit kuota atau gagal terhubung, studio otomatis mengalihkan tugas ke provider berikutnya dengan log transparan di laci Terminal.
 - **Topbar 1-Click AI Switcher**: Widget interaktif pada bilah atas untuk mengganti model instan, memantau latensi koneksi, dan membuka jalan pintas ke Settings tanpa mengganggu alur menulis.
@@ -106,7 +107,7 @@ Melakukan audit menyeluruh terhadap **128 tombol** di seluruh antarmuka web:
   2. *Script Outline Prompt*: Merumuskan 5 babak narasi dengan eskalasi konflik yang jelas.
   3. *Scriptwriter Brief Prompt*: Memasukkan persona pembicara dan 14 aturan audio voiceover (*spoken-first*).
   4. *Spoken & TTS Audio Audit*: Menganalisis naskah pada 4 dimensi penting dengan format laporan terstruktur (`BAGIAN ASLI -> MASALAH -> REVISI -> ALASAN`).
-  5. *Visual Cue Annotator*: Memberikan anotasi visual fungsional (`[BUKTI]`, `[JELASKAN]`, `[KONTEKS]`, `[TEKANKAN]`, `[RITME]`).
+  5. *5-Formula Rekomendasi Judul Hook*: Menghasilkan 5 varian judul berdasarkan formula hook Zeinity dengan aksi salin dan terapkan untuk A/B testing.
   6. *Thumbnail & Hook Copy Engine*: Menghasilkan 3 konsep thumbnail ber-CTR tinggi, pembanding sudut pandang (taruhan vs pertanyaan), serta teks kontras 2–4 kata.
 - **🔄 Multi-AI Provider Gateway & Fallback**:
   - **9Router Gateway (`custom`)**: Gerbang AI lokal (`http://localhost:20128/v1`) dengan preset Combo dan model spesifik.
@@ -116,9 +117,9 @@ Melakukan audit menyeluruh terhadap **128 tombol** di seluruh antarmuka web:
 - **🛡️ Arsitektur Hibrida Offline/Cloud**:
   - *Safe Offline Mode*: Beroperasi tanpa konfigurasi rumit menggunakan `localStorage` peramban dan cache memori. Berjalan lancar tanpa akun cloud.
   - *Supabase Cloud Sync*: Opsi sinkronisasi basis data PostgreSQL dengan langganan data *real-time* untuk kolaborasi tim.
-- **📱 Tangkap Ide Cepat via Bot Telegram**:
+- **📱 Tangkap Ide Cepat via Bot Telegram** *(Perlu Deployment Edge Function)*:
   - Catat ide konten secara kilat di ponsel melalui bot Telegram menggunakan perintah praktis (`/start`, `/help`, `/pillars`, `/pipeline`, `/latest`).
-  - Webhook memicu notifikasi desktop dan pembaruan tabel seketika.
+  - Webhook memicu notifikasi desktop dan pembaruan tabel seketika — setelah Edge Function `telegram-webhook` di-deploy ke Supabase. Lihat `supabase/MIGRATION.md` untuk panduan setup.
 - **📂 Dropzone Berkas & Ekstraksi Dokumen**:
   - Parsing dokumen langsung di peramban untuk berkas `.docx` (via Mammoth), `.md`, `.txt`, dan `.csv`.
   - Manajemen berkas permanen di *FileManager* untuk lampiran riset.
@@ -207,7 +208,7 @@ flowchart LR
 | **Penyimpanan Lokal** | Browser LocalStorage, State reaktif in-memory |
 | **Basis Data Cloud** | Supabase (PostgreSQL 15, Keamanan RLS, Edge Functions) |
 | **Gateway Inferensi AI** | 9Router Gateway (`http://localhost:20128/v1`), Google Generative AI SDK, OpenRouter API, Ollama Lokal |
-| **Kerangka Pengujian** | Penguji bawaan Node.js (`node:test`, `node:assert/strict`) — **146 Pengujian / 24 Suites** |
+| **Kerangka Pengujian** | Penguji bawaan Node.js (`node:test`, `node:assert/strict`) — **199 Pengujian / 32 Suites** |
 
 ---
 
@@ -218,7 +219,7 @@ Pastikan perangkat Anda telah terpasang:
 - **Node.js**: Versi 18.0.0 ke atas ([Unduh Node.js](https://nodejs.org/))
 - **npm** (otomatis ada bersama Node) atau **pnpm** / **yarn**
 - **Git** ([Unduh Git](https://git-scm.com/))
-- *(Opsional)* **9Router** atau **Ollama** ([Unduh Ollama](https://ollama.com/)) untuk menjalankan AI secara lokal.
+- *(Opsional)* **9Router** atau **Ollama** ([Unduh Ollama](https://ollama.com/)) untuk menjalankan AI secara lokal/remote.
 
 ### 2. Kloning Repositori
 ```bash
@@ -245,6 +246,10 @@ VITE_SUPABASE_ANON_KEY=anon-public-key-anda
 
 # Kunci API Google Gemini (Opsional - dapat juga diisi langsung via menu Settings)
 VITE_GEMINI_API_KEY=kunci_api_gemini_anda
+
+# 9Router AI Gateway - Deployment Remote (Opsional - untuk hosting Vercel/Netlify)
+VITE_CUSTOM_GATEWAY_ENDPOINT=https://rje2m9z.abc-tunnel.us/v1
+VITE_CUSTOM_GATEWAY_API_KEY=sk-kunci-api-9router-anda
 ```
 
 > [!TIP]
@@ -257,7 +262,7 @@ npm run dev
 Buka peramban favorit Anda dan akses alamat `http://localhost:5173`.
 
 ### 6. Menjalankan Pengujian Otomatis
-Pastikan seluruh 146 pengujian otomatis dalam 24 suite berjalan sukses:
+Pastikan seluruh 199 pengujian otomatis dalam 32 suite berjalan sukses:
 ```bash
 npm test
 ```
@@ -270,14 +275,18 @@ npm run preview
 
 ---
 
-## 🤖 Menjalankan AI Lokal (9Router & Ollama)
+## 🤖 Menjalankan AI Lokal & Remote (9Router & Ollama)
 
-### A. 9Router Gateway (Rekomendasi Default)
-1. Jalankan peladen 9Router lokal di port `20128`:
+### A. 9Router Gateway & 9Remote
+1. **Mode Lokal**: Jalankan peladen 9Router lokal di port `20128`:
    ```bash
    # Endpoint standar: http://localhost:20128/v1
    ```
-2. Aplikasi secara cerdas telah menetapkan **`custom` (9Router Gateway)** sebagai penyedia aktif default dengan preset model `Creator-Combo`.
+2. **Mode Remote (9Remote / Cloudflare Tunnel)**:
+   - Ketika men-deploy ke cloud hosting (Vercel / Netlify / Cloudflare Pages), gunakan endpoint tunnel publik resmi 9Router yang aman CORS (contoh: `https://rje2m9z.abc-tunnel.us/v1`).
+   - Aplikasi otomatis mendeteksi origin non-localhost dan memprioritaskan endpoint remote dari environment variable.
+   - Tombol preset cepat **Default Lokal**, **9Router Remote**, dan **Cloudflare Direct Tunnel** tersedia langsung di menu **Settings** (`/settings`).
+3. Aplikasi secara cerdas telah menetapkan **`custom` (9Router Gateway)** sebagai penyedia aktif default dengan preset model `Creator-Combo`.
 
 ### B. Ollama (100% Luring & Gratis)
 1. Pasang Ollama dari [ollama.com](https://ollama.com/).
@@ -315,7 +324,7 @@ zeinity-creator-assistants/
 ├── supabase/                           # Berkas konfigurasi Supabase
 │   ├── functions/                      # Deno Edge Functions (telegram-webhook)
 │   └── migrations/                     # Skrip migrasi SQL & kebijakan RLS
-├── test/                               # Berkas pengujian otomatis (146 pengujian, 24 suite)
+├── test/                               # Berkas pengujian otomatis (195 pengujian, 31 suite)
 ├── .env.example                        # Contoh berkas konfigurasi variabel lingkungan
 ├── .gitignore                          # Berkas & direktori yang diabaikan Git
 ├── package.json                        # Metadata proyek & skrip npm
@@ -330,14 +339,17 @@ zeinity-creator-assistants/
 - [x] Alur Lengkap 5 Tahap Konten Human-in-the-Loop
 - [x] Dual-Track In-App AI Scriptwriter & External Handoff
 - [x] Penegakan 14 Aturan Voiceover & Spoken-First TTS
-- [x] Integrasi Tangkap Ide Telegram Bot & Webhook
-- [x] 9Router Multi-Model Gateway & Rantai Auto-Fallback 4 Lapis
+- [x] 9Router Multi-Model Gateway & Failover Multi-Provider (Aktif — implementasi nyata di `callAI`)
 - [x] Switcher Model AI Interaktif 1-Klik di Topbar
 - [x] Safe Offline Mode (Penyimpanan Lokal Mandiri)
 - [x] Riwayat Snapshot Draf & Undo Revisi AI
 - [x] Impor Massal Ide (CSV, Markdown, Teks Polos)
 - [x] Resolusi Lengkap Audit 128 Tombol Frontend
 - [x] Branding Visual Resmi Zeinity (Banner, Logo, Favicon)
+- [x] Generasi Naskah Per-Beat (Dekonstruksi arsitektur Fase 2)
+- [x] Migrasi skema Supabase untuk 8 kolom scripting/thumbnail (Fase 3)
+- [x] Code-splitting bundle produksi (vendor chunks via Vite manualChunks)
+- [~] Tangkap Ide via Bot Telegram *(Kode Edge Function lengkap — perlu deployment manual; listener Realtime frontend sudah aktif)*
 - [ ] Integrasi langsung YouTube Data API untuk unggah metadata otomatis
 - [ ] Sintesis pratinjau audio naskah langsung di studio via ElevenLabs / Edge-TTS
 - [ ] Ekspor naskah ke format Teleprompter / Final Draft `.fdx`

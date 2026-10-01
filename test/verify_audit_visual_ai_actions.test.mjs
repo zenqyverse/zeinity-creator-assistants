@@ -18,9 +18,9 @@ describe('Transforms B & C: Audit & Visual Cue AI Actions Verification', () => {
   const cssPath = path.join(projectRoot, 'src', 'index.css');
   const cssContent = fs.readFileSync(cssPath, 'utf8');
 
-  it('gemini.ts exports runSpokenAudit, runVisualCueAnnotation, and parseJsonResponse', async () => {
+  it('gemini.ts exports runSpokenAudit and parseJsonResponse, and removes runVisualCueAnnotation', async () => {
     assert.ok(geminiContent.includes('export async function runSpokenAudit('), 'Must export runSpokenAudit');
-    assert.ok(geminiContent.includes('export async function runVisualCueAnnotation('), 'Must export runVisualCueAnnotation');
+    assert.ok(!geminiContent.includes('export async function runVisualCueAnnotation('), 'Must permanently remove runVisualCueAnnotation per user request');
     assert.ok(geminiContent.includes('export function parseJsonResponse'), 'Must export parseJsonResponse helper');
     assert.ok(!geminiContent.includes('export async function generateAuditSpokenPrompt('), 'Must remove generateAuditSpokenPrompt');
     assert.ok(!geminiContent.includes('export async function generateVisualCuePrompt('), 'Must remove generateVisualCuePrompt');
@@ -41,30 +41,29 @@ describe('Transforms B & C: Audit & Visual Cue AI Actions Verification', () => {
     assert.equal(res2.summary, 'Done');
   });
 
-  it('runSpokenAudit and runVisualCueAnnotation prompt specifications are direct actions', () => {
+  it('runSpokenAudit prompt specifications are direct actions', () => {
     assert.ok(geminiContent.includes('LANGSUNG AUDIT naskah berikut. JANGAN buat instruksi audit'), 'Audit prompt must execute direct audit');
-    assert.ok(geminiContent.includes('LANGSUNG tambahkan tags ke naskah'), 'Visual cue prompt must execute direct annotation');
     assert.ok(geminiContent.includes('A. Struktur Kalimat'), 'Audit must cover dimension A: Struktur Kalimat');
     assert.ok(geminiContent.includes('B. Punctuation & Prosodi TTS'), 'Audit must cover dimension B: Punctuation & Prosodi TTS');
     assert.ok(geminiContent.includes('C. Naturalitas Lisan & AI Tropes'), 'Audit must cover dimension C: Naturalitas Lisan & AI Tropes');
     assert.ok(geminiContent.includes('D. Larangan Voice-Over'), 'Audit must cover dimension D: Larangan Voice-Over');
   });
 
-  it('ScriptDetail.tsx removes prompt cards from left column and implements right panel AI action results', () => {
+  it('ScriptDetail.tsx removes visual cue and implements Spoken Audit, 5 Titles, and Thumbnail Studio', () => {
     // Left column checks
     assert.ok(!scriptDetailContent.includes('Audit Spoken & TTS Prompt'), 'Must not render Audit Prompt card in left column');
     assert.ok(!scriptDetailContent.includes('Visual Cue & B-Roll Director Prompt'), 'Must not render Visual Cue Prompt card in left column');
 
     // Action button checks
     assert.ok(scriptDetailContent.includes('Audit Spoken & TTS ✨'), 'ScriptDetail must render "Audit Spoken & TTS ✨" button');
-    assert.ok(scriptDetailContent.includes('Anotasi Visual Cue ✨'), 'ScriptDetail must render "Anotasi Visual Cue ✨" button');
+    assert.ok(!scriptDetailContent.includes('Anotasi Visual Cue ✨'), 'ScriptDetail must permanently remove "Anotasi Visual Cue ✨" button');
+    assert.ok(scriptDetailContent.includes('Generate Rekomendasi Judul ✨'), 'ScriptDetail must render "Generate Rekomendasi Judul ✨" button');
+    assert.ok(scriptDetailContent.includes('Studio Generate Thumbnail'), 'ScriptDetail must render Studio Generate Thumbnail');
 
     // Results panel checks
     assert.ok(scriptDetailContent.includes('audit-results-panel'), 'ScriptDetail must render audit-results-panel');
-    assert.ok(scriptDetailContent.includes('visual-results-panel'), 'ScriptDetail must render visual-results-panel');
     assert.ok(scriptDetailContent.includes('ai-summary-badge'), 'ScriptDetail must render ai-summary-badge');
     assert.ok(scriptDetailContent.includes('auditSummary'), 'ScriptDetail must scope audit summary to auditSummary state');
-    assert.ok(scriptDetailContent.includes('visualCueSummary'), 'ScriptDetail must scope visual cue summary to visualCueSummary state');
     assert.ok(scriptDetailContent.includes('Terapkan ke Draft'), 'ScriptDetail must offer "Terapkan ke Draft" button');
     assert.ok(scriptDetailContent.includes("cancelText: 'Nanti Saja'"), 'ScriptDetail showAlert must support declining draft revision');
   });

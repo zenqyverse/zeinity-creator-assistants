@@ -57,6 +57,27 @@ export function normalizeContentPillar(rawCategory?: string | null): string {
   return trimmed;
 }
 
+export interface TitleRecommendationItem {
+  id: string; // 'formula_1' .. 'formula_5'
+  formulaName: string;
+  title: string;
+  wordCount: number;
+  isMobileSafe: boolean;
+  explanation: string;
+}
+
+export type ScriptBeatNumber = 1 | 2 | 3 | 4 | 5;
+
+export interface ScriptBeatInfo {
+  beatNumber: ScriptBeatNumber;
+  id: string;
+  name: string;
+  shortName: string;
+  stageName: string;
+  description: string;
+  targetRatio: number;
+}
+
 export interface ContentItem {
   id: string;
   title: string;
@@ -75,11 +96,13 @@ export interface ContentItem {
   script_outline_approved?: boolean | null;
   scriptwriter_brief_prompt?: string | null;
   audit_spoken_prompt?: string | null;
-  visual_cue_prompt?: string | null;
   external_script_output?: string | null;
   generated_title_a?: string | null;
   generated_title_b?: string | null;
+  generated_titles?: TitleRecommendationItem[] | null;
   generated_thumbnail_prompt?: string | null;
+  thumbnail_mode?: 'prompt' | 'visual' | null;
+  generated_thumbnail_visual?: string | null;
   target_platform?: string | null;
   /**
    * @deprecated Target publish date tidak lagi digunakan secara aktif di UI (metrik publikasi menggunakan published_at).
@@ -151,5 +174,14 @@ export interface NineRouterCatalog {
   combos: string[];
   directModels: Record<string, string[]>;
   allModels: string[];
+}
+
+export interface AlertDiagnostics {
+  targetModel?: string;
+  provider?: string;
+  endpoint?: string;
+  statusCode?: number | string;
+  rootCause?: string;
+  upstreamError?: string;
 }
 

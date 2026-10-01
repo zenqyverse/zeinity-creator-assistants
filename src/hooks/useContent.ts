@@ -4,13 +4,30 @@ import {
   type ContentItem,
   type ContentSource,
   type ContentStatus,
+  type TitleRecommendationItem,
   CONTENT_PILLARS,
   normalizeContentPillar,
 } from '../types.ts';
 
 export const CACHED_CONTENT_STORAGE_KEY = 'zeinity_cached_content_items';
 const AUDIT_STORAGE_PREFIX = 'zeinity_audit_prompt_';
-const VISUAL_CUE_STORAGE_PREFIX = 'zeinity_visual_cue_prompt_';
+const TITLES_STORAGE_PREFIX = 'zeinity_generated_titles_';
+
+// Bersihkan key residual visual cue yang sudah dihapus permanen dari localStorage
+if (typeof window !== 'undefined') {
+  try {
+    const legacyKeys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('zeinity_visual_cue_prompt_')) {
+        legacyKeys.push(k);
+      }
+    }
+    legacyKeys.forEach((k) => localStorage.removeItem(k));
+  } catch {
+    // Ignore cleanup errors
+  }
+}
 
 export function getStoredContentItems(): ContentItem[] {
   if (typeof window === 'undefined') return [];
@@ -62,26 +79,84 @@ function setStoredAuditPrompt(id: string, prompt: string | null | undefined): vo
   }
 }
 
-function getStoredVisualCuePrompt(id: string): string | null {
+function getStoredGeneratedTitles(id: string): TitleRecommendationItem[] | null {
   if (typeof window === 'undefined') return null;
   try {
-    return localStorage.getItem(VISUAL_CUE_STORAGE_PREFIX + id);
+    const raw = localStorage.getItem(TITLES_STORAGE_PREFIX + id);
+    if (raw) return JSON.parse(raw);
   } catch {
     return null;
   }
+  return null;
 }
 
-function setStoredVisualCuePrompt(id: string, prompt: string | null | undefined): void {
+function setStoredGeneratedTitles(id: string, titles: TitleRecommendationItem[] | null | undefined): void {
   if (typeof window === 'undefined') return;
   try {
-    if (prompt) {
-      localStorage.setItem(VISUAL_CUE_STORAGE_PREFIX + id, prompt);
+    if (titles && titles.length > 0) {
+      localStorage.setItem(TITLES_STORAGE_PREFIX + id, JSON.stringify(titles));
     } else {
-      localStorage.removeItem(VISUAL_CUE_STORAGE_PREFIX + id);
+      localStorage.removeItem(TITLES_STORAGE_PREFIX + id);
     }
   } catch {
     // Ignore storage errors
   }
+}
+
+/**
+ * Menggabungkan data remote dari Supabase dengan metadata lokal di cache.
+ * Memastikan metadata naskah lokal (script_target_duration, script_target_words,
+ * script_angle_notes, script_production_track, script_outline_approved,
+ * generated_thumbnail_visual, thumbnail_mode, generated_titles, dll.) tetap dipertahankan
+ * jika kolom tersebut tidak ada atau bernilai null di skema database Supabase.
+ */
+export function mergeContentItemWithCache(
+  remoteItem: ContentItem,
+  cachedItem?: ContentItem | null
+): ContentItem {
+  return {
+    ...remoteItem,
+    audit_spoken_prompt:
+      remoteItem.audit_spoken_prompt !== undefined && remoteItem.audit_spoken_prompt !== null
+        ? remoteItem.audit_spoken_prompt
+        : (cachedItem?.audit_spoken_prompt ?? getStoredAuditPrompt(remoteItem.id)),
+    generated_titles:
+      remoteItem.generated_titles !== undefined && remoteItem.generated_titles !== null
+        ? remoteItem.generated_titles
+        : (cachedItem?.generated_titles ?? getStoredGeneratedTitles(remoteItem.id)),
+    thumbnail_mode:
+      remoteItem.thumbnail_mode !== undefined && remoteItem.thumbnail_mode !== null
+        ? remoteItem.thumbnail_mode
+        : (cachedItem?.thumbnail_mode ?? 'prompt'),
+    generated_thumbnail_visual:
+      remoteItem.generated_thumbnail_visual !== undefined && remoteItem.generated_thumbnail_visual !== null
+        ? remoteItem.generated_thumbnail_visual
+        : (cachedItem?.generated_thumbnail_visual ?? null),
+    script_outline:
+      remoteItem.script_outline !== undefined && remoteItem.script_outline !== null
+        ? remoteItem.script_outline
+        : (cachedItem?.script_outline ?? null),
+    script_target_duration:
+      remoteItem.script_target_duration !== undefined && remoteItem.script_target_duration !== null
+        ? remoteItem.script_target_duration
+        : (cachedItem?.script_target_duration ?? null),
+    script_target_words:
+      remoteItem.script_target_words !== undefined && remoteItem.script_target_words !== null
+        ? remoteItem.script_target_words
+        : (cachedItem?.script_target_words ?? null),
+    script_angle_notes:
+      remoteItem.script_angle_notes !== undefined && remoteItem.script_angle_notes !== null
+        ? remoteItem.script_angle_notes
+        : (cachedItem?.script_angle_notes ?? null),
+    script_production_track:
+      remoteItem.script_production_track !== undefined && remoteItem.script_production_track !== null
+        ? remoteItem.script_production_track
+        : (cachedItem?.script_production_track ?? null),
+    script_outline_approved:
+      remoteItem.script_outline_approved !== undefined && remoteItem.script_outline_approved !== null
+        ? remoteItem.script_outline_approved
+        : (cachedItem?.script_outline_approved ?? null),
+  };
 }
 
 const INITIAL_CONTENT_ITEMS: Omit<ContentItem, 'id'>[] = [
@@ -238,8 +313,21 @@ export function useContent() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const itemsRef = useRef(items);
-  itemsRef.current = items;
+  const itemsRef = useRef<ContentItem[]>(items);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
+  const dampedUpdateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (dampedUpdateTimerRef.current) {
+        clearTimeout(dampedUpdateTimerRef.current);
+      }
+    };
+  }, []);
 
   const fetchAll = useCallback(async (isInitial = false) => {
     if (isInitial && itemsRef.current.length === 0) setLoading(true);
@@ -269,7 +357,8 @@ export function useContent() {
                 ...item,
                 id: `offline-init-${idx + 1}`,
                 audit_spoken_prompt: getStoredAuditPrompt(`offline-init-${idx + 1}`),
-                visual_cue_prompt: getStoredVisualCuePrompt(`offline-init-${idx + 1}`),
+                generated_titles: getStoredGeneratedTitles(`offline-init-${idx + 1}`),
+                thumbnail_mode: item.thumbnail_mode ?? 'prompt',
               })) as ContentItem[];
               itemsRef.current = seeded;
               setItems(seeded);
@@ -289,11 +378,7 @@ export function useContent() {
                 updatedItem = { ...updatedItem, status: 'Researching' };
                 hasMigrations = true;
               }
-              return {
-                ...updatedItem,
-                audit_spoken_prompt: updatedItem.audit_spoken_prompt ?? getStoredAuditPrompt(updatedItem.id),
-                visual_cue_prompt: updatedItem.visual_cue_prompt ?? getStoredVisualCuePrompt(updatedItem.id),
-              };
+              return mergeContentItemWithCache(updatedItem, item);
             });
             if (hasMigrations) {
               setStoredContentItems(migrated);
@@ -311,11 +396,7 @@ export function useContent() {
 
         const cached = getStoredContentItems();
         if (cached.length > 0) {
-          const merged = cached.map((item) => ({
-            ...item,
-            audit_spoken_prompt: item.audit_spoken_prompt ?? getStoredAuditPrompt(item.id),
-            visual_cue_prompt: item.visual_cue_prompt ?? getStoredVisualCuePrompt(item.id),
-          }));
+          const merged = cached.map((item) => mergeContentItemWithCache(item, item));
           itemsRef.current = merged;
           setItems(merged);
         } else if (isInitial) {
@@ -323,7 +404,8 @@ export function useContent() {
             ...item,
             id: `offline-init-${idx + 1}`,
             audit_spoken_prompt: getStoredAuditPrompt(`offline-init-${idx + 1}`),
-            visual_cue_prompt: getStoredVisualCuePrompt(`offline-init-${idx + 1}`),
+            generated_titles: getStoredGeneratedTitles(`offline-init-${idx + 1}`),
+            thumbnail_mode: item.thumbnail_mode ?? 'prompt',
           })) as ContentItem[];
           itemsRef.current = seeded;
           setItems(seeded);
@@ -339,6 +421,18 @@ export function useContent() {
 
       if (fetchError) throw fetchError;
 
+      const cached = getStoredContentItems();
+      const cachedMap = new Map<string, ContentItem>();
+      cached.forEach((c) => {
+        if (c?.id) cachedMap.set(c.id, c);
+      });
+      itemsRef.current.forEach((c) => {
+        if (c?.id) {
+          const diskItem = cachedMap.get(c.id);
+          cachedMap.set(c.id, diskItem ? mergeContentItemWithCache(c, diskItem) : c);
+        }
+      });
+
       if (!data || data.length === 0) {
         if (isInitial) {
           // Seed database only on initial load if database is empty
@@ -349,17 +443,14 @@ export function useContent() {
             .order('created_at', { ascending: false });
             
           if (seedError) throw seedError;
-          const merged = (seededData as ContentItem[]).map((item) => ({
-            ...item,
-            audit_spoken_prompt: item.audit_spoken_prompt ?? getStoredAuditPrompt(item.id),
-            visual_cue_prompt: item.visual_cue_prompt ?? getStoredVisualCuePrompt(item.id),
-          }));
+          const merged = (seededData as ContentItem[]).map((item) =>
+            mergeContentItemWithCache(item, cachedMap.get(item.id))
+          );
           itemsRef.current = merged;
           setItems(merged);
           setStoredContentItems(merged);
         } else {
           // Jika Supabase kosong pada fetch berikutnya, gunakan cache lokal yang ada
-          const cached = getStoredContentItems();
           if (cached.length > 0) {
             itemsRef.current = cached;
             setItems(cached);
@@ -370,11 +461,9 @@ export function useContent() {
           }
         }
       } else {
-        const merged = (data as ContentItem[]).map((item) => ({
-          ...item,
-          audit_spoken_prompt: item.audit_spoken_prompt ?? getStoredAuditPrompt(item.id),
-          visual_cue_prompt: item.visual_cue_prompt ?? getStoredVisualCuePrompt(item.id),
-        }));
+        const merged = (data as ContentItem[]).map((item) =>
+          mergeContentItemWithCache(item, cachedMap.get(item.id))
+        );
         itemsRef.current = merged;
         setItems(merged);
         setStoredContentItems(merged);
@@ -386,11 +475,7 @@ export function useContent() {
       // FALLBACK KE CACHE OFFLINE: jangan pernah mengosongkan items ke [] jika Supabase down
       const cached = getStoredContentItems();
       if (cached.length > 0) {
-        const merged = cached.map((item) => ({
-          ...item,
-          audit_spoken_prompt: item.audit_spoken_prompt ?? getStoredAuditPrompt(item.id),
-          visual_cue_prompt: item.visual_cue_prompt ?? getStoredVisualCuePrompt(item.id),
-        }));
+        const merged = cached.map((item) => mergeContentItemWithCache(item, item));
         itemsRef.current = merged;
         setItems(merged);
       } else if (isInitial) {
@@ -399,7 +484,8 @@ export function useContent() {
           ...item,
           id: `offline-init-${idx + 1}`,
           audit_spoken_prompt: getStoredAuditPrompt(`offline-init-${idx + 1}`),
-          visual_cue_prompt: getStoredVisualCuePrompt(`offline-init-${idx + 1}`),
+          generated_titles: getStoredGeneratedTitles(`offline-init-${idx + 1}`),
+          thumbnail_mode: item.thumbnail_mode ?? 'prompt',
         })) as ContentItem[];
         itemsRef.current = seeded;
         setItems(seeded);
@@ -687,7 +773,11 @@ export function useContent() {
     return createdItems;
   }, []);
 
-  const updateItem = useCallback(async (id: string, updates: Partial<ContentItem>): Promise<ContentItem> => {
+  const updateItem = useCallback(async (
+    id: string,
+    updates: Partial<ContentItem>,
+    options?: { silent?: boolean; immediate?: boolean }
+  ): Promise<ContentItem> => {
     const exists = itemsRef.current.some((item) => item.id === id);
     if (!exists) {
       throw new Error(`Konten dengan ID ${id} tidak ditemukan`);
@@ -697,12 +787,12 @@ export function useContent() {
     delete safeUpdates.id;
     delete safeUpdates.created_at;
     
-    // Simpan ke local storage jika terdapat field audit_spoken_prompt atau visual_cue_prompt
+    // Simpan ke local storage jika terdapat field audit_spoken_prompt atau generated_titles
     if ('audit_spoken_prompt' in updates) {
       setStoredAuditPrompt(id, updates.audit_spoken_prompt);
     }
-    if ('visual_cue_prompt' in updates) {
-      setStoredVisualCuePrompt(id, updates.visual_cue_prompt);
+    if ('generated_titles' in updates) {
+      setStoredGeneratedTitles(id, updates.generated_titles);
     }
 
     const now = new Date().toISOString();
@@ -715,9 +805,33 @@ export function useContent() {
           audit_spoken_prompt: updates.audit_spoken_prompt !== undefined 
             ? updates.audit_spoken_prompt 
             : (targetItem.audit_spoken_prompt ?? getStoredAuditPrompt(id)),
-          visual_cue_prompt: updates.visual_cue_prompt !== undefined 
-            ? updates.visual_cue_prompt 
-            : (targetItem.visual_cue_prompt ?? getStoredVisualCuePrompt(id)),
+          generated_titles: updates.generated_titles !== undefined
+            ? updates.generated_titles
+            : (targetItem.generated_titles ?? getStoredGeneratedTitles(id)),
+          thumbnail_mode: updates.thumbnail_mode !== undefined
+            ? updates.thumbnail_mode
+            : (targetItem.thumbnail_mode ?? 'prompt'),
+          generated_thumbnail_visual: updates.generated_thumbnail_visual !== undefined
+            ? updates.generated_thumbnail_visual
+            : targetItem.generated_thumbnail_visual,
+          script_outline: updates.script_outline !== undefined
+            ? updates.script_outline
+            : targetItem.script_outline,
+          script_target_duration: updates.script_target_duration !== undefined
+            ? updates.script_target_duration
+            : targetItem.script_target_duration,
+          script_target_words: updates.script_target_words !== undefined
+            ? updates.script_target_words
+            : targetItem.script_target_words,
+          script_angle_notes: updates.script_angle_notes !== undefined
+            ? updates.script_angle_notes
+            : targetItem.script_angle_notes,
+          script_production_track: updates.script_production_track !== undefined
+            ? updates.script_production_track
+            : targetItem.script_production_track,
+          script_outline_approved: updates.script_outline_approved !== undefined
+            ? updates.script_outline_approved
+            : targetItem.script_outline_approved,
         }
       : null;
 
@@ -731,9 +845,48 @@ export function useContent() {
       throw err;
     }
 
-    // Optimistic update first: pastikan data langsung tersimpan di state dan localStorage
+    // Optimistic update first: pastikan data langsung tersimpan di ref dan localStorage
     itemsRef.current = updated;
-    setItems(updated);
+
+    // Peredaman / Damping pembaruan React state setItems:
+    // 1. Jika options?.silent === true, jangan ubah state `items` langsung (tidak memicu re-render root App.tsx saat mengetik),
+    //    namun jadwalkan debounced update (2000ms) agar setelah jeda mengetik state root tetap tersinkronisasi.
+    // 2. Jika options?.immediate === true atau terdapat perubahan status/kategori/judul, panggil setItems langsung
+    // 3. Jika hanya perubahan draft teks secara beruntun (misal debounced typing), redam/tunda pembaruan root
+    const isStructuralChange = updates.status !== undefined || updates.title !== undefined || updates.category !== undefined || updates.source !== undefined;
+    const isDraftTextOnly = !isStructuralChange && (
+      updates.external_script_output !== undefined ||
+      updates.external_research_output !== undefined ||
+      updates.script_outline !== undefined ||
+      updates.script_angle_notes !== undefined
+    );
+
+    if (options?.silent) {
+      // Pembaruan senyap: jangan panggil setItems sekarang (mencegah root re-render saat mengetik),
+      // namun jadwalkan debounced update (2000ms) agar setelah selesai mengetik state root tetap tersinkronisasi.
+      if (dampedUpdateTimerRef.current) {
+        clearTimeout(dampedUpdateTimerRef.current);
+      }
+      dampedUpdateTimerRef.current = setTimeout(() => {
+        dampedUpdateTimerRef.current = null;
+        setItems(itemsRef.current);
+      }, 2000);
+    } else if (options?.immediate || isStructuralChange || !isDraftTextOnly) {
+      if (dampedUpdateTimerRef.current) {
+        clearTimeout(dampedUpdateTimerRef.current);
+        dampedUpdateTimerRef.current = null;
+      }
+      setItems(updated);
+    } else {
+      // Peredaman pembaruan: debounce setItems agar ketikan naskah tidak memicu root re-render cascade
+      if (dampedUpdateTimerRef.current) {
+        clearTimeout(dampedUpdateTimerRef.current);
+      }
+      dampedUpdateTimerRef.current = setTimeout(() => {
+        dampedUpdateTimerRef.current = null;
+        setItems(itemsRef.current);
+      }, 2000);
+    }
 
     if (!isSupabaseConfigured) {
       return optimisticItem || ({ id, ...updates } as ContentItem);
@@ -747,11 +900,13 @@ export function useContent() {
         .select()
         .single();
 
-      // Jika skema remote Supabase belum memiliki kolom audit_spoken_prompt, visual_cue_prompt, atau metadata script baru (PGRST204 atau 42703), retry tanpa kolom tersebut
-      if (res.error && (res.error.code === 'PGRST204' || res.error.code === '42703' || res.error.message?.includes('audit_spoken_prompt') || res.error.message?.includes('visual_cue_prompt') || res.error.message?.includes('script_'))) {
+      // Jika skema remote Supabase belum memiliki kolom audit_spoken_prompt, generated_titles, atau metadata script baru (PGRST204 atau 42703), retry tanpa kolom tersebut
+      if (res.error && (res.error.code === 'PGRST204' || res.error.code === '42703' || res.error.message?.includes('audit_spoken_prompt') || res.error.message?.includes('generated_titles') || res.error.message?.includes('script_') || res.error.message?.includes('thumbnail_'))) {
         const fallbackUpdates = { ...safeUpdates };
         delete fallbackUpdates.audit_spoken_prompt;
-        delete fallbackUpdates.visual_cue_prompt;
+        delete fallbackUpdates.generated_titles;
+        delete fallbackUpdates.thumbnail_mode;
+        delete fallbackUpdates.generated_thumbnail_visual;
         delete fallbackUpdates.script_target_duration;
         delete fallbackUpdates.script_target_words;
         delete fallbackUpdates.script_angle_notes;
@@ -775,9 +930,15 @@ export function useContent() {
           audit_spoken_prompt: updates.audit_spoken_prompt !== undefined 
             ? updates.audit_spoken_prompt 
             : (remoteItem.audit_spoken_prompt ?? getStoredAuditPrompt(id)),
-          visual_cue_prompt: updates.visual_cue_prompt !== undefined 
-            ? updates.visual_cue_prompt 
-            : (remoteItem.visual_cue_prompt ?? getStoredVisualCuePrompt(id)),
+          generated_titles: updates.generated_titles !== undefined
+            ? updates.generated_titles
+            : (targetItem?.generated_titles ?? getStoredGeneratedTitles(id)),
+          thumbnail_mode: updates.thumbnail_mode !== undefined
+            ? updates.thumbnail_mode
+            : (remoteItem.thumbnail_mode ?? targetItem?.thumbnail_mode ?? optimisticItem?.thumbnail_mode ?? 'prompt'),
+          generated_thumbnail_visual: updates.generated_thumbnail_visual !== undefined
+            ? updates.generated_thumbnail_visual
+            : (remoteItem.generated_thumbnail_visual ?? targetItem?.generated_thumbnail_visual ?? optimisticItem?.generated_thumbnail_visual),
           script_outline: updates.script_outline !== undefined
             ? updates.script_outline
             : (remoteItem.script_outline ?? optimisticItem?.script_outline),
@@ -799,8 +960,12 @@ export function useContent() {
         };
         const updated = itemsRef.current.map((item) => (item.id === id ? fullyMerged : item));
         itemsRef.current = updated;
-        setItems(updated);
         setStoredContentItems(updated);
+        if (!options?.silent) {
+          if (options?.immediate || isStructuralChange || !isDraftTextOnly) {
+            setItems(updated);
+          }
+        }
         return fullyMerged;
       }
     } catch (netErr) {
@@ -812,8 +977,19 @@ export function useContent() {
 
   const deleteItem = useCallback(async (id: string): Promise<void> => {
     setStoredAuditPrompt(id, null);
-    setStoredVisualCuePrompt(id, null);
+    setStoredGeneratedTitles(id, null);
+    const storage = typeof window !== 'undefined' ? window.localStorage : (typeof globalThis !== 'undefined' ? (globalThis as unknown as { localStorage?: Storage }).localStorage : undefined);
+    if (storage) {
+      try {
+        storage.removeItem(`zeinity_generated_titles_${id}`);
+        storage.removeItem(`zeinity_draft_history_${id}`);
+        storage.removeItem(`zeinity_audit_revised_${id}`);
+      } catch {
+        // Ignore storage errors
+      }
+    }
 
+    const previousItems = itemsRef.current;
     // Optimistic local deletion
     const updated = itemsRef.current.filter((item) => item.id !== id);
     itemsRef.current = updated;
@@ -826,15 +1002,33 @@ export function useContent() {
 
     if (isSupabaseConfigured) {
       try {
-        const { error: deleteError } = await supabase
+        const { error: deleteError, count } = await supabase
           .from('content')
-          .delete()
+          .delete({ count: 'exact' })
           .eq('id', id);
 
         if (deleteError) {
           console.warn('Gagal menghapus item dari Supabase:', deleteError);
+          itemsRef.current = previousItems;
+          setStoredContentItems(previousItems);
+          setItems(previousItems);
+          throw new Error(`Database Supabase menolak penghapusan: ${deleteError.message}`);
+        }
+
+        // Deteksi jika PostgreSQL RLS memblokir penghapusan secara senyap (count === 0)
+        if (count === 0) {
+          console.warn('Operasi DELETE ditolak oleh kebijakan RLS Supabase (0 baris terhapus).');
+          itemsRef.current = previousItems;
+          setStoredContentItems(previousItems);
+          setItems(previousItems);
+          throw new Error(
+            'Gagal menghapus ide dari database Supabase: Operasi DELETE ditolak oleh kebijakan keamanan Row-Level Security (RLS) pada role anon (0 baris terhapus). Aktifkan policy "anon_delete_content" di Supabase SQL Editor.'
+          );
         }
       } catch (netErr) {
+        if (netErr instanceof Error && (netErr.message.includes('Row-Level Security') || netErr.message.includes('menolak penghapusan'))) {
+          throw netErr;
+        }
         console.warn('Jaringan offline saat menghapus item:', netErr);
       }
     }

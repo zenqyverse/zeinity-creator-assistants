@@ -4,8 +4,14 @@ import { useContent } from '@/hooks/useContent';
 import { useSettings, setChannelIdentity, getChannelIdentity, parseFallbackChain } from '@/hooks/useSettings';
 import { useFiles, isChannelIdentityFile } from '@/hooks/useFiles';
 import { extractDocxText, extractTextFromFile } from '@/lib/docx';
-import { generateResearchBriefPrompt, getProviderLabel, type ProviderConfig } from '@/lib/gemini';
 import { useAlert, parseAIError } from '@/components/AlertModal';
+import {
+  generateResearchBriefPrompt,
+  getProviderLabel,
+  resolveTargetModelForTask,
+  normalizeGatewayEndpoint,
+  type ProviderConfig,
+} from '@/lib/gemini';
 import Sidebar from '@/components/Sidebar';
 import Topbar from '@/components/Topbar';
 import Toast from '@/components/Toast';
@@ -31,7 +37,7 @@ import {
   STORAGE_KEY_PUBLISHED_ID,
 } from '@/lib/navigation';
 
-export const getProviderConfig = (settings: Record<string, string>): ProviderConfig => {
+const getProviderConfig = (settings: Record<string, string>): ProviderConfig => {
   const activeProvider = (settings.active_provider || 'custom') as AIProvider;
   const isDirect = settings.custom_gateway_model_mode === 'direct';
   const customModel = isDirect
@@ -108,9 +114,9 @@ export default function App() {
     let isMounted = true;
     const probeGateway = async () => {
       try {
-        const ep = (settings.custom_gateway_endpoint || 'http://localhost:20128/v1').trim().replace(/\/+$/, '');
+        const ep = normalizeGatewayEndpoint(settings.custom_gateway_endpoint);
         const controller = new AbortController();
-        const t = setTimeout(() => controller.abort(), 2500);
+        const t = setTimeout(() => controller.abort(), 4500);
         const headers: Record<string, string> = {};
         if (settings.custom_gateway_api_key?.trim()) {
           headers.Authorization = `Bearer ${settings.custom_gateway_api_key.trim()}`;
@@ -225,8 +231,9 @@ export default function App() {
   };
 
   const handleViewScript = (item: ContentItem) => {
-    setScriptItem(item);
-    setPendingScriptId(item.id);
+    const freshItem = items.find((i) => i.id === item.id) || item;
+    setScriptItem(freshItem);
+    setPendingScriptId(freshItem.id);
     setPublishedItem(null);
     setPendingPublishedId(null);
   };
@@ -248,45 +255,64 @@ export default function App() {
     setPendingPublishedId(null);
   };
 
-  const handleUpdateItem = async (id: string, updates: Partial<ContentItem>): Promise<ContentItem> => {
-    const res = await updateItem(id, updates);
-    if (scriptItem && scriptItem.id === id) {
-      const updated = { ...scriptItem, ...updates, ...res };
-      setScriptItem(updated);
-      try {
-        localStorage.setItem(STORAGE_KEY_CACHED_SCRIPT, JSON.stringify(updated));
-      } catch {
-        /* ignore localStorage quota errors */
-      }
-    }
-    const isTargetPublished = (publishedItem && publishedItem.id === id) || pendingPublishedId === id;
-    if (isTargetPublished) {
-      const baseItem = (publishedItem && publishedItem.id === id) ? publishedItem : (items.find((i) => i.id === id) || res);
-      const updated = { ...baseItem, ...updates, ...res };
-      if (updates.status && updates.status !== 'Published') {
-        // Jika status diubah/direvert dari Published ke alur produksi, transisikan ke ScriptDetail
-        const targetView: ViewKey = (updates.status === 'Researching' || updates.status === 'Idea' || updates.status === 'Validating') ? 'research' : 'scripts';
-        setActiveView(targetView);
-        setPublishedItem(null);
-        setPendingPublishedId(null);
+  const handleUpdateItem = async (
+    id: string,
+    updates: Partial<ContentItem>,
+    options?: { silent?: boolean; immediate?: boolean }
+  ): Promise<ContentItem> => {
+    const res = await updateItem(id, updates, options);
+    if (!options?.silent) {
+      if (scriptItem && scriptItem.id === id) {
+        const updated = { ...scriptItem, ...updates, ...res };
         setScriptItem(updated);
-        setPendingScriptId(updated.id);
         try {
-          localStorage.removeItem(STORAGE_KEY_PUBLISHED_ID);
-          localStorage.removeItem(STORAGE_KEY_CACHED_PUBLISHED);
-          localStorage.setItem(STORAGE_KEY_SCRIPT_ID, updated.id);
           localStorage.setItem(STORAGE_KEY_CACHED_SCRIPT, JSON.stringify(updated));
-          window.location.hash = `#/script/${updated.id}`;
         } catch {
           /* ignore localStorage quota errors */
         }
-      } else {
-        setPublishedItem(updated);
-        try {
-          localStorage.setItem(STORAGE_KEY_CACHED_PUBLISHED, JSON.stringify(updated));
-        } catch {
-          /* ignore localStorage quota errors */
+      }
+      const isTargetPublished = (publishedItem && publishedItem.id === id) || pendingPublishedId === id;
+      if (isTargetPublished) {
+        const baseItem = (publishedItem && publishedItem.id === id) ? publishedItem : (items.find((i) => i.id === id) || res);
+        const updated = { ...baseItem, ...updates, ...res };
+        if (updates.status && updates.status !== 'Published') {
+          // Jika status diubah/direvert dari Published ke alur produksi, transisikan ke ScriptDetail
+          const targetView: ViewKey = (updates.status === 'Researching' || updates.status === 'Idea' || updates.status === 'Validating') ? 'research' : 'scripts';
+          setActiveView(targetView);
+          setPublishedItem(null);
+          setPendingPublishedId(null);
+          setScriptItem(updated);
+          setPendingScriptId(updated.id);
+          try {
+            localStorage.removeItem(STORAGE_KEY_PUBLISHED_ID);
+            localStorage.removeItem(STORAGE_KEY_CACHED_PUBLISHED);
+            localStorage.setItem(STORAGE_KEY_SCRIPT_ID, updated.id);
+            localStorage.setItem(STORAGE_KEY_CACHED_SCRIPT, JSON.stringify(updated));
+            window.location.hash = `#/script/${updated.id}`;
+          } catch {
+            /* ignore localStorage quota errors */
+          }
+        } else {
+          setPublishedItem(updated);
+          try {
+            localStorage.setItem(STORAGE_KEY_CACHED_PUBLISHED, JSON.stringify(updated));
+          } catch {
+            /* ignore localStorage quota errors */
+          }
         }
+      }
+    } else {
+      // Pembaruan senyap: perbarui cache localStorage tanpa memicu re-render root App.tsx
+      try {
+        const cached = localStorage.getItem(STORAGE_KEY_CACHED_SCRIPT);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed?.id === id) {
+            localStorage.setItem(STORAGE_KEY_CACHED_SCRIPT, JSON.stringify({ ...parsed, ...updates, ...res }));
+          }
+        }
+      } catch {
+        // ignore
       }
     }
     return res;
@@ -439,7 +465,8 @@ export default function App() {
     await updateItem(item.id, { status: 'Validating', ai_output: 'Membuat Research Brief...' });
 
     const providerConfig = getProviderConfig(settings);
-    const providerLabel = getProviderLabel(providerConfig.provider);
+    const targetConfig = resolveTargetModelForTask('script', providerConfig);
+    const providerLabel = targetConfig.modelVersion || getProviderLabel(targetConfig.provider);
 
     startActivity('AI Validation Log', `Menghubungkan ke ${providerLabel} untuk membuat Research Brief...`);
 
@@ -449,7 +476,7 @@ export default function App() {
       addLog('Menyusun prompt berdasarkan identitas channel & 10 Narrative Assets...', 60);
 
       const promptRes = await generateResearchBriefPrompt(
-        providerConfig,
+        targetConfig,
         item.title,
         item.category || 'Umum',
         identityText,
@@ -476,6 +503,7 @@ export default function App() {
       showError(parsed.title, parsed.message, {
         technicalDetails: parsed.technicalDetails,
         solution: parsed.solution,
+        diagnostics: parsed.diagnostics,
         actionButton: {
           label: 'Buka Settings AI',
           onClick: () => handleNavigate('settings'),

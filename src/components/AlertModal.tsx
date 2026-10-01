@@ -16,6 +16,7 @@ import {
   parseAIError,
   type AlertType,
   type AlertOptions,
+  type AlertDiagnostics,
   type AlertContextType,
 } from '@/hooks/useAlert';
 
@@ -23,7 +24,7 @@ import {
  * Re-export type definitions for consumers and backward compatibility.
  * Options include: cancelText?: string; confirmText?: string;
  */
-export type { AlertType, AlertOptions, AlertContextType };
+export type { AlertType, AlertOptions, AlertDiagnostics, AlertContextType };
 
 // eslint-disable-next-line react-refresh/only-export-components
 export { useAlert, parseAIError };
@@ -150,6 +151,7 @@ export function AlertModal({ isOpen, options, onClose }: AlertModalProps) {
     type = 'info',
     technicalDetails,
     solution,
+    diagnostics,
     confirmText = 'Mengerti',
     cancelText,
     actionButton,
@@ -232,6 +234,39 @@ export function AlertModal({ isOpen, options, onClose }: AlertModalProps) {
         {/* Body */}
         <div className="alert-modal-body">
           <p className="alert-modal-message">{message}</p>
+
+          {/* Transparent Diagnostics Box */}
+          {diagnostics && (
+            <div className="alert-diag-container">
+              <div className="alert-diag-chips">
+                {diagnostics.targetModel && (
+                  <span className="alert-diag-chip alert-diag-chip-model" title="Model / Preset yang ditargetkan">
+                    <span className="alert-diag-label">Model Target:</span> {diagnostics.targetModel}
+                  </span>
+                )}
+                {diagnostics.provider && (
+                  <span className="alert-diag-chip alert-diag-chip-gateway" title="Gateway / Endpoint">
+                    <span className="alert-diag-label">Gateway:</span> {diagnostics.provider}
+                  </span>
+                )}
+                {diagnostics.statusCode && (
+                  <span className="alert-diag-chip alert-diag-chip-status" title="Status Respon Teknis">
+                    <span className="alert-diag-label">Status:</span> {diagnostics.statusCode}
+                  </span>
+                )}
+              </div>
+
+              {diagnostics.rootCause && (
+                <div className="alert-root-cause-box">
+                  <div className="alert-root-cause-title">
+                    <AlertTriangle size={13} />
+                    <span>Akar Masalah Sebenarnya:</span>
+                  </div>
+                  <div className="alert-root-cause-text">{diagnostics.rootCause}</div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Technical Details Code Box */}
           {technicalDetails && (

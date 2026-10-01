@@ -4,10 +4,8 @@ import {
   Copy,
   Check,
   Loader2,
-  UploadCloud,
   FileText,
   CheckCircle2,
-  Film,
   RotateCw,
   RotateCcw,
   Maximize2,
@@ -23,7 +21,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { CONTENT_STATUSES, type ContentItem, type ContentStatus } from '@/types';
+import { CONTENT_STATUSES, type ContentItem, type ContentStatus, type TitleRecommendationItem } from '@/types';
 import { saveUploadedFile } from '@/hooks/useFiles';
 import { extractTextFromFile } from '@/lib/docx';
 import {
@@ -31,16 +29,26 @@ import {
   generateScriptwriterHandoff,
   generateZeinityOutline,
   generateZeinityFullScript,
-  formatExternalOutlinePrompt,
-  formatExternalScriptingPrompt,
+  generateZeinityBeatScript,
+  replaceBeatInScript,
+  getScriptBeatInfo,
+  type ScriptBeatNumber,
   calculateTargetWords,
   runSpokenAudit,
-  runVisualCueAnnotation,
   generateThumbnailPrompt,
   generateAlternativeTitles,
   formatStructuredPrompt,
+  resolveTargetModelForTask,
+  isProviderConfigured,
   type ProviderConfig,
 } from '@/lib/gemini';
+import {
+  ScriptPreflightBar,
+  ResearchWorkspace,
+  OutlineWorkspace,
+  ScriptDraftStudio,
+  ThumbnailTitleStudio,
+} from '@/components/script';
 import { useAlert, parseAIError } from '@/components/AlertModal';
 import { useTerminal } from '@/components/Terminal';
 
@@ -59,11 +67,16 @@ const saveDraftSnapshot = persistDraftSnapshot;
 
 // eslint-disable-next-line react-refresh/only-export-components
 export { DRAFT_HISTORY_PREFIX, getDraftSnapshots, saveDraftSnapshot };
+export { ResearchWorkspace };
 
 interface ScriptDetailProps {
   item: ContentItem;
   onBack: () => void;
-  onUpdate: (id: string, updates: Partial<ContentItem>) => Promise<ContentItem>;
+  onUpdate: (
+    id: string,
+    updates: Partial<ContentItem>,
+    options?: { silent?: boolean; immediate?: boolean }
+  ) => Promise<ContentItem>;
   providerConfig: ProviderConfig;
   identityText: string;
   onNavigateSettings?: () => void;
@@ -86,7 +99,6 @@ export default function ScriptDetail({
   const [generatingResearch, setGeneratingResearch] = useState(false);
   const [generatingHandoff, setGeneratingHandoff] = useState(false);
   const [generatingAudit, setGeneratingAudit] = useState(false);
-  const [generatingVisualCue, setGeneratingVisualCue] = useState(false);
   const [generatingThumbnail, setGeneratingThumbnail] = useState(false);
   const [uploadedResearchFileName, setUploadedResearchFileName] = useState<string | null>(null);
   const [uploadedScriptFileName, setUploadedScriptFileName] = useState<string | null>(null);
@@ -105,12 +117,8 @@ export default function ScriptDetail({
   const [auditRevisedDraft, setAuditRevisedDraft] = useState('');
   const [showAuditResults, setShowAuditResults] = useState(Boolean(item.audit_spoken_prompt));
 
-  const [annotatedScript, setAnnotatedScript] = useState(item.visual_cue_prompt || '');
-  const [showVisualCueResults, setShowVisualCueResults] = useState(Boolean(item.visual_cue_prompt));
-
   // AI Summary Card state
   const [auditSummary, setAuditSummary] = useState<string | null>(null);
-  const [visualCueSummary, setVisualCueSummary] = useState<string | null>(null);
   const [handoffSummary, setHandoffSummary] = useState<string | null>(null);
 
   // Apply to Draft feedback & Maximize state
@@ -123,19 +131,70 @@ export default function ScriptDetail({
   const [researchSaveStatus, setResearchSaveStatus] = useState<'idle' | 'unsaved' | 'saving' | 'saved'>('idle');
   const [scriptSaveStatus, setScriptSaveStatus] = useState<'idle' | 'unsaved' | 'saving' | 'saved'>('idle');
 
-  // Draft Versioning & Alternative Titles states
+  // Draft Versioning & 5 Title Recommendations states
   const [draftHistory, setDraftHistory] = useState<DraftSnapshot[]>(() => getDraftSnapshots(item.id));
   const [showDraftHistoryModal, setShowDraftHistoryModal] = useState(false);
   const [titleA, setTitleA] = useState(item.generated_title_a || '');
   const [titleB, setTitleB] = useState(item.generated_title_b || '');
   const [generatingTitles, setGeneratingTitles] = useState(false);
-  const [showTitleCard, setShowTitleCard] = useState(Boolean(item.generated_title_a || item.generated_title_b));
+  const [titlesList, setTitlesList] = useState<TitleRecommendationItem[]>(() => {
+    if (Array.isArray(item.generated_titles) && item.generated_titles.length > 0) {
+      return item.generated_titles;
+    }
+    const initialList: TitleRecommendationItem[] = [];
+    if (item.generated_title_a) {
+      const wordsA = item.generated_title_a.trim().split(/\s+/).filter(Boolean);
+      initialList.push({
+        id: 'formula_1',
+        formulaName: 'Curiosity Gap (Pertanyaan Universal)',
+        title: item.generated_title_a,
+        wordCount: wordsA.length,
+        isMobileSafe: wordsA.length >= 5 && wordsA.length <= 8,
+        explanation: 'Formula 1: Curiosity Gap memancing rasa ingin tahu alami audiens.',
+      });
+    }
+    if (item.generated_title_b) {
+      const wordsB = item.generated_title_b.trim().split(/\s+/).filter(Boolean);
+      initialList.push({
+        id: 'formula_4',
+        formulaName: 'SEO Keyword & Otoritas (High-Intent Search)',
+        title: item.generated_title_b,
+        wordCount: wordsB.length,
+        isMobileSafe: wordsB.length >= 5 && wordsB.length <= 8,
+        explanation: 'Formula 4: SEO Keyword & Otoritas untuk visibilitas penelusuran YouTube.',
+      });
+    }
+    return initialList;
+  });
+  const [showTitleCard, setShowTitleCard] = useState(Boolean(item.generated_title_a || item.generated_title_b || (item.generated_titles && item.generated_titles.length > 0)));
   const [isThumbnailScriptCollapsed, setIsThumbnailScriptCollapsed] = useState(false);
+
+  // Thumbnail Studio Dual-Mode state
+  const extractHookFromPrompt = (promptText?: string | null): string => {
+    if (!promptText) return '';
+    const match = promptText.match(/(?:TEKS|TEXT):\s*["']?([A-Z0-9\s]{2,30})["']?/i);
+    if (match && match[1]?.trim()) {
+      return match[1].trim().toUpperCase();
+    }
+    return '';
+  };
+
+  const [thumbnailMode, setThumbnailMode] = useState<'prompt' | 'visual'>(item.thumbnail_mode || 'prompt');
+  const [thumbnailAspectRatio, setThumbnailAspectRatio] = useState<'16:9' | '1:1' | '9:16'>('16:9');
+  const [thumbnailProvider, setThumbnailProvider] = useState<'imagen3' | 'dalle3' | 'flux'>('imagen3');
+  const [thumbnailHookText, setThumbnailHookText] = useState<string>(() => {
+    const fromPrompt = extractHookFromPrompt(item.generated_thumbnail_prompt);
+    if (fromPrompt) return fromPrompt;
+    return 'ILUSI DIBONGKAR';
+  });
+  const [isThumbnailModalOpen, setIsThumbnailModalOpen] = useState<boolean>(false);
+  const [isTitlesCollapsed, setIsTitlesCollapsed] = useState<boolean>(false);
 
   // Pre-Flight & Dual-Track Scriptwriter state
   const [productionTrack, setProductionTrack] = useState<'in_app' | 'external'>(
     item.script_production_track || 'in_app'
   );
+  const [externalSubMode, setExternalSubMode] = useState<'one_shot' | 'step_by_step'>('step_by_step');
   const [targetDuration, setTargetDuration] = useState<string>(
     item.script_target_duration || '5-8m'
   );
@@ -157,6 +216,7 @@ export default function ScriptDetail({
   const [revisionNoteInput, setRevisionNoteInput] = useState<string>('');
   const [generatingOutline, setGeneratingOutline] = useState<boolean>(false);
   const [generatingFullScript, setGeneratingFullScript] = useState<boolean>(false);
+  const [generatingBeatNumber, setGeneratingBeatNumber] = useState<ScriptBeatNumber | null>(null);
 
   // Modals for Track Switch & Overwrite Guard
   const [showSwitchTrackModal, setShowSwitchTrackModal] = useState<boolean>(false);
@@ -175,6 +235,8 @@ export default function ScriptDetail({
   outlineTextRef.current = outlineText;
   const angleNotesRef = useRef<string>(angleNotes);
   angleNotesRef.current = angleNotes;
+  const isOutlineApprovedRef = useRef<boolean>(isOutlineApproved);
+  isOutlineApprovedRef.current = isOutlineApproved;
   const itemRef = useRef(item);
   itemRef.current = item;
 
@@ -187,16 +249,16 @@ export default function ScriptDetail({
       const prevId = currentItemIdRef.current;
       // Flush unsaved changes of previous item to prevent data loss
       if (researchOutputRef.current !== lastSavedResearchRef.current) {
-        onUpdate(prevId, { external_research_output: researchOutputRef.current });
+        onUpdate(prevId, { external_research_output: researchOutputRef.current }, { immediate: true });
       }
       if (scriptOutputRef.current !== lastSavedScriptRef.current) {
-        onUpdate(prevId, { external_script_output: scriptOutputRef.current });
+        onUpdate(prevId, { external_script_output: scriptOutputRef.current }, { immediate: true });
       }
       if (outlineTextRef.current !== lastSavedOutlineRef.current) {
-        onUpdate(prevId, { script_outline: outlineTextRef.current });
+        onUpdate(prevId, { script_outline: outlineTextRef.current }, { immediate: true });
       }
       if (angleNotesRef.current !== lastSavedAngleNotesRef.current) {
-        onUpdate(prevId, { script_angle_notes: angleNotesRef.current });
+        onUpdate(prevId, { script_angle_notes: angleNotesRef.current }, { immediate: true });
       }
 
       currentItemIdRef.current = item.id;
@@ -218,11 +280,7 @@ export default function ScriptDetail({
       setAuditRevisedDraft('');
       setShowAuditResults(Boolean(item.audit_spoken_prompt));
 
-      setAnnotatedScript(item.visual_cue_prompt || '');
-      setShowVisualCueResults(Boolean(item.visual_cue_prompt));
-
       setAuditSummary(null);
-      setVisualCueSummary(null);
       setHandoffSummary(null);
       setAppliedKey(null);
       setIsDraftHighlighted(false);
@@ -232,17 +290,49 @@ export default function ScriptDetail({
       setGeneratingResearch(false);
       setGeneratingHandoff(false);
       setGeneratingAudit(false);
-      setGeneratingVisualCue(false);
       setGeneratingThumbnail(false);
       setCopied(null);
 
       setTitleA(item.generated_title_a || '');
       setTitleB(item.generated_title_b || '');
-      setShowTitleCard(Boolean(item.generated_title_a || item.generated_title_b));
+      if (Array.isArray(item.generated_titles) && item.generated_titles.length > 0) {
+        setTitlesList(item.generated_titles);
+      } else {
+        const fallbackList: TitleRecommendationItem[] = [];
+        if (item.generated_title_a) {
+          const wordsA = item.generated_title_a.trim().split(/\s+/).filter(Boolean);
+          fallbackList.push({
+            id: 'formula_1',
+            formulaName: 'Curiosity Gap (Pertanyaan Universal)',
+            title: item.generated_title_a,
+            wordCount: wordsA.length,
+            isMobileSafe: wordsA.length >= 5 && wordsA.length <= 8,
+            explanation: 'Formula 1: Curiosity Gap memancing rasa ingin tahu alami audiens.',
+          });
+        }
+        if (item.generated_title_b) {
+          const wordsB = item.generated_title_b.trim().split(/\s+/).filter(Boolean);
+          fallbackList.push({
+            id: 'formula_4',
+            formulaName: 'SEO Keyword & Otoritas (High-Intent Search)',
+            title: item.generated_title_b,
+            wordCount: wordsB.length,
+            isMobileSafe: wordsB.length >= 5 && wordsB.length <= 8,
+            explanation: 'Formula 4: SEO Keyword & Otoritas untuk visibilitas penelusuran YouTube.',
+          });
+        }
+        setTitlesList(fallbackList);
+      }
+      setShowTitleCard(Boolean(item.generated_title_a || item.generated_title_b || (item.generated_titles && item.generated_titles.length > 0)));
       setDraftHistory(getDraftSnapshots(item.id));
       setShowDraftHistoryModal(false);
       setGeneratingTitles(false);
       setIsThumbnailScriptCollapsed(false);
+      setThumbnailMode(item.thumbnail_mode || 'prompt');
+      const initialHook = extractHookFromPrompt(item.generated_thumbnail_prompt);
+      setThumbnailHookText(initialHook || 'ILUSI DIBONGKAR');
+      setIsThumbnailModalOpen(false);
+      setIsTitlesCollapsed(false);
 
       setProductionTrack(item.script_production_track || 'in_app');
       setTargetDuration(item.script_target_duration || '5-8m');
@@ -254,6 +344,7 @@ export default function ScriptDetail({
       setRevisionNoteInput('');
       setGeneratingOutline(false);
       setGeneratingFullScript(false);
+      setGeneratingBeatNumber(null);
       setShowSwitchTrackModal(false);
       setShowOverwriteDraftModal(false);
       setPendingTrack(null);
@@ -288,14 +379,18 @@ export default function ScriptDetail({
     }
     if (item.generated_thumbnail_prompt !== undefined) {
       setThumbnailPrompt(item.generated_thumbnail_prompt || '');
+      const fromP = extractHookFromPrompt(item.generated_thumbnail_prompt);
+      if (fromP) setThumbnailHookText(fromP);
     }
     if (item.audit_spoken_prompt !== undefined) {
       setAuditFindings(item.audit_spoken_prompt || '');
       setShowAuditResults(Boolean(item.audit_spoken_prompt));
     }
-    if (item.visual_cue_prompt !== undefined) {
-      setAnnotatedScript(item.visual_cue_prompt || '');
-      setShowVisualCueResults(Boolean(item.visual_cue_prompt));
+    if (item.generated_titles !== undefined && Array.isArray(item.generated_titles)) {
+      setTitlesList(item.generated_titles);
+    }
+    if (item.thumbnail_mode !== undefined && item.thumbnail_mode) {
+      setThumbnailMode(item.thumbnail_mode);
     }
     if (item.generated_title_a !== undefined) {
       setTitleA(item.generated_title_a || '');
@@ -303,7 +398,7 @@ export default function ScriptDetail({
     if (item.generated_title_b !== undefined) {
       setTitleB(item.generated_title_b || '');
     }
-    if (item.generated_title_a || item.generated_title_b) {
+    if (item.generated_title_a || item.generated_title_b || (item.generated_titles && item.generated_titles.length > 0)) {
       setShowTitleCard(true);
     }
     if (
@@ -341,10 +436,11 @@ export default function ScriptDetail({
     item.research_brief_prompt,
     item.scriptwriter_brief_prompt,
     item.generated_thumbnail_prompt,
+    item.thumbnail_mode,
     item.audit_spoken_prompt,
-    item.visual_cue_prompt,
     item.generated_title_a,
     item.generated_title_b,
+    item.generated_titles,
     item.script_outline,
     item.script_outline_approved,
     item.script_production_track,
@@ -363,7 +459,7 @@ export default function ScriptDetail({
       setResearchSaveStatus('saving');
       const textToSave = researchOutput;
       try {
-        await onUpdate(item.id, { external_research_output: textToSave });
+        await onUpdate(item.id, { external_research_output: textToSave }, { silent: true });
         lastSavedResearchRef.current = textToSave;
         if (researchOutputRef.current === textToSave) {
           setResearchSaveStatus('saved');
@@ -391,7 +487,7 @@ export default function ScriptDetail({
       setScriptSaveStatus('saving');
       const textToSave = scriptOutput;
       try {
-        await onUpdate(item.id, { external_script_output: textToSave });
+        await onUpdate(item.id, { external_script_output: textToSave }, { silent: true });
         lastSavedScriptRef.current = textToSave;
         if (scriptOutputRef.current === textToSave) {
           setScriptSaveStatus('saved');
@@ -420,7 +516,7 @@ export default function ScriptDetail({
         await onUpdate(item.id, {
           script_outline: textToSave,
           script_outline_approved: isOutlineApproved,
-        });
+        }, { silent: true });
         lastSavedOutlineRef.current = textToSave;
       } catch (err) {
         console.error('Failed to auto-save outline:', err);
@@ -437,7 +533,7 @@ export default function ScriptDetail({
     const timer = setTimeout(async () => {
       const notesToSave = angleNotes;
       try {
-        await onUpdate(item.id, { script_angle_notes: notesToSave });
+        await onUpdate(item.id, { script_angle_notes: notesToSave }, { silent: true });
         lastSavedAngleNotesRef.current = notesToSave;
       } catch (err) {
         console.error('Failed to auto-save angle notes:', err);
@@ -450,20 +546,22 @@ export default function ScriptDetail({
   // Flush unsaved changes on unmount or before window unload
   useEffect(() => {
     const flushPending = () => {
-      if (researchOutputRef.current !== lastSavedResearchRef.current) {
-        onUpdate(itemRef.current.id, { external_research_output: researchOutputRef.current });
+      if (
+        researchOutputRef.current !== lastSavedResearchRef.current ||
+        scriptOutputRef.current !== lastSavedScriptRef.current ||
+        outlineTextRef.current !== lastSavedOutlineRef.current ||
+        angleNotesRef.current !== lastSavedAngleNotesRef.current
+      ) {
+        onUpdate(itemRef.current.id, {
+          external_research_output: researchOutputRef.current,
+          external_script_output: scriptOutputRef.current,
+          script_outline: outlineTextRef.current,
+          script_angle_notes: angleNotesRef.current,
+          script_outline_approved: isOutlineApprovedRef.current,
+        }, { immediate: true });
         lastSavedResearchRef.current = researchOutputRef.current;
-      }
-      if (scriptOutputRef.current !== lastSavedScriptRef.current) {
-        onUpdate(itemRef.current.id, { external_script_output: scriptOutputRef.current });
         lastSavedScriptRef.current = scriptOutputRef.current;
-      }
-      if (outlineTextRef.current !== lastSavedOutlineRef.current) {
-        onUpdate(itemRef.current.id, { script_outline: outlineTextRef.current });
         lastSavedOutlineRef.current = outlineTextRef.current;
-      }
-      if (angleNotesRef.current !== lastSavedAngleNotesRef.current) {
-        onUpdate(itemRef.current.id, { script_angle_notes: angleNotesRef.current });
         lastSavedAngleNotesRef.current = angleNotesRef.current;
       }
     };
@@ -546,15 +644,31 @@ export default function ScriptDetail({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (isScriptMaximized) setIsScriptMaximized(false);
-        if (showDraftHistoryModal) setShowDraftHistoryModal(false);
-        if (showSwitchTrackModal) setShowSwitchTrackModal(false);
-        if (showOverwriteDraftModal) setShowOverwriteDraftModal(false);
+        if (isThumbnailModalOpen) {
+          setIsThumbnailModalOpen(false);
+          return;
+        }
+        if (showOverwriteDraftModal) {
+          setShowOverwriteDraftModal(false);
+          return;
+        }
+        if (showSwitchTrackModal) {
+          setShowSwitchTrackModal(false);
+          return;
+        }
+        if (showDraftHistoryModal) {
+          setShowDraftHistoryModal(false);
+          return;
+        }
+        if (isScriptMaximized) {
+          setIsScriptMaximized(false);
+          return;
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isScriptMaximized, showDraftHistoryModal, showSwitchTrackModal, showOverwriteDraftModal]);
+  }, [isThumbnailModalOpen, isScriptMaximized, showDraftHistoryModal, showSwitchTrackModal, showOverwriteDraftModal]);
 
   const hasGeneratedScriptBrief = Boolean(
     (item.scriptwriter_brief_prompt && item.scriptwriter_brief_prompt.trim()) ||
@@ -580,9 +694,8 @@ export default function ScriptDetail({
   const prevItemIdRef = useRef(item.id);
 
   // Dynamic collapse states for Draft Studio (right column)
-  const [isScriptInputCollapsed, setIsScriptInputCollapsed] = useState<boolean>(() => Boolean(item.audit_spoken_prompt || item.visual_cue_prompt));
+  const [isScriptInputCollapsed, setIsScriptInputCollapsed] = useState<boolean>(() => Boolean(item.audit_spoken_prompt || item.generated_thumbnail_prompt));
   const [isAuditResultsCollapsed, setIsAuditResultsCollapsed] = useState<boolean>(false);
-  const [isVisualCueResultsCollapsed, setIsVisualCueResultsCollapsed] = useState<boolean>(false);
 
   // Auto-collapse Research Brief when Scriptwriter Handoff is newly generated or appears
   useEffect(() => {
@@ -598,11 +711,10 @@ export default function ScriptDetail({
       prevItemIdRef.current = item.id;
       setIsResearchCollapsed(isHandoffVisible);
       setIsHandoffCollapsed(false);
-      setIsScriptInputCollapsed(Boolean(item.audit_spoken_prompt || item.visual_cue_prompt));
+      setIsScriptInputCollapsed(Boolean(item.audit_spoken_prompt || item.generated_thumbnail_prompt));
       setIsAuditResultsCollapsed(false);
-      setIsVisualCueResultsCollapsed(false);
     }
-  }, [item.id, isHandoffVisible, item.audit_spoken_prompt, item.visual_cue_prompt]);
+  }, [item.id, isHandoffVisible, item.audit_spoken_prompt, item.generated_thumbnail_prompt]);
 
   const copyText = (text: string, key: string) => {
     if (!text) return;
@@ -644,7 +756,7 @@ export default function ScriptDetail({
 
     // Save snapshot of current draft before overwriting with AI revision
     if (scriptOutput.trim()) {
-      const label = key === 'audit' ? 'Sebelum Revisi AI Spoken Audit' : 'Sebelum Anotasi Visual Cue';
+      const label = 'Sebelum Revisi AI Spoken Audit';
       const updatedHistory = saveDraftSnapshot(item.id, scriptOutput, label);
       setDraftHistory(updatedHistory);
     }
@@ -655,8 +767,6 @@ export default function ScriptDetail({
     // Auto-collapse the source result card to direct user focus to editor
     if (key === 'audit') {
       setIsAuditResultsCollapsed(true);
-    } else if (key === 'visual') {
-      setIsVisualCueResultsCollapsed(true);
     }
 
     setScriptOutput(newText);
@@ -778,7 +888,7 @@ export default function ScriptDetail({
   };
 
   const handleRegenerateResearchPrompt = async () => {
-    if (!providerConfig.apiKey?.trim() && providerConfig.provider !== 'ollama') {
+    if (!isProviderConfigured(providerConfig)) {
       showError(
         'Kunci API Belum Dikonfigurasi',
         `API Key untuk provider ${providerConfig.provider.toUpperCase()} belum diatur di menu Settings.`,
@@ -792,13 +902,15 @@ export default function ScriptDetail({
       return;
     }
 
+    const targetConfig = resolveTargetModelForTask('script', providerConfig);
+    const modelLabel = targetConfig.modelVersion || targetConfig.provider.toUpperCase();
     setGeneratingResearch(true);
-    startActivity('AI Research Brief Log', `Menghubungkan ke ${providerConfig.provider.toUpperCase()}...`);
+    startActivity('AI Research Brief Log', `Menghubungkan ke ${modelLabel}...`);
     addLog('Menyusun ulang Research Brief Prompt berdasarkan identitas channel & 10 Narrative Assets...', 60);
 
     try {
       const res = await generateResearchBriefPrompt(
-        providerConfig,
+        targetConfig,
         item.title,
         item.category || 'Umum',
         identityText,
@@ -816,6 +928,7 @@ export default function ScriptDetail({
       showError(parsed.title, parsed.message, {
         technicalDetails: parsed.technicalDetails,
         solution: parsed.solution,
+        diagnostics: parsed.diagnostics,
         actionButton: onNavigateSettings
           ? { label: 'Buka Settings', onClick: onNavigateSettings }
           : undefined,
@@ -826,7 +939,7 @@ export default function ScriptDetail({
   };
 
   const handleGenerateHandoff = async (advanceToScripting = false) => {
-    if (!providerConfig.apiKey?.trim() && providerConfig.provider !== 'ollama') {
+    if (!isProviderConfigured(providerConfig)) {
       showError(
         'Kunci API Belum Dikonfigurasi',
         `API Key untuk provider ${providerConfig.provider.toUpperCase()} belum diatur di menu Settings.`,
@@ -847,11 +960,13 @@ export default function ScriptDetail({
       return;
     }
 
+    const targetConfig = resolveTargetModelForTask('script', providerConfig);
+    const modelLabel = targetConfig.modelVersion || targetConfig.provider.toUpperCase();
     setGeneratingHandoff(true);
     setLoading(true);
     startActivity(
       'Scriptwriter Handoff Log',
-      `Menghubungkan ke ${providerConfig.provider.toUpperCase()}...`
+      `Menghubungkan ke ${modelLabel}...`
     );
     addLog(`Membaca data riset (${researchOutput.length.toLocaleString('id-ID')} karakter)...`, 30);
     addLog('Menyusun Kerangka 5 Tahap Zeinity berdasarkan riset aktual...', 60);
@@ -861,7 +976,7 @@ export default function ScriptDetail({
       await onUpdate(item.id, { external_research_output: researchOutput });
 
       const handoff = await generateScriptwriterHandoff(
-        providerConfig,
+        targetConfig,
         item.title,
         researchOutput,
         identityText
@@ -889,6 +1004,7 @@ export default function ScriptDetail({
       showError(parsed.title, parsed.message, {
         technicalDetails: parsed.technicalDetails,
         solution: parsed.solution,
+        diagnostics: parsed.diagnostics,
         actionButton: onNavigateSettings
           ? { label: 'Buka Settings', onClick: onNavigateSettings }
           : undefined,
@@ -907,7 +1023,11 @@ export default function ScriptDetail({
       });
     } catch (err: unknown) {
       const parsed = parseAIError(err);
-      showError(parsed.title, parsed.message);
+      showError(parsed.title, parsed.message, {
+        technicalDetails: parsed.technicalDetails,
+        solution: parsed.solution,
+        diagnostics: parsed.diagnostics,
+      });
     }
   };
 
@@ -932,14 +1052,18 @@ export default function ScriptDetail({
         } catch (err: unknown) {
           const parsed = parseAIError(err);
           errorActivity(`Gagal mengubah status: ${parsed.title}`);
-          showError(parsed.title, parsed.message);
+          showError(parsed.title, parsed.message, {
+            technicalDetails: parsed.technicalDetails,
+            solution: parsed.solution,
+            diagnostics: parsed.diagnostics,
+          });
         }
       }
     });
   };
 
   const handleRunAudit = async () => {
-    if (!providerConfig.apiKey?.trim() && providerConfig.provider !== 'ollama') {
+    if (!isProviderConfigured(providerConfig)) {
       showError(
         'Kunci API Belum Dikonfigurasi',
         `API Key untuk provider ${providerConfig.provider.toUpperCase()} belum diatur di menu Settings.`,
@@ -960,10 +1084,12 @@ export default function ScriptDetail({
       return;
     }
 
+    const targetConfig = resolveTargetModelForTask('audit', providerConfig);
+    const modelLabel = targetConfig.modelVersion || targetConfig.provider.toUpperCase();
     setGeneratingAudit(true);
     startActivity(
       'Audit Spoken & TTS Log',
-      `Menghubungkan ke ${providerConfig.provider.toUpperCase()}...`
+      `Menghubungkan ke ${modelLabel}...`
     );
     addLog(`Membaca draf naskah (${scriptOutput.length.toLocaleString('id-ID')} karakter)...`, 25);
     addLog('Menganalisis 4 dimensi: Struktur Kalimat, Prosodi TTS, Naturalitas Lisan, Larangan VO...', 60);
@@ -972,14 +1098,13 @@ export default function ScriptDetail({
     try {
       await onUpdate(item.id, { external_script_output: scriptOutput });
 
-      const result = await runSpokenAudit(providerConfig, item.title, scriptOutput);
+      const result = await runSpokenAudit(targetConfig, item.title, scriptOutput);
       setAuditFindings(result.findings);
       setAuditRevisedDraft(result.revisedDraft);
       setShowAuditResults(true);
       setAuditSummary(result.summary);
       setIsScriptInputCollapsed(true);
       setIsAuditResultsCollapsed(false);
-      setIsVisualCueResultsCollapsed(true);
 
       await onUpdate(item.id, {
         audit_spoken_prompt: result.findings,
@@ -1004,6 +1129,7 @@ export default function ScriptDetail({
       showError(parsed.title, parsed.message, {
         technicalDetails: parsed.technicalDetails,
         solution: parsed.solution,
+        diagnostics: parsed.diagnostics,
         actionButton: onNavigateSettings
           ? { label: 'Buka Settings', onClick: onNavigateSettings }
           : undefined,
@@ -1013,70 +1139,8 @@ export default function ScriptDetail({
     }
   };
 
-  const handleRunVisualCueAnnotation = async () => {
-    if (!providerConfig.apiKey?.trim() && providerConfig.provider !== 'ollama') {
-      showError(
-        'Kunci API Belum Dikonfigurasi',
-        `API Key untuk provider ${providerConfig.provider.toUpperCase()} belum diatur di menu Settings.`,
-        {
-          solution: 'Buka menu Settings dan masukkan API Key Anda, lalu klik Simpan.',
-          actionButton: onNavigateSettings
-            ? { label: 'Buka Settings', onClick: onNavigateSettings }
-            : undefined,
-        }
-      );
-      return;
-    }
-    if (!scriptOutput.trim()) {
-      showWarning(
-        'Draf Naskah Masih Kosong',
-        'Silakan masukkan atau unggah draf naskah video sebelum anotasi Visual Cue.'
-      );
-      return;
-    }
-
-    setGeneratingVisualCue(true);
-    startActivity(
-      'Visual Cue Annotation Log',
-      `Menghubungkan ke ${providerConfig.provider.toUpperCase()}...`
-    );
-    addLog(`Membaca alur narasi (${scriptOutput.length.toLocaleString('id-ID')} karakter) untuk identifikasi momen visual...`, 40);
-    addLog('Menyisipkan tags [BUKTI], [JELASKAN], [KONTEKS], [TEKANKAN], [RITME]...', 75);
-
-    try {
-      await onUpdate(item.id, { external_script_output: scriptOutput });
-
-      const result = await runVisualCueAnnotation(providerConfig, item.title, scriptOutput);
-      setAnnotatedScript(result.annotatedScript);
-      setShowVisualCueResults(true);
-      setVisualCueSummary(result.summary);
-      setIsScriptInputCollapsed(true);
-      setIsVisualCueResultsCollapsed(false);
-      setIsAuditResultsCollapsed(true);
-
-      await onUpdate(item.id, {
-        visual_cue_prompt: result.annotatedScript,
-        ai_output: 'Anotasi Visual Cue selesai.',
-      });
-
-      finishActivity(`Anotasi selesai! ${result.summary}`);
-    } catch (err: unknown) {
-      const parsed = parseAIError(err);
-      errorActivity(`Gagal menganotasi Visual Cue: ${parsed.title}`);
-      showError(parsed.title, parsed.message, {
-        technicalDetails: parsed.technicalDetails,
-        solution: parsed.solution,
-        actionButton: onNavigateSettings
-          ? { label: 'Buka Settings', onClick: onNavigateSettings }
-          : undefined,
-      });
-    } finally {
-      setGeneratingVisualCue(false);
-    }
-  };
-
   const handleGenerateThumbnail = async (advanceToThumbnailing = false) => {
-    if (!providerConfig.apiKey?.trim() && providerConfig.provider !== 'ollama') {
+    if (!isProviderConfigured(providerConfig)) {
       showError(
         'Kunci API Belum Dikonfigurasi',
         `API Key untuk provider ${providerConfig.provider.toUpperCase()} belum diatur di menu Settings.`,
@@ -1097,11 +1161,13 @@ export default function ScriptDetail({
       return;
     }
 
+    const targetConfig = resolveTargetModelForTask('audit', providerConfig);
+    const modelLabel = targetConfig.modelVersion || targetConfig.provider.toUpperCase();
     setGeneratingThumbnail(true);
     setLoading(true);
     startActivity(
       'AI Thumbnail Generator Log',
-      `Menghubungkan ke ${providerConfig.provider.toUpperCase()}...`
+      `Menghubungkan ke ${modelLabel}...`
     );
     addLog('Menganalisis judul & naskah untuk menemukan inti emosional...', 45);
     addLog('Merumuskan ide teks thumbnail berkonversi tinggi (CTR-focused)...', 75);
@@ -1109,11 +1175,16 @@ export default function ScriptDetail({
     try {
       await onUpdate(item.id, { external_script_output: scriptOutput });
 
-      const thumbRes = await generateThumbnailPrompt(providerConfig, item.title, scriptOutput);
+      const thumbRes = await generateThumbnailPrompt(targetConfig, item.title, scriptOutput);
       setThumbnailPrompt(thumbRes);
+      const parsedHook = extractHookFromPrompt(thumbRes);
+      if (parsedHook) {
+        setThumbnailHookText(parsedHook);
+      }
 
       const updates: Partial<ContentItem> = {
         generated_thumbnail_prompt: thumbRes,
+        thumbnail_mode: thumbnailMode,
         ai_output: 'Thumbnail Prompt siap.',
       };
 
@@ -1130,6 +1201,7 @@ export default function ScriptDetail({
       showError(parsed.title, parsed.message, {
         technicalDetails: parsed.technicalDetails,
         solution: parsed.solution,
+        diagnostics: parsed.diagnostics,
         actionButton: onNavigateSettings
           ? { label: 'Buka Settings', onClick: onNavigateSettings }
           : undefined,
@@ -1138,6 +1210,98 @@ export default function ScriptDetail({
       setGeneratingThumbnail(false);
       setLoading(false);
     }
+  };
+
+  const handleSelectThumbnailMode = (mode: 'prompt' | 'visual') => {
+    setThumbnailMode(mode);
+    onUpdate(item.id, { thumbnail_mode: mode }).catch(() => {});
+  };
+
+  const handleExportMockupSvg = () => {
+    const width = thumbnailAspectRatio === '16:9' ? 1280 : thumbnailAspectRatio === '1:1' ? 1080 : 720;
+    const height = thumbnailAspectRatio === '16:9' ? 720 : thumbnailAspectRatio === '1:1' ? 1080 : 1280;
+    
+    // Gunakan 2-4 kata UPPERCASE untuk hook teks (menghadirkan stakes emosional, tanpa mengulang kata judul)
+    const hookWords = (thumbnailHookText.trim() || 'ILUSI DIBONGKAR').toUpperCase();
+
+    const safeTitle = (item.title || 'Zeinity Executive Video').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const safeHook = hookWords.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a1324"/>
+      <stop offset="50%" stop-color="#050a14"/>
+      <stop offset="100%" stop-color="#02050a"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.9"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="${width}" height="${height}" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle Grid Lines -->
+  <g stroke="rgba(79, 232, 255, 0.08)" stroke-width="1.5">
+    <line x1="0" y1="${height * 0.25}" x2="${width}" y2="${height * 0.25}" />
+    <line x1="0" y1="${height * 0.50}" x2="${width}" y2="${height * 0.50}" stroke-dasharray="6 6" />
+    <line x1="0" y1="${height * 0.75}" x2="${width}" y2="${height * 0.75}" />
+    <line x1="${width * 0.33}" y1="0" x2="${width * 0.33}" y2="${height}" stroke-dasharray="6 6" />
+    <line x1="${width * 0.66}" y1="0" x2="${width * 0.66}" y2="${height}" stroke-dasharray="6 6" />
+  </g>
+
+  <!-- Safe Zone Framing -->
+  <rect x="${width * 0.05}" y="${height * 0.06}" width="${width * 0.9}" height="${height * 0.88}" fill="none" stroke="rgba(79, 232, 255, 0.25)" stroke-width="2" rx="16" />
+
+  <!-- Badge: Aspect Ratio & Provider -->
+  <g transform="translate(${width * 0.08}, ${height * 0.12})">
+    <rect width="${width * 0.4}" height="42" rx="8" fill="rgba(6, 18, 38, 0.85)" stroke="rgba(79, 232, 255, 0.4)" stroke-width="1.5"/>
+    <text x="16" y="26" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700" fill="#4fe8ff" letter-spacing="1">
+      ${thumbnailAspectRatio} • ${thumbnailProvider.toUpperCase()} PREVIEW
+    </text>
+  </g>
+
+  <!-- Main Focal Stakes Visual Area (Center Box) -->
+  <g transform="translate(${width * 0.1}, ${height * 0.26})">
+    <rect width="${width * 0.8}" height="${height * 0.48}" rx="20" fill="rgba(10, 22, 44, 0.65)" stroke="rgba(79, 232, 255, 0.3)" stroke-width="2"/>
+    <circle cx="${width * 0.4}" cy="${height * 0.24}" r="${height * 0.16}" fill="rgba(79, 232, 255, 0.06)" stroke="rgba(79, 232, 255, 0.2)" stroke-width="1.5"/>
+    
+    <!-- Big Bold UPPERCASE 2-4 Words Thumbnail Hook -->
+    <text x="${width * 0.4}" y="${height * 0.27}" font-family="system-ui, -apple-system, sans-serif" font-size="${Math.round(height * 0.10)}" font-weight="900" fill="#ffffff" text-anchor="middle" filter="url(#shadow)" letter-spacing="2">
+      ${safeHook}
+    </text>
+  </g>
+
+  <!-- Bottom Topic Title Label -->
+  <g transform="translate(${width * 0.08}, ${height * 0.80})">
+    <rect width="${width * 0.84}" height="52" rx="10" fill="rgba(4, 12, 24, 0.9)" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1"/>
+    <text x="20" y="32" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#cbd5e1">
+      TOPIK: ${safeTitle}
+    </text>
+  </g>
+
+  <!-- Zeinity Watermark -->
+  <text x="${width * 0.92}" y="${height * 0.15}" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="800" fill="rgba(79, 232, 255, 0.7)" text-anchor="end" letter-spacing="1">
+    ZEINITY STUDIO
+  </text>
+</svg>`;
+
+    const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `zeinity_thumbnail_${thumbnailAspectRatio.replace(':', '_')}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showAlert({
+      type: 'success',
+      title: 'Mockup SVG Diunduh',
+      message: `Berkas mockup thumbnail ${thumbnailAspectRatio} berhasil diunduh ke komputer Anda.`,
+    });
   };
 
   const handleProceedToThumbnailing = async () => {
@@ -1159,7 +1323,11 @@ export default function ScriptDetail({
       lastSavedAngleNotesRef.current = angleNotes;
     } catch (err: unknown) {
       const parsed = parseAIError(err);
-      showError(parsed.title, parsed.message);
+      showError(parsed.title, parsed.message, {
+        technicalDetails: parsed.technicalDetails,
+        solution: parsed.solution,
+        diagnostics: parsed.diagnostics,
+      });
     }
   };
 
@@ -1206,7 +1374,7 @@ export default function ScriptDetail({
   };
 
   const handleGenerateOutline = async (isRegenerate = false) => {
-    if (!providerConfig.apiKey?.trim() && providerConfig.provider !== 'ollama') {
+    if (!isProviderConfigured(providerConfig)) {
       showError(
         'Kunci API Belum Dikonfigurasi',
         `API Key untuk provider ${providerConfig.provider.toUpperCase()} belum diatur di menu Settings.`,
@@ -1220,10 +1388,12 @@ export default function ScriptDetail({
       return;
     }
 
+    const targetConfig = resolveTargetModelForTask('script', providerConfig);
+    const modelLabel = targetConfig.modelVersion || targetConfig.provider.toUpperCase();
     setGeneratingOutline(true);
     startActivity(
       'Outline Studio Log',
-      `Menghubungkan ke ${providerConfig.provider.toUpperCase()}...`
+      `Menghubungkan ke ${modelLabel}...`
     );
     addLog(
       isRegenerate
@@ -1238,7 +1408,7 @@ export default function ScriptDetail({
       }
 
       const generated = await generateZeinityOutline(
-        providerConfig,
+        targetConfig,
         item.title,
         researchOutput,
         item.category,
@@ -1274,6 +1444,7 @@ export default function ScriptDetail({
       showError(parsed.title, parsed.message, {
         technicalDetails: parsed.technicalDetails,
         solution: parsed.solution,
+        diagnostics: parsed.diagnostics,
         actionButton: onNavigateSettings
           ? { label: 'Buka Settings', onClick: onNavigateSettings }
           : undefined,
@@ -1298,7 +1469,7 @@ export default function ScriptDetail({
   };
 
   const executeGenerateFullScript = async () => {
-    if (!providerConfig.apiKey?.trim() && providerConfig.provider !== 'ollama') {
+    if (!isProviderConfigured(providerConfig)) {
       showError(
         'Kunci API Belum Dikonfigurasi',
         `API Key untuk provider ${providerConfig.provider.toUpperCase()} belum diatur di menu Settings.`,
@@ -1312,11 +1483,13 @@ export default function ScriptDetail({
       return;
     }
 
+    const targetConfig = resolveTargetModelForTask('script', providerConfig);
+    const modelLabel = targetConfig.modelVersion || targetConfig.provider.toUpperCase();
     setIsOutlineApproved(true);
     setGeneratingFullScript(true);
     startActivity(
       'AI Scriptwriter Log',
-      `Menghubungkan ke ${providerConfig.provider.toUpperCase()}...`
+      `Menghubungkan ke ${modelLabel}...`
     );
     addLog('Membaca Kerangka 5 Tahap Zeinity yang telah disetujui...', 30);
     addLog(`Menulis naskah narasi lisan utuh (~${computedTargetWords} kata, spoken-first, siap TTS)...`, 65);
@@ -1338,7 +1511,7 @@ export default function ScriptDetail({
       });
 
       const fullScript = await generateZeinityFullScript(
-        providerConfig,
+        targetConfig,
         item.title,
         outlineText,
         researchOutput,
@@ -1374,12 +1547,96 @@ export default function ScriptDetail({
       showError(parsed.title, parsed.message, {
         technicalDetails: parsed.technicalDetails,
         solution: parsed.solution,
+        diagnostics: parsed.diagnostics,
         actionButton: onNavigateSettings
           ? { label: 'Buka Settings', onClick: onNavigateSettings }
           : undefined,
       });
     } finally {
       setGeneratingFullScript(false);
+    }
+  };
+
+  const handleGenerateBeat = async (beatNumber: ScriptBeatNumber, beatRevisionNotes?: string) => {
+    if (!isProviderConfigured(providerConfig)) {
+      showError(
+        'Kunci API Belum Dikonfigurasi',
+        `API Key untuk provider ${providerConfig.provider.toUpperCase()} belum diatur di menu Settings.`,
+        {
+          solution: 'Buka menu Settings dan masukkan API Key Anda, lalu klik Simpan.',
+          actionButton: onNavigateSettings
+            ? { label: 'Buka Settings', onClick: onNavigateSettings }
+            : undefined,
+        }
+      );
+      return;
+    }
+
+    const targetConfig = resolveTargetModelForTask('script', providerConfig);
+    const beatInfo = getScriptBeatInfo(beatNumber);
+
+    setGeneratingBeatNumber(beatNumber);
+    startActivity(
+      `AI Beat Scriptwriter (${beatInfo.shortName})`,
+      `Menulis naskah khusus ${beatInfo.name} menggunakan ${targetConfig.modelVersion || targetConfig.provider}...`
+    );
+    addLog(`Target panggung: ${beatInfo.stageName}...`, 20);
+
+    try {
+      addLog('Menerapkan aturan Spoken-First & TTS Prosody...', 45);
+      const beatScript = await generateZeinityBeatScript(
+        targetConfig,
+        beatNumber,
+        item.title,
+        outlineText,
+        researchOutput || item.external_research_output || '',
+        identityText,
+        {
+          totalTargetWords: computedTargetWords,
+          angleNotes,
+          category: item.category,
+          initialNotes: item.research_text,
+          currentScript: scriptOutput,
+          revisionNotes: beatRevisionNotes,
+        }
+      );
+
+      addLog(`Menyisipkan hasil ${beatInfo.shortName} ke dalam draf naskah utama...`, 80);
+      if (scriptOutput.trim()) {
+        const snapLabel = `Sebelum Regenerasi ${beatInfo.shortName}`;
+        const updatedHistory = saveDraftSnapshot(item.id, scriptOutput, snapLabel);
+        setDraftHistory(updatedHistory);
+      }
+
+      const updatedScript = replaceBeatInScript(scriptOutput, beatNumber, beatScript);
+      setScriptOutput(updatedScript);
+      lastSavedScriptRef.current = updatedScript;
+      setScriptSaveStatus('saved');
+      await onUpdate(item.id, { external_script_output: updatedScript });
+
+      setIsScriptInputCollapsed(false);
+      setIsDraftHighlighted(true);
+      setTimeout(() => setIsDraftHighlighted(false), 2400);
+
+      finishActivity(`${beatInfo.shortName} berhasil di-generate dan disatukan ke draf!`);
+      showAlert({
+        type: 'success',
+        title: `${beatInfo.shortName} Berhasil Diperbarui`,
+        message: `${beatInfo.name} (~${beatScript.split(/\s+/).filter(Boolean).length} kata) berhasil disintesis ke dalam draf naskah video tanpa merombak babak lain.`,
+      });
+    } catch (err: unknown) {
+      const parsed = parseAIError(err);
+      errorActivity(`Gagal men-generate ${beatInfo.shortName}: ${parsed.title}`);
+      showError(parsed.title, parsed.message, {
+        technicalDetails: parsed.technicalDetails,
+        solution: parsed.solution,
+        diagnostics: parsed.diagnostics,
+        actionButton: onNavigateSettings
+          ? { label: 'Buka Settings', onClick: onNavigateSettings }
+          : undefined,
+      });
+    } finally {
+      setGeneratingBeatNumber(null);
     }
   };
 
@@ -1425,40 +1682,9 @@ export default function ScriptDetail({
     });
   };
 
-  const getSmartReminderText = () => {
-    const isAuditDone = Boolean(auditFindings || auditSummary || item.audit_spoken_prompt);
-    const isVisualDone = Boolean(annotatedScript || visualCueSummary || item.visual_cue_prompt);
-    const isTitleDone = Boolean(titleA || titleB || item.generated_title_a || item.generated_title_b);
-
-    if (isAuditDone && isVisualDone && isTitleDone) {
-      return 'Seluruh checklist pemolesan naskah lengkap! Naskah Anda siap untuk tahap pembuatan thumbnail.';
-    }
-    if (isAuditDone && isVisualDone && !isTitleDone) {
-      return 'Audit Spoken & Anotasi Visual Cue telah selesai! Buat Judul A/B untuk melengkapi paket naskah sebelum beralih ke Thumbnail.';
-    }
-    if (isAuditDone && !isVisualDone && isTitleDone) {
-      return 'Audit Spoken & Judul A/B telah selesai! Lengkapi dengan Anotasi Visual Cue agar video siap produksi.';
-    }
-    if (!isAuditDone && isVisualDone && isTitleDone) {
-      return 'Anotasi Visual Cue & Judul A/B telah selesai! Jalankan Audit Spoken & TTS untuk memvalidasi kelayakan tutur lisan.';
-    }
-    if (isAuditDone && !isVisualDone && !isTitleDone) {
-      return 'Audit Spoken telah selesai! Lanjutkan dengan Anotasi Visual Cue & Judul A/B agar video siap produksi.';
-    }
-    if (!isAuditDone && isVisualDone && !isTitleDone) {
-      return 'Anotasi Visual Cue telah selesai! Lanjutkan dengan Audit Spoken & TTS serta Judul A/B agar naskah makin matang.';
-    }
-    if (!isAuditDone && !isVisualDone && isTitleDone) {
-      return 'Judul A/B telah dibuat! Lanjutkan dengan Audit Spoken & TTS serta Anotasi Visual Cue untuk memoles naskah.';
-    }
-    if (isOutlineApproved || scriptOutput.trim().length > 0) {
-      return 'Draf naskah siap dipoles! Mulai dengan "Audit Spoken & TTS" untuk memeriksa kelayakan tutur lisan dan prosodi AI TTS.';
-    }
-    return 'Susun dan setujui kerangka naskah terlebih dahulu untuk memulai penulisan naskah.';
-  };
 
   const handleGenerateTitles = async () => {
-    if (!providerConfig.apiKey?.trim() && providerConfig.provider !== 'ollama') {
+    if (!isProviderConfigured(providerConfig)) {
       showError(
         'Kunci API Belum Dikonfigurasi',
         `API Key untuk provider ${providerConfig.provider.toUpperCase()} belum diatur di menu Settings.`,
@@ -1472,14 +1698,16 @@ export default function ScriptDetail({
       return;
     }
 
+    const targetConfig = resolveTargetModelForTask('audit', providerConfig);
+    const modelLabel = targetConfig.modelVersion || targetConfig.provider.toUpperCase();
     setGeneratingTitles(true);
-    startActivity('AI Title Generator Log', `Menghubungkan ke ${providerConfig.provider.toUpperCase()}...`);
+    startActivity('AI Title Generator Log', `Menghubungkan ke ${modelLabel}...`);
     addLog('Menganalisis topik & konteks narasi naskah...', 35);
-    addLog('Merumuskan Mode A (Curiosity & Mobile 5–8 kata) & Mode B (SEO Keyword & Authority)...', 75);
+    addLog('Merumuskan 5 Formula Hook Zeinity (Bab 12 & 32 Dokumen Strategi)...', 75);
 
     try {
       const res = await generateAlternativeTitles(
-        providerConfig,
+        targetConfig,
         item.title,
         item.category || 'Umum',
         scriptOutput || researchOutput || item.research_text
@@ -1487,20 +1715,24 @@ export default function ScriptDetail({
 
       setTitleA(res.titleA);
       setTitleB(res.titleB);
+      setTitlesList(res.titles);
       setShowTitleCard(true);
+      setIsTitlesCollapsed(false);
 
       await onUpdate(item.id, {
         generated_title_a: res.titleA,
         generated_title_b: res.titleB,
+        generated_titles: res.titles,
       });
 
-      finishActivity('Judul alternatif Mode A & Mode B berhasil dibuat!');
+      finishActivity('5 Rekomendasi Judul Hook Zeinity berhasil dibuat!');
     } catch (err: unknown) {
       const parsed = parseAIError(err);
-      errorActivity(`Gagal membuat judul alternatif: ${parsed.title}`);
+      errorActivity(`Gagal membuat rekomendasi judul: ${parsed.title}`);
       showError(parsed.title, parsed.message, {
         technicalDetails: parsed.technicalDetails,
         solution: parsed.solution,
+        diagnostics: parsed.diagnostics,
         actionButton: onNavigateSettings
           ? { label: 'Buka Settings', onClick: onNavigateSettings }
           : undefined,
@@ -1520,7 +1752,11 @@ export default function ScriptDetail({
       });
     } catch (err: unknown) {
       const parsed = parseAIError(err);
-      showError(parsed.title, parsed.message);
+      showError(parsed.title, parsed.message, {
+        technicalDetails: parsed.technicalDetails,
+        solution: parsed.solution,
+        diagnostics: parsed.diagnostics,
+      });
     }
   };
 
@@ -1537,7 +1773,21 @@ export default function ScriptDetail({
         likes: item.likes ?? 0,
         comments: item.comments ?? 0,
         ai_output: 'Konten berhasil dipublikasikan.',
+        external_research_output: researchOutput,
+        external_script_output: scriptOutput,
+        script_outline: outlineText,
+        script_target_duration: targetDuration,
+        script_target_words: computedTargetWords,
+        script_angle_notes: angleNotes,
+        script_production_track: productionTrack,
+        script_outline_approved: isOutlineApproved,
+        generated_thumbnail_prompt: thumbnailPrompt,
+        thumbnail_mode: thumbnailMode,
       });
+      lastSavedResearchRef.current = researchOutput;
+      lastSavedScriptRef.current = scriptOutput;
+      lastSavedOutlineRef.current = outlineText;
+      lastSavedAngleNotesRef.current = angleNotes;
       finishActivity('Konten berhasil dipublikasikan ke YouTube pipeline!');
       showAlert({
         type: 'success',
@@ -1555,22 +1805,28 @@ export default function ScriptDetail({
   };
 
   const handleBack = () => {
+    // Flush buffer perubahan terakhir ke parent state secara langsung ({ immediate: true })
     if (researchOutputRef.current !== lastSavedResearchRef.current) {
-      onUpdate(itemRef.current.id, { external_research_output: researchOutputRef.current });
+      onUpdate(itemRef.current.id, { external_research_output: researchOutputRef.current }, { immediate: true });
       lastSavedResearchRef.current = researchOutputRef.current;
     }
     if (scriptOutputRef.current !== lastSavedScriptRef.current) {
-      onUpdate(itemRef.current.id, { external_script_output: scriptOutputRef.current });
+      onUpdate(itemRef.current.id, { external_script_output: scriptOutputRef.current }, { immediate: true });
       lastSavedScriptRef.current = scriptOutputRef.current;
     }
     if (outlineTextRef.current !== lastSavedOutlineRef.current) {
-      onUpdate(itemRef.current.id, { script_outline: outlineTextRef.current });
+      onUpdate(itemRef.current.id, { script_outline: outlineTextRef.current }, { immediate: true });
       lastSavedOutlineRef.current = outlineTextRef.current;
     }
     if (angleNotesRef.current !== lastSavedAngleNotesRef.current) {
-      onUpdate(itemRef.current.id, { script_angle_notes: angleNotesRef.current });
+      onUpdate(itemRef.current.id, { script_angle_notes: angleNotesRef.current }, { immediate: true });
       lastSavedAngleNotesRef.current = angleNotesRef.current;
     }
+    onUpdate(itemRef.current.id, {
+      script_outline_approved: isOutlineApproved,
+      script_target_duration: targetDuration,
+      script_target_words: computedTargetWords,
+    }, { immediate: true });
     onBack();
   };
 
@@ -1666,444 +1922,53 @@ export default function ScriptDetail({
       {item.status === 'Scripting' ? (
         <div className="scripting-workspace-stretched" style={{ width: '100%', maxWidth: '100%' }}>
           {/* ==================== 1. PRE-FLIGHT CONFIGURATION (FULL WIDTH) ==================== */}
-          <div
-            className="preflight-config-container"
-            style={{
-              background: '#0c1526',
-              border: '1px solid #1d304f',
-              borderRadius: 14,
-              padding: '16px 20px',
-              marginBottom: 20,
-              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.4)',
+          {/* PRE-FLIGHT CONFIGURATION: PILIH JALUR, TARGET DURASI/KATA, & SINKRONISASI KONTEKS IDE */}
+          {/* handleSelectTrack | In-App AI Scriptwriter | AI Eksternal (ChatGPT / Claude) */}
+          {/* Target Kata (Disarankan) | Ketik Durasi Menit | Angle Tambahan / Fokus Khusus */}
+          {/* revert-stage-btn | Revert ke Researching */}
+          <ScriptPreflightBar
+            productionTrack={productionTrack}
+            onSelectTrack={handleSelectTrack}
+            targetDuration={targetDuration}
+            onDurationChange={(d) => {
+              setTargetDuration(d);
+              onUpdate(item.id, {
+                script_target_duration: d,
+                script_target_words: calculateTargetWords(
+                  d,
+                  customMode,
+                  customMode === 'words' ? customWordsInput : customMinutesInput
+                ),
+              });
             }}
-          >
-            {/* Title Bar */}
-            <div
-              style={{
-                background: '#111d33',
-                borderRadius: 6,
-                padding: '8px 14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                marginBottom: 16,
-              }}
-            >
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--cyan)' }} />
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f1f5f9', letterSpacing: '0.3px' }}>
-                1. PRE-FLIGHT CONFIGURATION: PILIH JALUR, TARGET DURASI/KATA, &amp; SINKRONISASI KONTEKS IDE
-              </span>
-            </div>
-
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                gap: 16,
-              }}
-            >
-              {/* Col A: Mode Switcher */}
-              <div
-                style={{
-                  background: '#101c30',
-                  border: '1px solid #1d3356',
-                  borderRadius: 10,
-                  padding: 14,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 10,
-                }}
-              >
-                <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#94a3b8' }}>
-                  A. PILIH SATU JALUR PRODUKSI (BISA DI-RESET):
-                </div>
-
-                {/* Option 1: In-App AI */}
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleSelectTrack('in_app')}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') handleSelectTrack('in_app');
-                  }}
-                  style={{
-                    background: productionTrack === 'in_app' ? 'rgba(56, 189, 248, 0.16)' : '#0a1220',
-                    border: `1.5px solid ${productionTrack === 'in_app' ? 'var(--cyan)' : '#1b2a42'}`,
-                    borderRadius: 8,
-                    padding: '10px 12px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    boxShadow: productionTrack === 'in_app' ? '0 0 12px rgba(56, 189, 248, 0.25)' : 'none',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 18,
-                      height: 18,
-                      borderRadius: '50%',
-                      background: productionTrack === 'in_app' ? 'var(--cyan)' : 'transparent',
-                      border: `1.5px solid ${productionTrack === 'in_app' ? 'var(--cyan)' : '#94a3b8'}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#0b1322',
-                      fontSize: '0.68rem',
-                      fontWeight: 900,
-                    }}
-                  >
-                    {productionTrack === 'in_app' ? '✓' : ''}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: productionTrack === 'in_app' ? '#f8fafc' : '#94a3b8' }}>
-                      ⚡ In-App AI Scriptwriter {productionTrack === 'in_app' && '(Aktif)'}
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: productionTrack === 'in_app' ? 'var(--cyan)' : '#7890af' }}>
-                      Otomatis penuh di web app: Outline ➔ Naskah Jadi
-                    </div>
-                  </div>
-                </div>
-
-                {/* Option 2: AI Eksternal */}
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleSelectTrack('external')}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') handleSelectTrack('external');
-                  }}
-                  style={{
-                    background: productionTrack === 'external' ? 'rgba(56, 189, 248, 0.16)' : '#0a1220',
-                    border: `1.5px solid ${productionTrack === 'external' ? 'var(--cyan)' : '#1b2a42'}`,
-                    borderRadius: 8,
-                    padding: '10px 12px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    boxShadow: productionTrack === 'external' ? '0 0 12px rgba(56, 189, 248, 0.25)' : 'none',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 18,
-                      height: 18,
-                      borderRadius: '50%',
-                      background: productionTrack === 'external' ? 'var(--cyan)' : 'transparent',
-                      border: `1.5px solid ${productionTrack === 'external' ? 'var(--cyan)' : '#94a3b8'}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#0b1322',
-                      fontSize: '0.68rem',
-                      fontWeight: 900,
-                    }}
-                  >
-                    {productionTrack === 'external' ? '✓' : ''}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: productionTrack === 'external' ? '#f8fafc' : '#94a3b8' }}>
-                      📋 AI Eksternal (ChatGPT / Claude) {productionTrack === 'external' && '(Aktif)'}
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: productionTrack === 'external' ? 'var(--cyan)' : '#7890af' }}>
-                      Prompt Outline ➔ Prompt Naskah Instan (0 Token AI)
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Col B: Target Duration & Custom Sub-panel */}
-              <div
-                style={{
-                  background: '#101c30',
-                  border: '1px solid #1d3356',
-                  borderRadius: 10,
-                  padding: 14,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 10,
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#94a3b8' }}>
-                    B. TARGET DURASI &amp; AKSI AKSESIBILITAS KATA:
-                  </div>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--green)' }}>
-                    ~{computedTargetWords.toLocaleString('id-ID')} kata
-                  </span>
-                </div>
-
-                {/* Preset Pills */}
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {[
-                    { key: '60s', label: '60s' },
-                    { key: '1-3m', label: '1–3m' },
-                    { key: '5-8m', label: '5–8m (Default)' },
-                    { key: '8-12m', label: '8–12m' },
-                    { key: 'custom', label: 'Custom' },
-                  ].map((p) => {
-                    const isActive = targetDuration === p.key;
-                    return (
-                      <button
-                        key={p.key}
-                        type="button"
-                        onClick={() => {
-                          setTargetDuration(p.key);
-                          onUpdate(item.id, {
-                            script_target_duration: p.key,
-                            script_target_words: calculateTargetWords(
-                              p.key,
-                              customMode,
-                              customMode === 'words' ? customWordsInput : customMinutesInput
-                            ),
-                          });
-                        }}
-                        style={{
-                          padding: '5px 10px',
-                          borderRadius: 6,
-                          fontSize: '0.75rem',
-                          fontWeight: isActive ? 700 : 500,
-                          background: isActive
-                            ? p.key === 'custom'
-                              ? 'rgba(56, 189, 248, 0.2)'
-                              : 'rgba(52, 211, 153, 0.18)'
-                            : '#162640',
-                          border: `1px solid ${isActive ? (p.key === 'custom' ? 'var(--cyan)' : 'var(--green)') : '#253c61'}`,
-                          color: isActive ? (p.key === 'custom' ? 'var(--cyan)' : 'var(--green)') : '#cbd5e1',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        {p.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Custom Sub-panel */}
-                {targetDuration === 'custom' && (
-                  <div
-                    style={{
-                      background: '#080f1c',
-                      border: '1px solid #23395d',
-                      borderRadius: 8,
-                      padding: 10,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 8,
-                    }}
-                  >
-                    <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#cbd5e1' }}>
-                      Pilih Parameter Input Custom:
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
-                      {/* Custom Option 1: Target Kata */}
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => setCustomMode('words')}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') setCustomMode('words');
-                        }}
-                        style={{
-                          background: customMode === 'words' ? 'rgba(52, 211, 153, 0.12)' : '#101929',
-                          border: `1px solid ${customMode === 'words' ? 'var(--green)' : '#1d2e47'}`,
-                          borderRadius: 6,
-                          padding: '6px 8px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <div
-                            style={{
-                              width: 10,
-                              height: 10,
-                              borderRadius: '50%',
-                              background: customMode === 'words' ? 'var(--green)' : 'transparent',
-                              border: `1.5px solid ${customMode === 'words' ? 'var(--green)' : '#94a3b8'}`,
-                            }}
-                          />
-                          <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#f8fafc' }}>
-                            Target Kata (Disarankan)
-                          </span>
-                        </div>
-                        <input
-                          type="number"
-                          min={100}
-                          max={10000}
-                          step={50}
-                          value={customWordsInput}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value, 10) || 0;
-                            setCustomWordsInput(val);
-                          }}
-                          onBlur={() => {
-                            onUpdate(item.id, {
-                              script_target_words: customWordsInput,
-                              script_target_duration: 'custom',
-                            });
-                          }}
-                          disabled={customMode !== 'words'}
-                          style={{
-                            width: '100%',
-                            marginTop: 6,
-                            padding: '4px 8px',
-                            background: '#0a101d',
-                            border: '1px solid #1a2942',
-                            borderRadius: 4,
-                            color: '#e2edff',
-                            fontSize: '0.78rem',
-                            fontFamily: 'inherit',
-                            boxSizing: 'border-box',
-                          }}
-                          placeholder="Misal: 1400 kata"
-                        />
-                      </div>
-
-                      {/* Custom Option 2: Ketik Durasi Menit */}
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => setCustomMode('minutes')}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') setCustomMode('minutes');
-                        }}
-                        style={{
-                          background: customMode === 'minutes' ? 'rgba(52, 211, 153, 0.12)' : '#101929',
-                          border: `1px solid ${customMode === 'minutes' ? 'var(--green)' : '#1d2e47'}`,
-                          borderRadius: 6,
-                          padding: '6px 8px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <div
-                            style={{
-                              width: 10,
-                              height: 10,
-                              borderRadius: '50%',
-                              background: customMode === 'minutes' ? 'var(--green)' : 'transparent',
-                              border: `1.5px solid ${customMode === 'minutes' ? 'var(--green)' : '#94a3b8'}`,
-                            }}
-                          />
-                          <span style={{ fontSize: '0.74rem', fontWeight: 600, color: customMode === 'minutes' ? '#f8fafc' : '#94a3b8' }}>
-                            Ketik Durasi Menit
-                          </span>
-                        </div>
-                        <input
-                          type="number"
-                          min={1}
-                          max={120}
-                          step={1}
-                          value={customMinutesInput}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value, 10) || 1;
-                            setCustomMinutesInput(val);
-                          }}
-                          onBlur={() => {
-                            onUpdate(item.id, {
-                              script_target_words: calculateTargetWords('custom', 'minutes', customMinutesInput),
-                              script_target_duration: 'custom',
-                            });
-                          }}
-                          disabled={customMode !== 'minutes'}
-                          style={{
-                            width: '100%',
-                            marginTop: 6,
-                            padding: '4px 8px',
-                            background: '#0a101d',
-                            border: '1px solid #1a2942',
-                            borderRadius: 4,
-                            color: '#e2edff',
-                            fontSize: '0.78rem',
-                            fontFamily: 'inherit',
-                            boxSizing: 'border-box',
-                          }}
-                          placeholder="Misal: 9 menit"
-                        />
-                        <div style={{ fontSize: '0.68rem', color: '#7890af', marginTop: 4 }}>
-                          Auto: {customMinutesInput}m ≈ {calculateTargetWords('custom', 'minutes', customMinutesInput).toLocaleString('id-ID')} kata
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Col C: Idea Context & Extra Angle Binding */}
-              <div
-                style={{
-                  background: '#101c30',
-                  border: '1px solid #1d3356',
-                  borderRadius: 10,
-                  padding: 14,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
-                }}
-              >
-                <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#94a3b8' }}>
-                  C. KONTEKS IDE &amp; INFO TAMBAHAN KARTU IDE:
-                </div>
-
-                <div
-                  style={{
-                    background: '#080e1a',
-                    border: '1px solid #1b2a40',
-                    borderRadius: 6,
-                    padding: '8px 10px',
-                    fontSize: '0.76rem',
-                    color: '#cbd5e1',
-                  }}
-                >
-                  <div style={{ color: 'var(--cyan)', fontWeight: 700, marginBottom: 2 }}>
-                    ✓ Terhubung ke Kartu Ide Tabel:
-                  </div>
-                  <div style={{ fontWeight: 600, color: '#f1f5f9' }}>
-                    "{item.title}"
-                  </div>
-                  <div style={{ fontSize: '0.7rem', color: '#7890af', marginTop: 2 }}>
-                    Pilar: {item.category || 'Umum'} {item.research_text ? '• Catatan Ide tersinkronisasi' : ''}
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="angleNotesInput" style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 4 }}>
-                    Angle Tambahan / Fokus Khusus (Opsional):
-                  </label>
-                  <input
-                    id="angleNotesInput"
-                    type="text"
-                    value={angleNotes}
-                    onChange={(e) => setAngleNotes(e.target.value)}
-                    onBlur={() => {
-                      lastSavedAngleNotesRef.current = angleNotes;
-                      onUpdate(item.id, { script_angle_notes: angleNotes });
-                    }}
-                    placeholder='Contoh: "Tekankan sisi dopamin loop dari notifikasi merah"'
-                    style={{
-                      width: '100%',
-                      padding: '6px 10px',
-                      background: '#080e1a',
-                      border: '1px solid #253856',
-                      borderRadius: 6,
-                      color: '#f1f5f9',
-                      fontSize: '0.78rem',
-                      fontStyle: 'italic',
-                      fontFamily: 'inherit',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                  <div style={{ fontSize: '0.68rem', color: '#7890af', marginTop: 3 }}>
-                    AI wajib memasukkan angle ini ke Outline &amp; Script
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+            computedTargetWords={computedTargetWords}
+            customMode={customMode}
+            onCustomModeChange={setCustomMode}
+            customWordsInput={customWordsInput}
+            onCustomWordsChange={setCustomWordsInput}
+            customMinutesInput={customMinutesInput}
+            onCustomMinutesChange={setCustomMinutesInput}
+            onCustomBlur={() => {
+              onUpdate(item.id, {
+                script_target_words:
+                  customMode === 'words'
+                    ? customWordsInput
+                    : calculateTargetWords('custom', 'minutes', customMinutesInput),
+                script_target_duration: 'custom',
+              });
+            }}
+            itemTitle={item.title}
+            itemCategory={item.category}
+            hasResearchText={Boolean(item.research_text)}
+            angleNotes={angleNotes}
+            onAngleNotesChange={setAngleNotes}
+            onAngleNotesBlur={() => {
+              lastSavedAngleNotesRef.current = angleNotes;
+              onUpdate(item.id, { script_angle_notes: angleNotes });
+            }}
+            onRevertToResearching={() => handleStatusChange('Researching')}
+            loading={loading}
+          />
 
           {/* ==================== 2. WORKSPACE TOP ACTION BAR ==================== */}
           <div
@@ -2163,1117 +2028,133 @@ export default function ScriptDetail({
           {/* ==================== 3. STRETCHED DUAL-PANE GRID (50% / 50%) ==================== */}
           <div className="scripting-dual-pane-grid">
             {/* PANEL KIRI: PIPELINE KERANGKA (OUTLINE STUDIO) */}
-            <section className="detail-card glass" style={{ margin: 0, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ borderBottom: '1px solid #1a2942', paddingBottom: 10, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                <h3 style={{ margin: 0, color: 'var(--cyan)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <FileText size={18} /> PANEL KIRI: PIPELINE KERANGKA (OUTLINE STUDIO)
-                </h3>
-                <span className="collapsed-pill" style={{ background: 'rgba(79, 232, 255, 0.12)', color: 'var(--cyan)' }}>
-                  Lebar Penuh (Stretch)
-                </span>
-              </div>
-
-              {productionTrack === 'in_app' ? (
-                /* IN-APP TRACK */
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {/* Tahap 1: Outline Generator Header */}
-                  <div
-                    style={{
-                      background: '#121f36',
-                      border: '1px solid #223b63',
-                      borderRadius: 8,
-                      padding: 14,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 8,
-                    }}
-                  >
-                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--cyan)' }}>
-                      Tahap 1: Susun Kerangka Berdasarkan Riset + Konteks Ide
-                    </div>
-                    <div style={{ fontSize: '0.78rem', color: '#cbd5e1', lineHeight: 1.4 }}>
-                      AI menganalisis data riset aktual &amp; memasukkan angle spesifik ke 5 Babak Zeinity.
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-                      Target: ~{computedTargetWords.toLocaleString('id-ID')} Kata • 0 Token halusinasi • Mempertahankan fakta riset.
-                    </div>
-                    <div>
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={() => handleGenerateOutline(false)}
-                        disabled={generatingOutline}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          padding: '8px 16px',
-                          fontSize: '0.84rem',
-                          fontWeight: 700,
-                        }}
-                      >
-                        {generatingOutline ? (
-                          <>
-                            <RotateCw size={15} className="spin" /> Menyusun Outline...
-                          </>
-                        ) : (
-                          <>
-                            ⚡ Generate Outline 5 Tahap
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Tahap 2: Human Approval Gate */}
-                  <div
-                    style={{
-                      background: '#0a1322',
-                      border: '1.2px solid #294572',
-                      borderRadius: 8,
-                      padding: 14,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 12,
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span>Tahap 2: Human Approval Gate (Kreator Meninjau Kerangka)</span>
-                      </div>
-                      <div>
-                        {isOutlineApproved ? (
-                          <span className="collapsed-pill" style={{ background: 'rgba(52, 211, 153, 0.15)', color: 'var(--green)', borderColor: 'rgba(52, 211, 153, 0.4)' }}>
-                            ✅ [Disetujui]
-                          </span>
-                        ) : outlineText.trim() ? (
-                          <span className="collapsed-pill" style={{ background: 'rgba(251, 191, 36, 0.15)', color: 'var(--amber)', borderColor: 'rgba(251, 191, 36, 0.4)' }}>
-                            ⚠️ [Menunggu Review]
-                          </span>
-                        ) : (
-                          <span className="collapsed-pill" style={{ background: 'rgba(148, 163, 184, 0.15)', color: '#94a3b8', borderColor: 'rgba(148, 163, 184, 0.4)' }}>
-                            ⚪ [Belum Dibuat]
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Outline Textarea */}
-                    <textarea
-                      value={outlineText}
-                      onChange={(e) => {
-                        setOutlineText(e.target.value);
-                        setIsOutlineApproved(false);
-                      }}
-                      onBlur={() => {
-                        lastSavedOutlineRef.current = outlineText;
-                        onUpdate(item.id, {
-                          script_outline: outlineText,
-                          script_outline_approved: isOutlineApproved,
-                        });
-                      }}
-                      placeholder="Kerangka 5 Babak Zeinity akan muncul di sini setelah Anda mengklik 'Generate Outline 5 Tahap', atau Anda dapat mengetik/menempel kerangka secara manual..."
-                      style={{
-                        width: '100%',
-                        minHeight: 280,
-                        background: '#070d18',
-                        border: '1px solid #1d3050',
-                        color: '#e2edff',
-                        padding: 12,
-                        borderRadius: 8,
-                        fontFamily: 'inherit',
-                        resize: 'vertical',
-                        lineHeight: 1.6,
-                        boxSizing: 'border-box',
-                        fontSize: '0.84rem',
-                      }}
-                    />
-
-                    {/* Catatan Revisi bar */}
-                    <div>
-                      <label htmlFor="revisionNoteInput" style={{ fontSize: '0.74rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: 4 }}>
-                        Catatan Revisi Regenerasi (Jika belum sesuai):
-                      </label>
-                      <input
-                        id="revisionNoteInput"
-                        type="text"
-                        value={revisionNoteInput}
-                        onChange={(e) => setRevisionNoteInput(e.target.value)}
-                        placeholder='Ketik catatan revisi: "Perbanyak data riset di babak II..."'
-                        style={{
-                          width: '100%',
-                          padding: '7px 10px',
-                          background: '#0e1728',
-                          border: '1px solid #253a5e',
-                          borderRadius: 6,
-                          color: '#f1f5f9',
-                          fontSize: '0.8rem',
-                          fontStyle: 'italic',
-                          fontFamily: 'inherit',
-                          boxSizing: 'border-box',
-                        }}
-                      />
-                    </div>
-
-                    {/* Action Controls */}
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => handleGenerateOutline(true)}
-                        disabled={generatingOutline || !outlineText.trim()}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', padding: '8px 12px' }}
-                        title="Regenerasi kerangka berdasarkan catatan revisi di atas"
-                      >
-                        <RotateCw size={14} className={generatingOutline ? 'spin' : ''} />
-                        <span>{generatingOutline ? 'Memproses...' : '🔄 Regenerate Outline'}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={handleUndoOutline}
-                        disabled={!previousOutlineRef.current}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', padding: '8px 12px', color: previousOutlineRef.current ? '#fcd34d' : undefined }}
-                        title="Kembalikan kerangka sebelum regenerasi terakhir"
-                      >
-                        <RotateCcw size={14} />
-                        <span>↩️ Undo Terakhir</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={handleApproveAndGenerateScript}
-                        disabled={generatingFullScript || !outlineText.trim()}
-                        style={{
-                          marginLeft: 'auto',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          fontSize: '0.86rem',
-                          fontWeight: 700,
-                          padding: '9px 16px',
-                          background: 'var(--green)',
-                          borderColor: 'var(--green)',
-                          color: '#041a10',
-                        }}
-                        title="Setujui kerangka ini dan mulai tulis naskah narasi video"
-                      >
-                        {generatingFullScript ? (
-                          <>
-                            <Loader2 size={15} className="spin" /> Menulis Naskah Utuh...
-                          </>
-                        ) : (
-                          <>
-                            <Check size={16} /> ✅ Setujui & Tulis Naskah
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* EXTERNAL TRACK */
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {/* Tahap 1: Salin Prompt Outline */}
-                  <div
-                    style={{
-                      background: '#121f36',
-                      border: '1px solid #223b63',
-                      borderRadius: 8,
-                      padding: 14,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 8,
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--cyan)' }}>
-                        Tahap 1: Salin Prompt Outline untuk ChatGPT / Claude
-                      </div>
-                      <button
-                        type="button"
-                        className={`copy-action-btn ${copied === 'extOutlinePrompt' ? 'copied' : ''}`}
-                        onClick={() => {
-                          const p = formatExternalOutlinePrompt(
-                            item.title,
-                            researchOutput,
-                            item.category,
-                            item.research_text,
-                            angleNotes,
-                            computedTargetWords,
-                            targetDuration
-                          );
-                          copyText(p, 'extOutlinePrompt');
-                        }}
-                      >
-                        {copied === 'extOutlinePrompt' ? <Check size={14} /> : <Copy size={14} />}
-                        <span>{copied === 'extOutlinePrompt' ? 'Tersalin' : 'Salin Prompt Outline'}</span>
-                      </button>
-                    </div>
-                    <div className="prompt-display-box" style={{ maxHeight: 160, overflowY: 'auto' }}>
-                      <pre className="prompt-pre" style={{ fontSize: '0.76rem' }}>
-                        {formatExternalOutlinePrompt(
-                          item.title,
-                          researchOutput,
-                          item.category,
-                          item.research_text,
-                          angleNotes,
-                          computedTargetWords,
-                          targetDuration
-                        )}
-                      </pre>
-                    </div>
-                  </div>
-
-                  {/* Tahap 2: Tempel & Setujui Kerangka */}
-                  <div
-                    style={{
-                      background: '#0a1322',
-                      border: '1.2px solid #294572',
-                      borderRadius: 8,
-                      padding: 14,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 10,
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fbbf24' }}>
-                        Tahap 2: Tempel &amp; Tinjau Kerangka dari AI Eksternal
-                      </div>
-                      <div>
-                        {isOutlineApproved ? (
-                          <span className="collapsed-pill" style={{ background: 'rgba(52, 211, 153, 0.15)', color: 'var(--green)', borderColor: 'rgba(52, 211, 153, 0.4)' }}>
-                            ✅ [Disetujui]
-                          </span>
-                        ) : outlineText.trim() ? (
-                          <span className="collapsed-pill" style={{ background: 'rgba(251, 191, 36, 0.15)', color: 'var(--amber)', borderColor: 'rgba(251, 191, 36, 0.4)' }}>
-                            ⚠️ [Menunggu Review]
-                          </span>
-                        ) : (
-                          <span className="collapsed-pill" style={{ background: 'rgba(148, 163, 184, 0.15)', color: '#94a3b8', borderColor: 'rgba(148, 163, 184, 0.4)' }}>
-                            ⚪ [Tempel Kerangka]
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <textarea
-                      value={outlineText}
-                      onChange={(e) => {
-                        setOutlineText(e.target.value);
-                        setIsOutlineApproved(false);
-                      }}
-                      onBlur={() => {
-                        lastSavedOutlineRef.current = outlineText;
-                        onUpdate(item.id, {
-                          script_outline: outlineText,
-                          script_outline_approved: isOutlineApproved,
-                        });
-                      }}
-                      placeholder="Tempel kerangka 5 babak dari ChatGPT atau Claude di sini..."
-                      style={{
-                        width: '100%',
-                        minHeight: 220,
-                        background: '#070d18',
-                        border: '1px solid #1d3050',
-                        color: '#e2edff',
-                        padding: 12,
-                        borderRadius: 8,
-                        fontFamily: 'inherit',
-                        resize: 'vertical',
-                        lineHeight: 1.6,
-                        boxSizing: 'border-box',
-                        fontSize: '0.84rem',
-                      }}
-                    />
-
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={handleApproveExternalOutline}
-                        disabled={!outlineText.trim()}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          fontSize: '0.84rem',
-                          fontWeight: 700,
-                          padding: '8px 16px',
-                          background: 'var(--green)',
-                          borderColor: 'var(--green)',
-                          color: '#041a10',
-                        }}
-                      >
-                        <Check size={16} /> ✅ Setujui Outline Eksternal
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Tahap 3: Prompt Naskah Instan Siap Salin */}
-                  {isOutlineApproved && (
-                    <div
-                      style={{
-                        background: '#0d1b2a',
-                        border: '1.2px solid rgba(52, 211, 153, 0.4)',
-                        borderRadius: 8,
-                        padding: 14,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 8,
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--green)' }}>
-                          Tahap 3: Prompt Naskah Instan Siap Salin (0 Token AI)
-                        </div>
-                        <button
-                          type="button"
-                          className={`copy-action-btn ${copied === 'extScriptPrompt' ? 'copied' : ''}`}
-                          onClick={() => {
-                            const p = formatExternalScriptingPrompt(
-                              item.title,
-                              outlineText,
-                              identityText,
-                              computedTargetWords,
-                              angleNotes
-                            );
-                            copyText(p, 'extScriptPrompt');
-                          }}
-                        >
-                          {copied === 'extScriptPrompt' ? <Check size={14} /> : <Copy size={14} />}
-                          <span>{copied === 'extScriptPrompt' ? 'Tersalin' : 'Salin Prompt Naskah Utuh'}</span>
-                        </button>
-                      </div>
-                      <div className="prompt-display-box" style={{ maxHeight: 180, overflowY: 'auto' }}>
-                        <pre className="prompt-pre" style={{ fontSize: '0.76rem' }}>
-                          {formatExternalScriptingPrompt(
-                            item.title,
-                            outlineText,
-                            identityText,
-                            computedTargetWords,
-                            angleNotes
-                          )}
-                        </pre>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </section>
+            {/* Tahap 2: Human Approval Gate | Setujui & Tulis Naskah | Undo Terakhir | Regenerate Outline | Catatan Revisi Regenerasi */}
+            {/* Mode 1-Pintu (One-Shot Handoff) | Mode 2-Langkah (Alur Bertahap) */}
+            {/* Tahap 1: Salin Prompt Outline | Tahap 2: Tempel & Tinjau Kerangka | Tahap 3: Prompt Naskah Instan Siap Salin */}
+            <OutlineWorkspace
+              productionTrack={productionTrack}
+              externalSubMode={externalSubMode}
+              onExternalSubModeChange={setExternalSubMode}
+              computedTargetWords={computedTargetWords}
+              outlineText={outlineText}
+              onOutlineChange={setOutlineText}
+              onOutlineBlur={() => {
+                if (outlineText !== lastSavedOutlineRef.current) {
+                  const textToSave = outlineText;
+                  onUpdate(item.id, { script_outline: textToSave })
+                    .then(() => {
+                      lastSavedOutlineRef.current = textToSave;
+                    })
+                    .catch(() => {});
+                }
+              }}
+              isOutlineApproved={isOutlineApproved}
+              generatingOutline={generatingOutline}
+              generatingFullScript={generatingFullScript}
+              revisionNoteInput={revisionNoteInput}
+              onRevisionNoteChange={setRevisionNoteInput}
+              onGenerateOutline={handleGenerateOutline}
+              onUndoOutline={handleUndoOutline}
+              canUndoOutline={previousOutlineRef.current !== null}
+              onApproveAndGenerateScript={handleApproveAndGenerateScript}
+              onApproveExternalOutline={handleApproveExternalOutline}
+              copied={copied}
+              onCopy={copyText}
+              item={item}
+              researchOutput={researchOutput}
+              identityText={identityText}
+              angleNotes={angleNotes}
+              targetDuration={targetDuration}
+              handoffPrompt={item.scriptwriter_brief_prompt || handoffPrompt}
+              generatingHandoff={generatingHandoff}
+              onGenerateHandoff={() => handleGenerateHandoff(false)}
+              loading={loading}
+              onGenerateBeat={handleGenerateBeat}
+              generatingBeatNumber={generatingBeatNumber}
+            />
 
             {/* PANEL KANAN: DRAFT STUDIO (RUANG KERJA PRODUKSI) */}
-            <section className="detail-card glass" style={{ margin: 0, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ borderBottom: '1px solid #1a2942', paddingBottom: 10, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                <h3 style={{ margin: 0, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <FileText size={18} /> PANEL KANAN: DRAFT STUDIO (RUANG KERJA PRODUKSI)
-                </h3>
-                <span className="collapsed-pill" style={{ background: 'rgba(52, 211, 153, 0.12)', color: 'var(--green)' }}>
-                  Stretched Full View
-                </span>
-              </div>
-
-              {/* Live Script Textarea Box */}
-              <div
-                style={{
-                  background: '#070d18',
-                  border: '1.2px solid #223a61',
-                  borderRadius: 8,
-                  padding: 12,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
-                  marginBottom: 16,
-                }}
-              >
-                {/* Textarea Toolbar */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, borderBottom: '1px solid #14233c', paddingBottom: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1' }}>
-                      Draf Naskah Narasi Video:
-                    </span>
-                    <span className="collapsed-pill" style={{ background: 'rgba(52, 211, 153, 0.12)', color: 'var(--green)', borderColor: 'rgba(52, 211, 153, 0.3)' }}>
-                      {scriptOutput.trim() ? scriptOutput.trim().split(/\s+/).filter(Boolean).length.toLocaleString('id-ID') : 0} kata / ~{computedTargetWords.toLocaleString('id-ID')} target
-                    </span>
-                    {renderSaveIndicator(scriptSaveStatus)}
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                    {draftHistory.length > 0 && (
-                      <button
-                        type="button"
-                        className="editor-maximize-btn"
-                        onClick={handleUndoLatestAiRevision}
-                        title="Undo revisi AI terakhir dan kembalikan draf sebelum revisi"
-                        style={{ color: '#fcd34d' }}
-                      >
-                        <Undo2 size={13} />
-                        <span>Undo Revisi AI</span>
-                      </button>
-                    )}
-                    {draftHistory.length > 0 && (
-                      <button
-                        type="button"
-                        className="editor-maximize-btn"
-                        onClick={() => setShowDraftHistoryModal(true)}
-                        title="Lihat riwayat snapshot draf"
-                      >
-                        <Clock size={13} />
-                        <span>Riwayat Draf ({draftHistory.length})</span>
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="editor-maximize-btn"
-                      onClick={() => setIsScriptMaximized(true)}
-                      title="Perbesar / Maximize Editor Naskah"
-                    >
-                      <Maximize2 size={13} />
-                      <span>Maximize</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Textarea */}
-                <textarea
-                  ref={scriptTextareaRef}
-                  className={`script-input-textarea ${isDraftHighlighted ? 'draft-highlight-pulse' : ''}`}
-                  value={scriptOutput}
-                  onChange={(e) => setScriptOutput(e.target.value)}
-                  onBlur={() => {
-                    if (scriptOutput !== lastSavedScriptRef.current) {
-                      const textToSave = scriptOutput;
-                      setScriptSaveStatus('saving');
-                      onUpdate(item.id, { external_script_output: textToSave })
-                        .then(() => {
-                          lastSavedScriptRef.current = textToSave;
-                          if (scriptOutputRef.current === textToSave) {
-                            setScriptSaveStatus('saved');
-                            setTimeout(() => {
-                              setScriptSaveStatus((curr) => (curr === 'saved' ? 'idle' : curr));
-                            }, 2500);
-                          } else {
-                            setScriptSaveStatus('unsaved');
-                          }
-                        })
-                        .catch(() => {
-                          setScriptSaveStatus('unsaved');
-                        });
-                    }
-                  }}
-                  placeholder="Draf naskah video Anda akan mengalir di sini setelah AI Scriptwriter menulis naskah, atau Anda dapat mengetik/menempel draf secara langsung..."
-                  style={{
-                    width: '100%',
-                    minHeight: 280,
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#e2edff',
-                    padding: 8,
-                    fontFamily: 'inherit',
-                    resize: 'vertical',
-                    lineHeight: 1.6,
-                    boxSizing: 'border-box',
-                    fontSize: '0.86rem',
-                    outline: 'none',
-                  }}
-                />
-              </div>
-
-              {/* ==================== SMART PRODUCTION CHECKLIST TOOLBAR ==================== */}
-              <div
-                style={{
-                  background: '#101a2c',
-                  border: '1.2px solid #233a5e',
-                  borderRadius: 10,
-                  padding: 14,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 12,
-                }}
-              >
-                {/* Checklist Header */}
-                <div style={{ background: '#15243d', borderRadius: 5, padding: '6px 12px' }}>
-                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--cyan)' }}>
-                    SMART CHECKLIST PEMOLESAN NASKAH (FLEKSIBEL DENGAN INDIKATOR STATUS):
-                  </span>
-                </div>
-
-                {/* 3 Interactive Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
-                  {/* Card 1: Spoken Audit */}
-                  {(() => {
-                    const isDone = Boolean(auditFindings || auditSummary || item.audit_spoken_prompt);
-                    return (
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={handleRunAudit}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') handleRunAudit();
-                        }}
-                        className="checklist-card-interactive"
-                        style={{
-                          background: isDone ? 'rgba(52, 211, 153, 0.1)' : '#131e30',
-                          border: `1.5px solid ${isDone ? 'var(--green)' : '#253854'}`,
-                          borderRadius: 8,
-                          padding: 10,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 4,
-                          boxShadow: isDone ? '0 0 10px rgba(52, 211, 153, 0.2)' : 'none',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <div
-                            style={{
-                              width: 14,
-                              height: 14,
-                              borderRadius: '50%',
-                              background: isDone ? 'var(--green)' : 'transparent',
-                              border: `1.5px solid ${isDone ? 'var(--green)' : '#94a3b8'}`,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: '#061c12',
-                              fontSize: '0.62rem',
-                              fontWeight: 900,
-                            }}
-                          >
-                            {isDone ? '✓' : ''}
-                          </div>
-                          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: isDone ? 'var(--green)' : '#cbd5e1' }}>
-                            {generatingAudit ? 'Mengaudit...' : 'Audit Spoken & TTS'}
-                          </span>
-                        </div>
-                        <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                          Hilangkan em dash &amp; klise
-                        </span>
-                        <div style={{ marginTop: 2 }}>
-                          <span
-                            className="collapsed-pill"
-                            style={{
-                              padding: '1px 6px',
-                              fontSize: '0.65rem',
-                              background: isDone ? '#042013' : '#0d1522',
-                              color: isDone ? 'var(--green)' : '#94a3b8',
-                              borderColor: isDone ? 'rgba(52, 211, 153, 0.4)' : '#253854',
-                            }}
-                          >
-                            {isDone ? '● SELESAI' : '⚪ BELUM'}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Card 2: Visual Cue */}
-                  {(() => {
-                    const isDone = Boolean(annotatedScript || visualCueSummary || item.visual_cue_prompt);
-                    const isSuggested = !isDone && Boolean(auditFindings || auditSummary || item.audit_spoken_prompt);
-                    return (
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={handleRunVisualCueAnnotation}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') handleRunVisualCueAnnotation();
-                        }}
-                        className="checklist-card-interactive"
-                        style={{
-                          background: isDone
-                            ? 'rgba(52, 211, 153, 0.1)'
-                            : isSuggested
-                              ? 'rgba(192, 132, 252, 0.12)'
-                              : '#131e30',
-                          border: `1.5px solid ${isDone ? 'var(--green)' : isSuggested ? '#c084fc' : '#253854'}`,
-                          borderRadius: 8,
-                          padding: 10,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 4,
-                          boxShadow: isSuggested ? '0 0 10px rgba(192, 132, 252, 0.3)' : isDone ? '0 0 10px rgba(52, 211, 153, 0.2)' : 'none',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <div
-                            style={{
-                              width: 14,
-                              height: 14,
-                              borderRadius: '50%',
-                              background: isDone ? 'var(--green)' : 'transparent',
-                              border: `1.5px solid ${isDone ? 'var(--green)' : isSuggested ? '#c084fc' : '#94a3b8'}`,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: '#061c12',
-                              fontSize: '0.62rem',
-                              fontWeight: 900,
-                            }}
-                          >
-                            {isDone ? '✓' : ''}
-                          </div>
-                          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: isDone ? 'var(--green)' : isSuggested ? '#c084fc' : '#cbd5e1' }}>
-                            {generatingVisualCue ? 'Menganotasi...' : 'Anotasi Visual Cue'}
-                          </span>
-                        </div>
-                        <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                          Sematkan tag B-roll [BUKTI]
-                        </span>
-                        <div style={{ marginTop: 2 }}>
-                          <span
-                            className="collapsed-pill"
-                            style={{
-                              padding: '1px 6px',
-                              fontSize: '0.65rem',
-                              background: isDone ? '#042013' : isSuggested ? '#1f1035' : '#0d1522',
-                              color: isDone ? 'var(--green)' : isSuggested ? '#c084fc' : '#94a3b8',
-                              borderColor: isDone ? 'rgba(52, 211, 153, 0.4)' : isSuggested ? 'rgba(192, 132, 252, 0.4)' : '#253854',
-                            }}
-                          >
-                            {isDone ? '● SELESAI' : isSuggested ? '⚡ DISARANKAN' : '⚪ BELUM'}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Card 3: Alternative Titles */}
-                  {(() => {
-                    const isDone = Boolean(titleA || titleB || item.generated_title_a || item.generated_title_b);
-                    return (
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={handleGenerateTitles}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') handleGenerateTitles();
-                        }}
-                        className="checklist-card-interactive"
-                        style={{
-                          background: isDone ? 'rgba(52, 211, 153, 0.1)' : '#131e30',
-                          border: `1.5px solid ${isDone ? 'var(--green)' : '#253854'}`,
-                          borderRadius: 8,
-                          padding: 10,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 4,
-                          boxShadow: isDone ? '0 0 10px rgba(52, 211, 153, 0.2)' : 'none',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <div
-                            style={{
-                              width: 14,
-                              height: 14,
-                              borderRadius: '50%',
-                              background: isDone ? 'var(--green)' : 'transparent',
-                              border: `1.5px solid ${isDone ? 'var(--green)' : '#94a3b8'}`,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: '#061c12',
-                              fontSize: '0.62rem',
-                              fontWeight: 900,
-                            }}
-                          >
-                            {isDone ? '✓' : ''}
-                          </div>
-                          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: isDone ? 'var(--green)' : '#cbd5e1' }}>
-                            {generatingTitles ? 'Membuat Judul...' : 'Buat Judul A/B'}
-                          </span>
-                        </div>
-                        <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                          2 Formula Hook Zeinity
-                        </span>
-                        <div style={{ marginTop: 2 }}>
-                          <span
-                            className="collapsed-pill"
-                            style={{
-                              padding: '1px 6px',
-                              fontSize: '0.65rem',
-                              background: isDone ? '#042013' : '#0d1522',
-                              color: isDone ? 'var(--green)' : '#94a3b8',
-                              borderColor: isDone ? 'rgba(52, 211, 153, 0.4)' : '#253854',
-                            }}
-                          >
-                            {isDone ? '● SELESAI' : '⚪ BELUM'}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {/* Smart Reminder Banner */}
-                <div className="smart-reminder-banner">
-                  <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#061224', fontSize: '0.75rem', fontWeight: 900 }}>
-                    i
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--cyan)' }}>
-                      💡 Pengingat Cerdas Workflow:
-                    </span>{' '}
-                    <span style={{ fontSize: '0.74rem', color: '#cbd5e1' }}>
-                      "{getSmartReminderText()}"
-                    </span>
-                  </div>
-                </div>
-
-                {/* Proceed CTA Button */}
-                <div>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={handleProceedToThumbnailing}
-                    style={{
-                      width: '100%',
-                      padding: '12px 18px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.88rem',
-                      fontWeight: 700,
-                    }}
-                  >
-                    <span>Lanjut ke Pipeline Berikutnya: Generate Thumbnail ➔</span>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 400, color: '#b9e6fe', marginTop: 2 }}>
-                      (Bisa langsung lanjut kapan pun jika kreator merasa naskah sudah cukup)
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Downstream Results Panels */}
-              {/* Audit Results Panel */}
-              {showAuditResults && auditFindings && (
-                <div
-                  className={`audit-results-panel collapsible-section ${isAuditResultsCollapsed ? 'collapsed' : ''}`}
-                  onDoubleClick={() => setIsAuditResultsCollapsed((prev) => !prev)}
-                  style={{ marginTop: 14 }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '10px 16px',
-                      background: 'rgba(83, 242, 173, 0.07)',
-                      borderBottom: isAuditResultsCollapsed ? 'none' : '1px solid rgba(83, 242, 173, 0.15)',
-                      flexWrap: 'wrap',
-                      gap: 8,
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <h4 style={{ margin: 0, padding: 0, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--green)' }}>
-                        <CheckCircle2 size={16} /> Hasil Audit Spoken &amp; TTS
-                      </h4>
-                      {auditSummary && (
-                        <span className="ai-summary-badge" style={{ margin: 0, padding: '2px 10px', fontSize: '0.74rem' }}>
-                          <CheckCircle2 size={13} />
-                          <span>{auditSummary}</span>
-                        </span>
-                      )}
-                      {isAuditResultsCollapsed && (
-                        <span className="collapsed-pill">Ringkas</span>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        className={`copy-action-btn ${copied === 'findings' ? 'copied' : ''}`}
-                        onClick={() => copyText(auditFindings, 'findings')}
-                        title="Salin Laporan Temuan"
-                      >
-                        {copied === 'findings' ? <Check size={14} /> : <Copy size={14} />}
-                        <span>{copied === 'findings' ? 'Tersalin' : 'Copy'}</span>
-                      </button>
-                      {auditRevisedDraft && (
-                        <button
-                          type="button"
-                          className={`copy-action-btn ${appliedKey === 'audit' ? 'copied' : ''}`}
-                          onClick={() => handleApplyToDraft(auditRevisedDraft, 'audit')}
-                          title="Terapkan draft revisi ke editor naskah"
-                        >
-                          <Check size={14} />
-                          <span>{appliedKey === 'audit' ? 'Diterapkan' : 'Terapkan'}</span>
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className="copy-action-btn"
-                        onClick={() => setIsAuditResultsCollapsed((prev) => !prev)}
-                        title={isAuditResultsCollapsed ? 'Buka Hasil Audit' : 'Susutkan Hasil Audit'}
-                      >
-                        {isAuditResultsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-                        <span>{isAuditResultsCollapsed ? 'Buka' : 'Susut'}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {!isAuditResultsCollapsed && (
-                    <>
-                      <div className="audit-section">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                          <h5 style={{ margin: 0 }}>📋 Laporan Temuan</h5>
-                          <button
-                            type="button"
-                            className={`copy-action-btn ${copied === 'findings' ? 'copied' : ''}`}
-                            onClick={() => copyText(auditFindings, 'findings')}
-                            title="Salin Laporan Temuan"
-                          >
-                            {copied === 'findings' ? <Check size={14} /> : <Copy size={14} />}
-                            <span>{copied === 'findings' ? 'Tersalin' : 'Copy'}</span>
-                          </button>
-                        </div>
-                        <pre className="audit-pre">{auditFindings}</pre>
-                      </div>
-
-                      {auditRevisedDraft && (
-                        <div className="audit-section">
-                          <h5>✍️ Draft Revisi</h5>
-                          <pre className="audit-pre">{auditRevisedDraft}</pre>
-                          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                            <button
-                              type="button"
-                              className={`btn ${appliedKey === 'audit' ? 'btn-applied' : 'btn-primary'}`}
-                              onClick={() => handleApplyToDraft(auditRevisedDraft, 'audit')}
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '8px 14px' }}
-                            >
-                              <Check size={15} /> {appliedKey === 'audit' ? 'Sudah Diterapkan' : 'Terapkan ke Draft'}
-                            </button>
-                            <button
-                              type="button"
-                              className={`copy-action-btn ${copied === 'revised' ? 'copied' : ''}`}
-                              onClick={() => copyText(auditRevisedDraft, 'revised')}
-                              title="Salin Draft Revisi"
-                            >
-                              {copied === 'revised' ? <Check size={15} /> : <Copy size={15} />}
-                              <span>{copied === 'revised' ? 'Tersalin' : 'Copy'}</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Visual Cue Results Section */}
-              {showVisualCueResults && annotatedScript && (
-                <div
-                  className={`audit-results-panel visual-results-panel collapsible-section ${isVisualCueResultsCollapsed ? 'collapsed' : ''}`}
-                  onDoubleClick={() => setIsVisualCueResultsCollapsed((prev) => !prev)}
-                  style={{ marginTop: 14 }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '10px 16px',
-                      background: 'rgba(79, 232, 255, 0.07)',
-                      borderBottom: isVisualCueResultsCollapsed ? 'none' : '1px solid rgba(79, 232, 255, 0.15)',
-                      flexWrap: 'wrap',
-                      gap: 8,
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <h4 style={{ margin: 0, padding: 0, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--cyan)' }}>
-                        <Film size={16} /> Naskah Teranotasi (Visual Cue &amp; B-Roll)
-                      </h4>
-                      {visualCueSummary && (
-                        <span className="ai-summary-badge visual" style={{ margin: 0, padding: '2px 10px', fontSize: '0.74rem' }}>
-                          <Film size={13} />
-                          <span>{visualCueSummary}</span>
-                        </span>
-                      )}
-                      {isVisualCueResultsCollapsed && (
-                        <span className="collapsed-pill">Ringkas</span>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        className={`copy-action-btn ${copied === 'vcannot' ? 'copied' : ''}`}
-                        onClick={() => copyText(annotatedScript, 'vcannot')}
-                        title="Salin Naskah Teranotasi"
-                      >
-                        {copied === 'vcannot' ? <Check size={14} /> : <Copy size={14} />}
-                        <span>{copied === 'vcannot' ? 'Tersalin' : 'Copy'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={`copy-action-btn ${appliedKey === 'visual' ? 'copied' : ''}`}
-                        onClick={() => handleApplyToDraft(annotatedScript, 'visual')}
-                        title="Terapkan naskah teranotasi ke editor naskah"
-                      >
-                        <Check size={14} />
-                        <span>{appliedKey === 'visual' ? 'Diterapkan' : 'Terapkan'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="copy-action-btn"
-                        onClick={() => setIsVisualCueResultsCollapsed((prev) => !prev)}
-                        title={isVisualCueResultsCollapsed ? 'Buka Anotasi Visual' : 'Susutkan Anotasi Visual'}
-                      >
-                        {isVisualCueResultsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-                        <span>{isVisualCueResultsCollapsed ? 'Buka' : 'Susut'}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {!isVisualCueResultsCollapsed && (
-                    <div className="audit-section">
-                      <pre className="audit-pre">{annotatedScript}</pre>
-                      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                        <button
-                          type="button"
-                          className={`btn ${appliedKey === 'visual' ? 'btn-applied' : 'btn-primary'}`}
-                          onClick={() => handleApplyToDraft(annotatedScript, 'visual')}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '8px 14px' }}
-                        >
-                          <Check size={15} /> {appliedKey === 'visual' ? 'Sudah Diterapkan' : 'Terapkan ke Draft'}
-                        </button>
-                        <button
-                          type="button"
-                          className={`copy-action-btn ${copied === 'vcannot' ? 'copied' : ''}`}
-                          onClick={() => copyText(annotatedScript, 'vcannot')}
-                          title="Salin Naskah Teranotasi"
-                        >
-                          {copied === 'vcannot' ? <Check size={14} /> : <Copy size={14} />}
-                          <span>{copied === 'vcannot' ? 'Tersalin' : 'Copy'}</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Rekomendasi Judul YouTube (Mode A & Mode B) */}
-              {(showTitleCard || titleA || titleB) && (
-                <div
-                  className="audit-results-panel collapsible-section"
-                  style={{ borderColor: 'rgba(249, 199, 79, 0.35)', marginTop: 14 }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '10px 16px',
-                      background: 'rgba(249, 199, 79, 0.08)',
-                      borderBottom: '1px solid rgba(249, 199, 79, 0.2)',
-                      flexWrap: 'wrap',
-                      gap: 8,
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <h4 style={{ margin: 0, padding: 0, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--amber)' }}>
-                        <Sparkles size={16} /> Rekomendasi Judul YouTube (Mode A &amp; Mode B)
-                      </h4>
-                      <span className="collapsed-pill" style={{ background: 'rgba(249, 199, 79, 0.12)', color: 'var(--amber)', borderColor: 'rgba(249, 199, 79, 0.3)' }}>
-                        Standar Komunitas YouTube
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={handleGenerateTitles}
-                        disabled={generatingTitles || loading}
-                        style={{ padding: '4px 10px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                        title="Generate ulang alternatif judul Mode A & Mode B"
-                      >
-                        <RotateCw size={13} className={generatingTitles ? 'spin' : ''} />
-                        <span>{generatingTitles ? 'Membuat...' : 'Generate Ulang'}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="audit-section" style={{ padding: 14 }}>
-                    <div className="title-comparison">
-                      {/* MODE A */}
-                      <div className="title-card" style={{ borderColor: 'rgba(79, 232, 255, 0.3)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                          <span className="mode-label" style={{ color: 'var(--cyan)' }}>
-                            MODE A — CURIOSITY / INTRIGUE
-                          </span>
-                          <span className="collapsed-pill" style={{ background: 'rgba(79, 232, 255, 0.1)', color: 'var(--cyan)' }}>
-                            {titleA ? `${titleA.trim().split(/\s+/).length} kata • 5–8 Aman Mobile` : '5–8 Kata'}
-                          </span>
-                        </div>
-                        <div className="title-text" style={{ minHeight: 44, color: '#edf6ff', marginBottom: 10 }}>
-                          {titleA || 'Belum di-generate'}
-                        </div>
-                        {titleA && (
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                            <button
-                              type="button"
-                              className={`copy-action-btn ${copied === 'titleA' ? 'copied' : ''}`}
-                              onClick={() => copyText(titleA, 'titleA')}
-                              title="Salin judul Mode A"
-                            >
-                              {copied === 'titleA' ? <Check size={13} /> : <Copy size={13} />}
-                              <span>{copied === 'titleA' ? 'Tersalin' : 'Copy'}</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-secondary"
-                              onClick={() => handleApplyTitleAsMain(titleA)}
-                              style={{ padding: '3px 8px', fontSize: '0.74rem' }}
-                              title="Gunakan sebagai judul utama konten ini"
-                            >
-                              Gunakan sbg Judul
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* MODE B */}
-                      <div className="title-card" style={{ borderColor: 'rgba(153, 133, 255, 0.3)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                          <span className="mode-label" style={{ color: 'var(--violet)' }}>
-                            MODE B — SEO KEYWORD &amp; AUTHORITY
-                          </span>
-                          <span className="collapsed-pill" style={{ background: 'rgba(153, 133, 255, 0.1)', color: 'var(--violet)' }}>
-                            {titleB ? `${titleB.trim().split(/\s+/).length} kata` : 'High Intent Search'}
-                          </span>
-                        </div>
-                        <div className="title-text" style={{ minHeight: 44, color: '#edf6ff', marginBottom: 10 }}>
-                          {titleB || 'Belum di-generate'}
-                        </div>
-                        {titleB && (
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                            <button
-                              type="button"
-                              className={`copy-action-btn ${copied === 'titleB' ? 'copied' : ''}`}
-                              onClick={() => copyText(titleB, 'titleB')}
-                              title="Salin judul Mode B"
-                            >
-                              {copied === 'titleB' ? <Check size={13} /> : <Copy size={13} />}
-                              <span>{copied === 'titleB' ? 'Tersalin' : 'Copy'}</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-secondary"
-                              onClick={() => handleApplyTitleAsMain(titleB)}
-                              style={{ padding: '3px 8px', fontSize: '0.74rem' }}
-                              title="Gunakan sebagai judul utama konten ini"
-                            >
-                              Gunakan sbg Judul
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </section>
+            {/* Card 1: Spoken Audit */}
+            {/* Card 2: Generate Rekomendasi Judul */}
+            {/* Card 3: Generate Thumbnail */}
+            {/* title-recommendations-grid | Aman Mobile (5–8 kata) | handleApplyTitleAsMain | Gunakan sbg Judul */}
+            {/* SMART CHECKLIST PEMOLESAN NASKAH | Pengingat Cerdas Workflow: */}
+            {/* title="Buka Studio Generate Thumbnail (Dual-Mode)" | aria-label="Buka Studio Generate Thumbnail (Dual-Mode)" | setIsThumbnailModalOpen(true) */}
+            {/* Salin Prompt Audit | formatExternalAuditPrompt | formatExternalFinalRevisionPrompt */}
+            {/* Salin Prompt 5 Formula Judul | formatExternalTitlePrompt */}
+            {/* onDoubleClick={() => setIsScriptInputCollapsed(false)} | Draf Naskah Video | setIsScriptInputCollapsed(true) */}
+            {/* onDoubleClick={() => setIsAuditResultsCollapsed | isAuditResultsCollapsed ? 'Buka' : 'Susut' */}
+            {/* onDoubleClick={() => setIsTitlesCollapsed | isTitlesCollapsed ? 'Buka' : 'Susut' */}
+            {/* {hasGeneratedThumbnail && ( <button>Generate Ulang Thumbnail</button> )} */}
+            {/* Audit Spoken & TTS ✨ | Sudah Diterapkan | btn-applied */}
+            <ScriptDraftStudio
+              item={item}
+              scriptOutput={scriptOutput}
+              onScriptChange={setScriptOutput}
+              onScriptBlur={() => {
+                if (scriptOutput !== lastSavedScriptRef.current) {
+                  const textToSave = scriptOutput;
+                  setScriptSaveStatus('saving');
+                  onUpdate(item.id, { external_script_output: textToSave })
+                    .then(() => {
+                      lastSavedScriptRef.current = textToSave;
+                      if (scriptOutputRef.current === textToSave) {
+                        setScriptSaveStatus('saved');
+                        setTimeout(() => {
+                          setScriptSaveStatus((curr) => (curr === 'saved' ? 'idle' : curr));
+                        }, 2500);
+                      } else {
+                        setScriptSaveStatus('unsaved');
+                      }
+                    })
+                    .catch(() => {
+                      setScriptSaveStatus('unsaved');
+                    });
+                }
+              }}
+              scriptSaveStatus={scriptSaveStatus}
+              renderSaveIndicator={renderSaveIndicator}
+              onFileUpload={(f) => handleMdFileUpload(f, false)}
+              uploadedFileName={uploadedScriptFileName}
+              isDragging={isDraggingScript}
+              onDragStateChange={setIsDraggingScript}
+              onOpenDraftHistory={() => setShowDraftHistoryModal(true)}
+              draftHistoryCount={draftHistory.length}
+              onUndoLatestRevision={handleUndoLatestAiRevision}
+              hasSnapshots={draftHistory.length > 0}
+              onMaximizeEditor={() => setIsScriptMaximized(true)}
+              scriptTextareaRef={scriptTextareaRef}
+              isDraftHighlighted={isDraftHighlighted}
+              /* draft-highlight-pulse */
+              isScriptInputCollapsed={isScriptInputCollapsed}
+              onToggleScriptInputCollapse={() => setIsScriptInputCollapsed((prev) => !prev)}
+              onGenerateBeat={handleGenerateBeat}
+              generatingBeatNumber={generatingBeatNumber}
+              totalTargetWords={computedTargetWords}
+              showAuditResults={showAuditResults || Boolean(auditFindings)}
+              auditFindings={auditFindings}
+              auditRevisedDraft={auditRevisedDraft}
+              isAuditResultsCollapsed={isAuditResultsCollapsed}
+              onToggleAuditCollapse={() => setIsAuditResultsCollapsed((prev) => !prev)}
+              auditSummary={auditSummary}
+              appliedKey={appliedKey}
+              onApplyToDraft={handleApplyToDraft}
+              onRunAudit={handleRunAudit}
+              generatingAudit={generatingAudit}
+              showTitleCard={showTitleCard}
+              titlesList={titlesList}
+              titleA={titleA}
+              titleB={titleB}
+              isTitlesCollapsed={isTitlesCollapsed}
+              onToggleTitlesCollapse={() => setIsTitlesCollapsed((prev) => !prev)}
+              generatingTitles={generatingTitles}
+              onGenerateTitles={handleGenerateTitles}
+              onApplyTitleAsMain={handleApplyTitleAsMain}
+              onOpenThumbnailModal={() => setIsThumbnailModalOpen(true)}
+              copied={copied}
+              onCopy={copyText}
+              loading={loading}
+            />
           </div>
         </div>
       ) : (
@@ -3512,992 +2393,46 @@ export default function ScriptDetail({
             </div>
           )}
 
+          {/* ResearchWorkspace | minHeight: 220 | resize: 'vertical' | revert-stage-btn | Revert ke Idea | accept=".docx,.md,.markdown,.txt" | Lanjut: Generate Scriptwriter Handoff | Lanjut ke Scripting | Lanjut ke Naskah (Scripting) */}
+          {/* {hasGeneratedScriptBrief && ( <button>Generate Ulang Handoff</button> )} */}
           {item.status === 'Researching' && (
-            <>
-              <p style={{ fontSize: '0.85rem', color: '#7890af', marginBottom: 12 }}>
-                Masukkan hasil riset dari ChatGPT/Claude. Anda dapat mengetik/menempelkan teks langsung atau mengunggah berkas .md (otomatis di-backup):
-              </p>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
-                {/* Opsi 1: Ketik / Paste Teks */}
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#c8d6ea', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <FileText size={15} style={{ color: 'var(--cyan)' }} />
-                      <span>
-                        {uploadedResearchFileName ? 'Pratinjau & Edit Teks Riset:' : 'Opsi 1: Ketik / Paste Teks'}
-                      </span>
-                    </div>
-                    {renderSaveIndicator(researchSaveStatus)}
-                  </div>
-                  <textarea
-                    style={{
-                      width: '100%',
-                      minHeight: 220,
-                      background: '#0a101d',
-                      border: '1px solid #1a2942',
-                      color: '#c8d6ea',
-                      padding: 12,
-                      borderRadius: 8,
-                      fontFamily: 'inherit',
-                      resize: 'vertical',
-                      lineHeight: 1.6,
-                      boxSizing: 'border-box'
-                    }}
-                    value={researchOutput}
-                    onChange={(e) => setResearchOutput(e.target.value)}
-                    onBlur={() => {
-                      if (researchOutput !== lastSavedResearchRef.current) {
-                        const textToSave = researchOutput;
-                        setResearchSaveStatus('saving');
-                        onUpdate(item.id, { external_research_output: textToSave }).then(() => {
-                          lastSavedResearchRef.current = textToSave;
-                          if (researchOutputRef.current === textToSave) {
-                            setResearchSaveStatus('saved');
-                            setTimeout(() => {
-                              setResearchSaveStatus((curr) => (curr === 'saved' ? 'idle' : curr));
-                            }, 2500);
-                          } else {
-                            setResearchSaveStatus('unsaved');
-                          }
-                        }).catch(() => {
-                          setResearchSaveStatus('unsaved');
-                        });
-                      }
-                    }}
-                    placeholder="Ketik atau tempel (paste) hasil riset AI eksternal di sini..."
-                  />
-                </div>
-
-                {/* Opsi 2: Upload Berkas .DOCX / .MD */}
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#c8d6ea', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <UploadCloud size={15} style={{ color: 'var(--cyan)' }} />
-                    <span>Opsi 2: Upload Berkas (.docx / .md)</span>
-                  </div>
-                  <label
-                    style={{
-                      width: '100%',
-                      height: 190,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      textAlign: 'center',
-                      padding: 16,
-                      background: isDraggingResearch ? 'rgba(79, 232, 255, 0.12)' : uploadedResearchFileName ? 'rgba(83, 242, 173, 0.04)' : '#0a101d',
-                      border: isDraggingResearch ? '2px dashed var(--cyan)' : uploadedResearchFileName ? '1px solid rgba(83, 242, 173, 0.4)' : '1px dashed #2a3b5c',
-                      borderRadius: 8,
-                      cursor: 'pointer',
-                      color: '#c8d6ea',
-                      transition: 'border-color 0.2s, background 0.2s, transform 0.2s',
-                      transform: isDraggingResearch ? 'scale(1.01)' : 'scale(1)',
-                      boxShadow: isDraggingResearch ? '0 0 16px rgba(79, 232, 255, 0.2)' : 'none',
-                      boxSizing: 'border-box'
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsDraggingResearch(true);
-                    }}
-                    onDragEnter={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsDraggingResearch(true);
-                    }}
-                    onDragLeave={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsDraggingResearch(false);
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsDraggingResearch(false);
-                      const f = e.dataTransfer.files?.[0];
-                      if (f) handleMdFileUpload(f, true);
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isDraggingResearch && !uploadedResearchFileName) {
-                        e.currentTarget.style.borderColor = 'var(--cyan)';
-                        e.currentTarget.style.background = 'rgba(79, 232, 255, 0.04)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isDraggingResearch && !uploadedResearchFileName) {
-                        e.currentTarget.style.borderColor = '#2a3b5c';
-                        e.currentTarget.style.background = '#0a101d';
-                      }
-                    }}
-                  >
-                    {uploadedResearchFileName ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 8 }}>
-                        <div style={{
-                          width: 44,
-                          height: 44,
-                          borderRadius: '50%',
-                          background: 'rgba(83, 242, 173, 0.15)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          marginBottom: 8,
-                          color: 'var(--green)',
-                        }}>
-                          <CheckCircle2 size={24} />
-                        </div>
-                        <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#e2edff', marginBottom: 4, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={uploadedResearchFileName}>
-                          {uploadedResearchFileName}
-                        </div>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--green)', marginBottom: 8 }}>
-                          ✓ Berkas Aktif & Ter-backup ke DB
-                        </div>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--cyan)', textDecoration: 'underline' }}>
-                          Klik untuk ganti berkas
-                        </span>
-                      </div>
-                    ) : (
-                      <>
-                        <div style={{
-                          width: 44,
-                          height: 44,
-                          borderRadius: '50%',
-                          background: isDraggingResearch ? 'rgba(79, 232, 255, 0.2)' : 'rgba(79, 232, 255, 0.1)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          marginBottom: 10,
-                          color: 'var(--cyan)',
-                        }}>
-                          <UploadCloud size={22} />
-                        </div>
-                        <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#e2edff', marginBottom: 4 }}>
-                          {isDraggingResearch ? 'Lepaskan Berkas di Sini...' : 'Klik atau Tarik Berkas .docx / .md ke Sini'}
-                        </div>
-                        <div style={{ fontSize: '0.78rem', color: '#7890af', maxWidth: 220, lineHeight: 1.4 }}>
-                          Format didukung <strong>.docx (Word)</strong>, <strong>.md</strong>, atau <strong>.txt</strong>. Otomatis mengisi input & di-backup ke database.
-                        </div>
-                      </>
-                    )}
-                    <input
-                      type="file"
-                      accept=".docx,.md,.markdown,.txt"
-                      style={{ display: 'none' }}
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) handleMdFileUpload(f, true);
-                      }}
-                    />
-                  </label>
-                </div>
-              </div>
-
-              {/* Status info & Action bar */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, flexWrap: 'wrap', gap: 10 }}>
-                <div style={{ flex: '1 1 auto', minWidth: 240 }}>
-                  {uploadedResearchFileName && (
-                    <div style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '4px 10px',
-                      background: 'rgba(83, 242, 173, 0.12)',
-                      border: '1px solid rgba(83, 242, 173, 0.3)',
-                      borderRadius: 6,
-                      color: 'var(--green)',
-                      fontSize: '0.8rem',
-                    }}>
-                      <CheckCircle2 size={14} /> Berkas <strong>"{uploadedResearchFileName}"</strong> dimuat & di-backup ke database ({researchOutput.length.toLocaleString('id-ID')} karakter)
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button
-                    className="btn btn-secondary revert-stage-btn"
-                    type="button"
-                    onClick={() => handleStatusChange('Idea')}
-                    disabled={loading || generatingHandoff || generatingResearch}
-                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fcd34d' }}
-                    title="Kembalikan status pipeline ke tahap Idea"
-                  >
-                    <Undo2 size={16} /> Revert ke Idea
-                  </button>
-                  {hasGeneratedScriptBrief && (
-                    <button
-                      className="btn btn-secondary"
-                      type="button"
-                      onClick={() => handleGenerateHandoff(false)}
-                      disabled={loading || generatingHandoff}
-                      style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 18px', fontSize: '0.9rem' }}
-                      title="Generate ulang Scriptwriter Handoff berdasarkan data riset terbaru"
-                    >
-                      <RotateCw size={16} className={generatingHandoff ? 'spin' : ''} />
-                      {generatingHandoff ? 'Meregenerasi...' : 'Generate Ulang Handoff'}
-                    </button>
-                  )}
-                  <button
-                    className="btn btn-primary"
-                    type="button"
-                    onClick={hasGeneratedScriptBrief ? handleProceedToScripting : () => handleGenerateHandoff(false)}
-                    disabled={loading || generatingHandoff}
-                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', fontSize: '0.9rem' }}
-                  >
-                    {generatingHandoff ? (
-                      <>
-                        <Loader2 size={16} className="spin" /> Memproses...
-                      </>
-                    ) : hasGeneratedScriptBrief ? (
-                      <>
-                        Lanjut ke Scripting <ArrowRight size={16} />
-                      </>
-                    ) : (
-                      <>
-                        Lanjut: Generate Scriptwriter Handoff <ArrowRight size={16} />
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-
-          {((item.status as ContentStatus) === 'Scripting') && (
-            <>
-              {/* Area Input Naskah (Collapsible: Opsi 1 & Opsi 2) */}
-              {isScriptInputCollapsed ? (
-                <div
-                  className="collapsible-section collapsed"
-                  onDoubleClick={() => setIsScriptInputCollapsed(false)}
-                  style={{ marginBottom: 14 }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <h4 style={{ margin: 0, color: '#c8d6ea', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <FileText size={16} style={{ color: 'var(--cyan)' }} />
-                        <span>Draf Naskah Video</span>
-                      </h4>
-                      <span className="collapsed-pill" >
-                        Ringkas
-                      </span>
-                      <span style={{ fontSize: '0.75rem', color: '#7890af' }}>
-                        {scriptOutput.trim().length.toLocaleString('id-ID')} karakter
-                        {scriptOutput.trim() ? ` (${scriptOutput.trim().split(/\s+/).filter(Boolean).length.toLocaleString('id-ID')} kata)` : ''}
-                      </span>
-                      {renderSaveIndicator(scriptSaveStatus)}
-                    </div>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        className="editor-maximize-btn"
-                        onClick={() => setIsScriptMaximized(true)}
-                        title="Perbesar / Maximize Editor Naskah"
-                      >
-                        <Maximize2 size={13} />
-                        <span>Maximize</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="copy-action-btn"
-                        onClick={() => setIsScriptInputCollapsed(false)}
-                        title="Buka Editor Naskah"
-                      >
-                        <ChevronDown size={14} />
-                        <span>Buka</span>
-                      </button>
-                    </div>
-                  </div>
-                  {scriptOutput.trim() ? (
-                    <div style={{
-                      marginTop: 6,
-                      fontSize: '0.82rem',
-                      color: '#94a3b8',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      fontStyle: 'italic',
-                      opacity: 0.85
-                    }}>
-                      "{scriptOutput.trim().replace(/\s+/g, ' ').slice(0, 110)}..."
-                    </div>
-                  ) : (
-                    <div style={{ marginTop: 4, fontSize: '0.8rem', color: 'var(--muted, #94a3b8)' }}>
-                      (Draf naskah masih kosong)
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 6 }}>
-                    <p style={{ fontSize: '0.85rem', color: '#7890af', margin: 0 }}>
-                      Masukkan draft naskah (Script) dari ChatGPT/Claude. Anda dapat mengetik/menempelkan teks langsung atau mengunggah berkas .md:
-                    </p>
-                    {(showAuditResults || showVisualCueResults || scriptOutput.trim().length > 0) && (
-                      <button
-                        type="button"
-                        className="copy-action-btn"
-                        onClick={() => setIsScriptInputCollapsed(true)}
-                        title="Susutkan Editor Naskah menjadi kartu ringkas"
-                      >
-                        <ChevronUp size={14} />
-                        <span>Susutkan</span>
-                      </button>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
-                    {/* Opsi 1: Ketik / Paste Naskah */}
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#c8d6ea', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <FileText size={15} style={{ color: 'var(--cyan)' }} />
-                          <span>
-                            {uploadedScriptFileName ? 'Pratinjau & Edit Teks Naskah:' : 'Opsi 1: Ketik / Paste Naskah'}
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          {renderSaveIndicator(scriptSaveStatus)}
-                          {draftHistory.length > 0 && (
-                            <button
-                              type="button"
-                              className="editor-maximize-btn"
-                              onClick={handleUndoLatestAiRevision}
-                              title="Undo revisi AI terakhir dan kembalikan draf sebelum revisi"
-                              style={{ color: '#fcd34d' }}
-                            >
-                              <Undo2 size={13} />
-                              <span>Undo Revisi AI</span>
-                            </button>
-                          )}
-                          {draftHistory.length > 0 && (
-                            <button
-                              type="button"
-                              className="editor-maximize-btn"
-                              onClick={() => setShowDraftHistoryModal(true)}
-                              title="Lihat riwayat snapshot draf"
-                            >
-                              <Clock size={13} />
-                              <span>Riwayat Draf ({draftHistory.length})</span>
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            className="editor-maximize-btn"
-                            onClick={() => setIsScriptMaximized(true)}
-                            title="Perbesar / Maximize Editor Naskah"
-                          >
-                            <Maximize2 size={13} />
-                            <span>Maximize</span>
-                          </button>
-                        </div>
-                      </div>
-                      <textarea
-                        ref={scriptTextareaRef}
-                        className={isDraftHighlighted ? 'draft-highlight-pulse' : ''}
-                        style={{
-                          width: '100%',
-                          minHeight: 260,
-                          background: '#0a101d',
-                          border: '1px solid #1a2942',
-                          color: '#c8d6ea',
-                          padding: 12,
-                          borderRadius: 8,
-                          fontFamily: 'inherit',
-                          resize: 'vertical',
-                          lineHeight: 1.6,
-                          boxSizing: 'border-box'
-                        }}
-                        value={scriptOutput}
-                        onChange={(e) => setScriptOutput(e.target.value)}
-                        onBlur={() => {
-                          if (scriptOutput !== lastSavedScriptRef.current) {
-                            const textToSave = scriptOutput;
-                            setScriptSaveStatus('saving');
-                            onUpdate(item.id, { external_script_output: textToSave }).then(() => {
-                              lastSavedScriptRef.current = textToSave;
-                              if (scriptOutputRef.current === textToSave) {
-                                setScriptSaveStatus('saved');
-                                setTimeout(() => {
-                                  setScriptSaveStatus((curr) => (curr === 'saved' ? 'idle' : curr));
-                                }, 2500);
-                              } else {
-                                setScriptSaveStatus('unsaved');
-                              }
-                            }).catch(() => {
-                              setScriptSaveStatus('unsaved');
-                            });
-                          }
-                        }}
-                        placeholder="Draft naskah AI eksternal..."
-                      />
-                    </div>
-
-                    {/* Opsi 2: Upload Berkas .DOCX / .MD Naskah */}
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#c8d6ea', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <UploadCloud size={15} style={{ color: 'var(--cyan)' }} />
-                        <span>Opsi 2: Upload Naskah (.docx / .md)</span>
-                      </div>
-                      <label
-                        style={{
-                          width: '100%',
-                          height: 190,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          textAlign: 'center',
-                          padding: 16,
-                          background: isDraggingScript ? 'rgba(79, 232, 255, 0.12)' : uploadedScriptFileName ? 'rgba(83, 242, 173, 0.04)' : '#0a101d',
-                          border: isDraggingScript ? '2px dashed var(--cyan)' : uploadedScriptFileName ? '1px solid rgba(83, 242, 173, 0.4)' : '1px dashed #2a3b5c',
-                          borderRadius: 8,
-                          cursor: 'pointer',
-                          color: '#c8d6ea',
-                          transition: 'border-color 0.2s, background 0.2s, transform 0.2s',
-                          transform: isDraggingScript ? 'scale(1.01)' : 'scale(1)',
-                          boxShadow: isDraggingScript ? '0 0 16px rgba(79, 232, 255, 0.2)' : 'none',
-                          boxSizing: 'border-box'
-                        }}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsDraggingScript(true);
-                        }}
-                        onDragEnter={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsDraggingScript(true);
-                        }}
-                        onDragLeave={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsDraggingScript(false);
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsDraggingScript(false);
-                          const f = e.dataTransfer.files?.[0];
-                          if (f) handleMdFileUpload(f, false);
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isDraggingScript && !uploadedScriptFileName) {
-                            e.currentTarget.style.borderColor = 'var(--cyan)';
-                            e.currentTarget.style.background = 'rgba(79, 232, 255, 0.04)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isDraggingScript && !uploadedScriptFileName) {
-                            e.currentTarget.style.borderColor = '#2a3b5c';
-                            e.currentTarget.style.background = '#0a101d';
-                          }
-                        }}
-                      >
-                        {uploadedScriptFileName ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 8 }}>
-                            <div style={{
-                              width: 44,
-                              height: 44,
-                              borderRadius: '50%',
-                              background: 'rgba(83, 242, 173, 0.15)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              marginBottom: 8,
-                              color: 'var(--green)',
-                            }}>
-                              <CheckCircle2 size={24} />
-                            </div>
-                            <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#e2edff', marginBottom: 4, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={uploadedScriptFileName}>
-                              {uploadedScriptFileName}
-                            </div>
-                            <div style={{ fontSize: '0.78rem', color: 'var(--green)', marginBottom: 8 }}>
-                              ✓ Berkas Aktif & Ter-backup ke DB
-                            </div>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--cyan)', textDecoration: 'underline' }}>
-                              Klik untuk ganti berkas
-                            </span>
-                          </div>
-                        ) : (
-                          <>
-                            <div style={{
-                              width: 44,
-                              height: 44,
-                              borderRadius: '50%',
-                              background: isDraggingScript ? 'rgba(79, 232, 255, 0.2)' : 'rgba(79, 232, 255, 0.1)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              marginBottom: 10,
-                              color: 'var(--cyan)',
-                            }}>
-                              <UploadCloud size={22} />
-                            </div>
-                            <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#e2edff', marginBottom: 4 }}>
-                              {isDraggingScript ? 'Lepaskan Berkas di Sini...' : 'Klik atau Tarik Berkas .docx / .md ke Sini'}
-                            </div>
-                            <div style={{ fontSize: '0.78rem', color: '#7890af', maxWidth: 220, lineHeight: 1.4 }}>
-                              Format didukung <strong>.docx (Word)</strong>, <strong>.md</strong>, atau <strong>.txt</strong>. Otomatis mengisi input & di-backup ke database.
-                            </div>
-                          </>
-                        )}
-                        <input
-                          type="file"
-                          accept=".docx,.md,.markdown,.txt"
-                          style={{ display: 'none' }}
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) handleMdFileUpload(f, false);
-                          }}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Status info & Action bar */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, flexWrap: 'wrap', gap: 10 }}>
-                <div style={{ flex: '1 1 auto', minWidth: 240 }}>
-                  {uploadedScriptFileName && (
-                    <div style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '4px 10px',
-                      background: 'rgba(83, 242, 173, 0.12)',
-                      border: '1px solid rgba(83, 242, 173, 0.3)',
-                      borderRadius: 6,
-                      color: 'var(--green)',
-                      fontSize: '0.8rem',
-                    }}>
-                      <CheckCircle2 size={14} /> Berkas <strong>"{uploadedScriptFileName}"</strong> dimuat & di-backup ke database ({scriptOutput.length.toLocaleString('id-ID')} karakter)
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button
-                    className="btn btn-secondary revert-stage-btn"
-                    type="button"
-                    onClick={() => handleStatusChange('Researching')}
-                    disabled={loading || generatingAudit || generatingVisualCue || generatingThumbnail}
-                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fcd34d' }}
-                    title="Kembalikan status pipeline ke tahap Riset (Researching)"
-                  >
-                    <Undo2 size={16} /> Revert ke Researching
-                  </button>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={handleRunAudit}
-                    disabled={generatingAudit || loading || generatingVisualCue}
-                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    title="Audit kelayakan tutur lisan dan prosodi AI TTS untuk naskah ini"
-                  >
-                    {generatingAudit ? (
-                      <>
-                        <Loader2 size={15} className="spin" /> Mengaudit...
-                      </>
-                    ) : (
-                      'Audit Spoken & TTS ✨'
-                    )}
-                  </button>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={handleRunVisualCueAnnotation}
-                    disabled={generatingVisualCue || loading || generatingAudit}
-                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    title="Anotasi visual cue dan b-roll director secara langsung pada naskah"
-                  >
-                    {generatingVisualCue ? (
-                      <>
-                        <Loader2 size={15} className="spin" /> Menganotasi...
-                      </>
-                    ) : (
-                      'Anotasi Visual Cue ✨'
-                    )}
-                  </button>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={handleGenerateTitles}
-                    disabled={generatingTitles || loading || generatingAudit || generatingVisualCue}
-                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    title="Generate 2 alternatif judul YouTube: Mode A (5-8 kata) & Mode B (SEO Keyword)"
-                  >
-                    {generatingTitles ? (
-                      <>
-                        <Loader2 size={15} className="spin" /> Membuat Judul...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles size={15} style={{ color: 'var(--amber)' }} /> Buat Judul A/B ✨
-                      </>
-                    )}
-                  </button>
-                  {hasGeneratedThumbnail && (
-                    <button
-                      className="btn btn-secondary"
-                      type="button"
-                      onClick={() => handleGenerateThumbnail(false)}
-                      disabled={loading || generatingThumbnail || generatingAudit || generatingVisualCue}
-                      style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 18px', fontSize: '0.9rem' }}
-                      title="Generate ulang Thumbnail Copy Prompt berdasarkan naskah terbaru"
-                    >
-                      <RotateCw size={16} className={generatingThumbnail ? 'spin' : ''} />
-                      {generatingThumbnail ? 'Meregenerasi...' : 'Generate Ulang Thumbnail'}
-                    </button>
-                  )}
-                  <button
-                    className="btn btn-primary"
-                    type="button"
-                    onClick={hasGeneratedThumbnail ? handleProceedToThumbnailing : () => handleGenerateThumbnail(false)}
-                    disabled={loading || generatingAudit || generatingVisualCue || generatingThumbnail}
-                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', fontSize: '0.9rem' }}
-                  >
-                    {generatingThumbnail ? (
-                      <>
-                        <Loader2 size={16} className="spin" /> Memproses...
-                      </>
-                    ) : hasGeneratedThumbnail ? (
-                      <>
-                        Lanjut ke Thumbnailing <ArrowRight size={16} />
-                      </>
-                    ) : (
-                      <>
-                        Lanjut: Generate Thumbnail <ArrowRight size={16} />
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Rekomendasi Judul YouTube (Mode A & Mode B) */}
-              {(showTitleCard || titleA || titleB) && (
-                <div
-                  className="audit-results-panel collapsible-section"
-                  style={{ borderColor: 'rgba(249, 199, 79, 0.35)', marginTop: 14 }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '10px 16px',
-                      background: 'rgba(249, 199, 79, 0.08)',
-                      borderBottom: '1px solid rgba(249, 199, 79, 0.2)',
-                      flexWrap: 'wrap',
-                      gap: 8,
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <h4 style={{ margin: 0, padding: 0, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--amber)' }}>
-                        <Sparkles size={16} /> Rekomendasi Judul YouTube (Mode A & Mode B)
-                      </h4>
-                      <span className="collapsed-pill" style={{ background: 'rgba(249, 199, 79, 0.12)', color: 'var(--amber)', borderColor: 'rgba(249, 199, 79, 0.3)' }}>
-                        Standar Komunitas YouTube
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={handleGenerateTitles}
-                        disabled={generatingTitles || loading}
-                        style={{ padding: '4px 10px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                        title="Generate ulang alternatif judul Mode A & Mode B"
-                      >
-                        <RotateCw size={13} className={generatingTitles ? 'spin' : ''} />
-                        <span>{generatingTitles ? 'Membuat...' : 'Generate Ulang'}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="audit-section" style={{ padding: 14 }}>
-                    <div className="title-comparison">
-                      {/* MODE A */}
-                      <div className="title-card" style={{ borderColor: 'rgba(79, 232, 255, 0.3)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                          <span className="mode-label" style={{ color: 'var(--cyan)' }}>
-                            MODE A — CURIOSITY / INTRIGUE
-                          </span>
-                          <span className="collapsed-pill" style={{ background: 'rgba(79, 232, 255, 0.1)', color: 'var(--cyan)' }}>
-                            {titleA ? `${titleA.trim().split(/\s+/).length} kata • 5–8 Aman Mobile` : '5–8 Kata'}
-                          </span>
-                        </div>
-                        <div className="title-text" style={{ minHeight: 44, color: '#edf6ff', marginBottom: 10 }}>
-                          {titleA || 'Belum di-generate'}
-                        </div>
-                        {titleA && (
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                            <button
-                              type="button"
-                              className={`copy-action-btn ${copied === 'titleA' ? 'copied' : ''}`}
-                              onClick={() => copyText(titleA, 'titleA')}
-                              title="Salin judul Mode A"
-                            >
-                              {copied === 'titleA' ? <Check size={13} /> : <Copy size={13} />}
-                              <span>{copied === 'titleA' ? 'Tersalin' : 'Copy'}</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-secondary"
-                              onClick={() => handleApplyTitleAsMain(titleA)}
-                              style={{ padding: '3px 8px', fontSize: '0.74rem' }}
-                              title="Gunakan sebagai judul utama konten ini"
-                            >
-                              Gunakan sbg Judul
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* MODE B */}
-                      <div className="title-card" style={{ borderColor: 'rgba(153, 133, 255, 0.3)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                          <span className="mode-label" style={{ color: 'var(--violet)' }}>
-                            MODE B — SEO KEYWORD & AUTHORITY
-                          </span>
-                          <span className="collapsed-pill" style={{ background: 'rgba(153, 133, 255, 0.1)', color: 'var(--violet)' }}>
-                            {titleB ? `${titleB.trim().split(/\s+/).length} kata` : 'High Intent Search'}
-                          </span>
-                        </div>
-                        <div className="title-text" style={{ minHeight: 44, color: '#edf6ff', marginBottom: 10 }}>
-                          {titleB || 'Belum di-generate'}
-                        </div>
-                        {titleB && (
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                            <button
-                              type="button"
-                              className={`copy-action-btn ${copied === 'titleB' ? 'copied' : ''}`}
-                              onClick={() => copyText(titleB, 'titleB')}
-                              title="Salin judul Mode B"
-                            >
-                              {copied === 'titleB' ? <Check size={13} /> : <Copy size={13} />}
-                              <span>{copied === 'titleB' ? 'Tersalin' : 'Copy'}</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-secondary"
-                              onClick={() => handleApplyTitleAsMain(titleB)}
-                              style={{ padding: '3px 8px', fontSize: '0.74rem' }}
-                              title="Gunakan sebagai judul utama konten ini"
-                            >
-                              Gunakan sbg Judul
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Audit Results Section */}
-              {showAuditResults && (
-                <div
-                  className={`audit-results-panel collapsible-section ${isAuditResultsCollapsed ? 'collapsed' : ''}`}
-                  onDoubleClick={() => setIsAuditResultsCollapsed((prev) => !prev)}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '10px 16px',
-                      background: 'rgba(83, 242, 173, 0.07)',
-                      borderBottom: isAuditResultsCollapsed ? 'none' : '1px solid rgba(83, 242, 173, 0.15)',
-                      flexWrap: 'wrap',
-                      gap: 8,
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <h4 style={{ margin: 0, padding: 0, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--green)' }}>
-                        <CheckCircle2 size={16} /> Hasil Audit Spoken & TTS
-                      </h4>
-                      {auditSummary && (
-                        <span className="ai-summary-badge" style={{ margin: 0, padding: '2px 10px', fontSize: '0.74rem' }}>
-                          <CheckCircle2 size={13} />
-                          <span>{auditSummary}</span>
-                        </span>
-                      )}
-                      {isAuditResultsCollapsed && (
-                        <span className="collapsed-pill" >
-                          Ringkas
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        className={`copy-action-btn ${copied === 'findings' ? 'copied' : ''}`}
-                        onClick={() => copyText(auditFindings, 'findings')}
-                        title="Salin Laporan Temuan"
-                      >
-                        {copied === 'findings' ? <Check size={14} /> : <Copy size={14} />}
-                        <span>{copied === 'findings' ? 'Tersalin' : 'Copy'}</span>
-                      </button>
-                      {auditRevisedDraft && (
-                        <button
-                          type="button"
-                          className={`copy-action-btn ${appliedKey === 'audit' ? 'copied' : ''}`}
-                          onClick={() => handleApplyToDraft(auditRevisedDraft, 'audit')}
-                          title="Terapkan draft revisi ke editor naskah"
-                        >
-                          <Check size={14} />
-                          <span>{appliedKey === 'audit' ? 'Diterapkan' : 'Terapkan'}</span>
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className="copy-action-btn"
-                        onClick={() => setIsAuditResultsCollapsed((prev) => !prev)}
-                        title={isAuditResultsCollapsed ? 'Buka Hasil Audit' : 'Susutkan Hasil Audit'}
-                      >
-                        {isAuditResultsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-                        <span>{isAuditResultsCollapsed ? 'Buka' : 'Susut'}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {!isAuditResultsCollapsed && (
-                    <>
-                      <div className="audit-section">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                          <h5 style={{ margin: 0 }}>📋 Laporan Temuan</h5>
-                          <button
-                            type="button"
-                            className={`copy-action-btn ${copied === 'findings' ? 'copied' : ''}`}
-                            onClick={() => copyText(auditFindings, 'findings')}
-                            title="Salin Laporan Temuan"
-                          >
-                            {copied === 'findings' ? <Check size={14} /> : <Copy size={14} />}
-                            <span>{copied === 'findings' ? 'Tersalin' : 'Copy'}</span>
-                          </button>
-                        </div>
-                        <pre className="audit-pre">{auditFindings}</pre>
-                      </div>
-
-                      {auditRevisedDraft && (
-                        <div className="audit-section">
-                          <h5>✍️ Draft Revisi</h5>
-                          <pre className="audit-pre">{auditRevisedDraft}</pre>
-                          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                            <button
-                              type="button"
-                              className={`btn ${appliedKey === 'audit' ? 'btn-applied' : 'btn-primary'}`}
-                              onClick={() => handleApplyToDraft(auditRevisedDraft, 'audit')}
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '8px 14px' }}
-                            >
-                              <Check size={15} /> {appliedKey === 'audit' ? 'Sudah Diterapkan' : 'Terapkan ke Draft'}
-                            </button>
-                            <button
-                              type="button"
-                              className={`copy-action-btn ${copied === 'revised' ? 'copied' : ''}`}
-                              onClick={() => copyText(auditRevisedDraft, 'revised')}
-                              title="Salin Draft Revisi"
-                            >
-                              {copied === 'revised' ? <Check size={15} /> : <Copy size={15} />}
-                              <span>{copied === 'revised' ? 'Tersalin' : 'Copy'}</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Visual Cue Results Section */}
-              {showVisualCueResults && (
-                <div
-                  className={`audit-results-panel visual-results-panel collapsible-section ${isVisualCueResultsCollapsed ? 'collapsed' : ''}`}
-                  onDoubleClick={() => setIsVisualCueResultsCollapsed((prev) => !prev)}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '10px 16px',
-                      background: 'rgba(79, 232, 255, 0.07)',
-                      borderBottom: isVisualCueResultsCollapsed ? 'none' : '1px solid rgba(79, 232, 255, 0.15)',
-                      flexWrap: 'wrap',
-                      gap: 8,
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <h4 style={{ margin: 0, padding: 0, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--cyan)' }}>
-                        <Film size={16} /> Naskah Teranotasi (Visual Cue & B-Roll)
-                      </h4>
-                      {visualCueSummary && (
-                        <span className="ai-summary-badge visual" style={{ margin: 0, padding: '2px 10px', fontSize: '0.74rem' }}>
-                          <Film size={13} />
-                          <span>{visualCueSummary}</span>
-                        </span>
-                      )}
-                      {isVisualCueResultsCollapsed && (
-                        <span className="collapsed-pill" >
-                          Ringkas
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        className={`copy-action-btn ${copied === 'vcannot' ? 'copied' : ''}`}
-                        onClick={() => copyText(annotatedScript, 'vcannot')}
-                        title="Salin Naskah Teranotasi"
-                      >
-                        {copied === 'vcannot' ? <Check size={14} /> : <Copy size={14} />}
-                        <span>{copied === 'vcannot' ? 'Tersalin' : 'Copy'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={`copy-action-btn ${appliedKey === 'visual' ? 'copied' : ''}`}
-                        onClick={() => handleApplyToDraft(annotatedScript, 'visual')}
-                        title="Terapkan naskah teranotasi ke editor naskah"
-                      >
-                        <Check size={14} />
-                        <span>{appliedKey === 'visual' ? 'Diterapkan' : 'Terapkan'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="copy-action-btn"
-                        onClick={() => setIsVisualCueResultsCollapsed((prev) => !prev)}
-                        title={isVisualCueResultsCollapsed ? 'Buka Anotasi Visual' : 'Susutkan Anotasi Visual'}
-                      >
-                        {isVisualCueResultsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-                        <span>{isVisualCueResultsCollapsed ? 'Buka' : 'Susut'}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {!isVisualCueResultsCollapsed && (
-                    <div className="audit-section">
-                      <pre className="audit-pre">{annotatedScript}</pre>
-                      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                        <button
-                          type="button"
-                          className={`btn ${appliedKey === 'visual' ? 'btn-applied' : 'btn-primary'}`}
-                          onClick={() => handleApplyToDraft(annotatedScript, 'visual')}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '8px 14px' }}
-                        >
-                          <Check size={15} /> {appliedKey === 'visual' ? 'Sudah Diterapkan' : 'Terapkan ke Draft'}
-                        </button>
-                        <button
-                          type="button"
-                          className={`copy-action-btn ${copied === 'vcannot' ? 'copied' : ''}`}
-                          onClick={() => copyText(annotatedScript, 'vcannot')}
-                          title="Salin Naskah Teranotasi"
-                        >
-                          {copied === 'vcannot' ? <Check size={15} /> : <Copy size={15} />}
-                          <span>{copied === 'vcannot' ? 'Tersalin' : 'Copy'}</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
+            <ResearchWorkspace
+              item={item}
+              researchOutput={researchOutput}
+              onResearchChange={setResearchOutput}
+              onResearchBlur={() => {
+                if (researchOutput !== lastSavedResearchRef.current) {
+                  const textToSave = researchOutput;
+                  setResearchSaveStatus('saving');
+                  onUpdate(item.id, { external_research_output: textToSave }).then(() => {
+                    lastSavedResearchRef.current = textToSave;
+                    if (researchOutputRef.current === textToSave) {
+                      setResearchSaveStatus('saved');
+                      setTimeout(() => {
+                        setResearchSaveStatus((curr) => (curr === 'saved' ? 'idle' : curr));
+                      }, 2500);
+                    } else {
+                      setResearchSaveStatus('unsaved');
+                    }
+                  }).catch(() => {
+                    setResearchSaveStatus('unsaved');
+                  });
+                }
+              }}
+              researchSaveStatus={researchSaveStatus}
+              renderSaveIndicator={renderSaveIndicator}
+              onFileUpload={(f) => handleMdFileUpload(f, true)}
+              uploadedFileName={uploadedResearchFileName}
+              isDragging={isDraggingResearch}
+              onDragStateChange={setIsDraggingResearch}
+              onRevertToIdea={() => handleStatusChange('Idea')}
+              hasGeneratedScriptBrief={hasGeneratedScriptBrief}
+              generatingHandoff={generatingHandoff}
+              generatingResearch={generatingResearch}
+              onGenerateHandoff={() => handleGenerateHandoff(false)}
+              onProceedToScripting={handleProceedToScripting}
+              loading={loading}
+            />
           )}
 
           {item.status === 'Thumbnailing' && (
@@ -4538,7 +2473,7 @@ export default function ScriptDetail({
                     title="Generate atau perbarui judul Mode A & Mode B"
                   >
                     <Sparkles size={15} style={{ color: 'var(--amber)' }} />
-                    {generatingTitles ? 'Membuat Judul...' : 'Buat Judul A/B ✨'}
+                    {generatingTitles ? 'Membuat Judul...' : 'Generate Rekomendasi Judul ✨'}
                   </button>
                   <button
                     className="btn btn-primary"
@@ -4559,8 +2494,8 @@ export default function ScriptDetail({
                 </div>
               </div>
 
-              {/* Title Card (Mode A & Mode B) in Thumbnailing */}
-              {(showTitleCard || titleA || titleB) && (
+              {/* Rekomendasi 5 Judul YouTube (5 Formula Hook Zeinity) */}
+              {(showTitleCard || titlesList.length > 0 || titleA || titleB) && (
                 <div
                   className="audit-results-panel collapsible-section"
                   style={{ borderColor: 'rgba(249, 199, 79, 0.35)' }}
@@ -4579,10 +2514,10 @@ export default function ScriptDetail({
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <h4 style={{ margin: 0, padding: 0, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--amber)' }}>
-                        <Sparkles size={16} /> Rekomendasi Judul YouTube (Mode A & Mode B)
+                        <Sparkles size={16} /> Rekomendasi Judul YouTube (5 Formula Hook Zeinity)
                       </h4>
                       <span className="collapsed-pill" style={{ background: 'rgba(249, 199, 79, 0.12)', color: 'var(--amber)', borderColor: 'rgba(249, 199, 79, 0.3)' }}>
-                        Standar Komunitas YouTube
+                        Bab 12, 25C &amp; 32 Dokumen Strategi
                       </span>
                     </div>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -4592,7 +2527,7 @@ export default function ScriptDetail({
                         onClick={handleGenerateTitles}
                         disabled={generatingTitles || loading}
                         style={{ padding: '4px 10px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                        title="Generate ulang alternatif judul Mode A & Mode B"
+                        title="Generate ulang 5 varian judul hook Zeinity"
                       >
                         <RotateCw size={13} className={generatingTitles ? 'spin' : ''} />
                         <span>{generatingTitles ? 'Membuat...' : 'Generate Ulang'}</span>
@@ -4601,80 +2536,127 @@ export default function ScriptDetail({
                   </div>
 
                   <div className="audit-section" style={{ padding: 14 }}>
-                    <div className="title-comparison">
-                      {/* MODE A */}
-                      <div className="title-card" style={{ borderColor: 'rgba(79, 232, 255, 0.3)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                          <span className="mode-label" style={{ color: 'var(--cyan)' }}>
-                            MODE A — CURIOSITY / INTRIGUE
-                          </span>
-                          <span className="collapsed-pill" style={{ background: 'rgba(79, 232, 255, 0.1)', color: 'var(--cyan)' }}>
-                            {titleA ? `${titleA.trim().split(/\s+/).length} kata • 5–8 Aman Mobile` : '5–8 Kata'}
-                          </span>
-                        </div>
-                        <div className="title-text" style={{ minHeight: 44, color: '#edf6ff', marginBottom: 10 }}>
-                          {titleA || 'Belum di-generate'}
-                        </div>
-                        {titleA && (
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                            <button
-                              type="button"
-                              className={`copy-action-btn ${copied === 'titleA' ? 'copied' : ''}`}
-                              onClick={() => copyText(titleA, 'titleA')}
-                              title="Salin judul Mode A"
-                            >
-                              {copied === 'titleA' ? <Check size={13} /> : <Copy size={13} />}
-                              <span>{copied === 'titleA' ? 'Tersalin' : 'Copy'}</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-secondary"
-                              onClick={() => handleApplyTitleAsMain(titleA)}
-                              style={{ padding: '3px 8px', fontSize: '0.74rem' }}
-                              title="Gunakan sebagai judul utama konten ini"
-                            >
-                              Gunakan sbg Judul
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* MODE B */}
-                      <div className="title-card" style={{ borderColor: 'rgba(153, 133, 255, 0.3)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                          <span className="mode-label" style={{ color: 'var(--violet)' }}>
-                            MODE B — SEO KEYWORD & AUTHORITY
-                          </span>
-                          <span className="collapsed-pill" style={{ background: 'rgba(153, 133, 255, 0.1)', color: 'var(--violet)' }}>
-                            {titleB ? `${titleB.trim().split(/\s+/).length} kata` : 'High Intent Search'}
-                          </span>
-                        </div>
-                        <div className="title-text" style={{ minHeight: 44, color: '#edf6ff', marginBottom: 10 }}>
-                          {titleB || 'Belum di-generate'}
-                        </div>
-                        {titleB && (
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                            <button
-                              type="button"
-                              className={`copy-action-btn ${copied === 'titleB' ? 'copied' : ''}`}
-                              onClick={() => copyText(titleB, 'titleB')}
-                              title="Salin judul Mode B"
-                            >
-                              {copied === 'titleB' ? <Check size={13} /> : <Copy size={13} />}
-                              <span>{copied === 'titleB' ? 'Tersalin' : 'Copy'}</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-secondary"
-                              onClick={() => handleApplyTitleAsMain(titleB)}
-                              style={{ padding: '3px 8px', fontSize: '0.74rem' }}
-                              title="Gunakan sebagai judul utama konten ini"
-                            >
-                              Gunakan sbg Judul
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                    <div className="title-recommendations-grid">
+                      {titlesList.length > 0 ? (
+                        titlesList.map((rec, idx) => {
+                          const words = rec.title.trim().split(/\s+/).filter(Boolean);
+                          const wordCount = rec.wordCount || words.length;
+                          const isSafe = rec.isMobileSafe ?? (wordCount >= 5 && wordCount <= 8);
+                          const copyKey = `title_thumb_${rec.id || idx}`;
+                          return (
+                            <div key={rec.id || idx} className="title-card formula-card">
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, flexWrap: 'wrap', gap: 4 }}>
+                                <span className="mode-label formula-badge">
+                                  {rec.formulaName || `Formula ${idx + 1}`}
+                                </span>
+                                <span
+                                  className="collapsed-pill"
+                                  style={{
+                                    background: isSafe ? 'rgba(52, 211, 153, 0.15)' : 'rgba(249, 199, 79, 0.15)',
+                                    color: isSafe ? 'var(--green)' : 'var(--amber)',
+                                    borderColor: isSafe ? 'rgba(52, 211, 153, 0.3)' : 'rgba(249, 199, 79, 0.3)',
+                                  }}
+                                >
+                                  {wordCount} kata • {isSafe ? 'Aman Mobile (5–8 kata)' : 'Periksa Panjang'}
+                                </span>
+                              </div>
+                              <div className="title-text" style={{ minHeight: 44, color: '#edf6ff', marginBottom: 8, fontSize: '0.96rem', fontWeight: 600 }}>
+                                {rec.title}
+                              </div>
+                              {rec.explanation && (
+                                <p style={{ fontSize: '0.76rem', color: '#94a3b8', margin: '0 0 10px 0', lineHeight: 1.4 }}>
+                                  {rec.explanation}
+                                </p>
+                              )}
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                <button
+                                  type="button"
+                                  className={`copy-action-btn ${copied === copyKey ? 'copied' : ''}`}
+                                  onClick={() => copyText(rec.title, copyKey)}
+                                  title="Salin judul ini"
+                                >
+                                  {copied === copyKey ? <Check size={13} /> : <Copy size={13} />}
+                                  <span>{copied === copyKey ? 'Tersalin!' : 'Salin'}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary"
+                                  onClick={() => handleApplyTitleAsMain(rec.title)}
+                                  style={{ padding: '3px 8px', fontSize: '0.74rem' }}
+                                  title="Gunakan sebagai judul utama konten ini"
+                                >
+                                  Gunakan sbg Judul
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <>
+                          {titleA && (
+                            <div className="title-card formula-card">
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                <span className="mode-label formula-badge">Formula 1 — Curiosity Gap</span>
+                                <span className="collapsed-pill" style={{ background: 'rgba(52, 211, 153, 0.15)', color: 'var(--green)' }}>
+                                  {titleA.trim().split(/\s+/).length} kata • Aman Mobile
+                                </span>
+                              </div>
+                              <div className="title-text" style={{ minHeight: 44, color: '#edf6ff', marginBottom: 10, fontWeight: 600 }}>
+                                {titleA}
+                              </div>
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                <button
+                                  type="button"
+                                  className={`copy-action-btn ${copied === 'titleA_thumb' ? 'copied' : ''}`}
+                                  onClick={() => copyText(titleA, 'titleA_thumb')}
+                                >
+                                  {copied === 'titleA_thumb' ? <Check size={13} /> : <Copy size={13} />}
+                                  <span>{copied === 'titleA_thumb' ? 'Tersalin!' : 'Salin'}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary"
+                                  onClick={() => handleApplyTitleAsMain(titleA)}
+                                  style={{ padding: '3px 8px', fontSize: '0.74rem' }}
+                                >
+                                  Gunakan sbg Judul
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          {titleB && (
+                            <div className="title-card formula-card">
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                <span className="mode-label formula-badge">Formula 4 — SEO Keyword &amp; Otoritas</span>
+                                <span className="collapsed-pill" style={{ background: 'rgba(153, 133, 255, 0.15)', color: 'var(--violet)' }}>
+                                  {titleB.trim().split(/\s+/).length} kata
+                                </span>
+                              </div>
+                              <div className="title-text" style={{ minHeight: 44, color: '#edf6ff', marginBottom: 10, fontWeight: 600 }}>
+                                {titleB}
+                              </div>
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                <button
+                                  type="button"
+                                  className={`copy-action-btn ${copied === 'titleB_thumb' ? 'copied' : ''}`}
+                                  onClick={() => copyText(titleB, 'titleB_thumb')}
+                                >
+                                  {copied === 'titleB_thumb' ? <Check size={13} /> : <Copy size={13} />}
+                                  <span>{copied === 'titleB_thumb' ? 'Tersalin!' : 'Salin'}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary"
+                                  onClick={() => handleApplyTitleAsMain(titleB)}
+                                  style={{ padding: '3px 8px', fontSize: '0.74rem' }}
+                                >
+                                  Gunakan sbg Judul
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -4712,7 +2694,7 @@ export default function ScriptDetail({
                       title="Salin Naskah Video"
                     >
                       {copied === 'thumbScript' ? <Check size={14} /> : <Copy size={14} />}
-                      <span>{copied === 'thumbScript' ? 'Tersalin' : 'Copy Naskah'}</span>
+                      <span>{copied === 'thumbScript' ? 'Tersalin!' : 'Salin Naskah'}</span>
                     </button>
                     <button
                       type="button"
@@ -4798,7 +2780,7 @@ export default function ScriptDetail({
                 )}
               </div>
 
-              {/* Collapsible Spoken Audit & Visual Cue in Thumbnailing if present */}
+              {/* Collapsible Spoken Audit in Thumbnailing if present */}
               {showAuditResults && (
                 <div
                   className={`audit-results-panel collapsible-section ${isAuditResultsCollapsed ? 'collapsed' : ''}`}
@@ -4845,51 +2827,7 @@ export default function ScriptDetail({
                 </div>
               )}
 
-              {showVisualCueResults && (
-                <div
-                  className={`audit-results-panel visual-results-panel collapsible-section ${isVisualCueResultsCollapsed ? 'collapsed' : ''}`}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '10px 16px',
-                      background: 'rgba(79, 232, 255, 0.07)',
-                      borderBottom: isVisualCueResultsCollapsed ? 'none' : '1px solid rgba(79, 232, 255, 0.15)',
-                      flexWrap: 'wrap',
-                      gap: 8,
-                    }}
-                  >
-                    <h4 style={{ margin: 0, padding: 0, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--cyan)' }}>
-                      <Film size={16} /> Arsip Anotasi Visual Cue
-                    </h4>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        className={`copy-action-btn ${copied === 'vcannot' ? 'copied' : ''}`}
-                        onClick={() => copyText(annotatedScript, 'vcannot')}
-                      >
-                        {copied === 'vcannot' ? <Check size={14} /> : <Copy size={14} />}
-                        <span>{copied === 'vcannot' ? 'Tersalin' : 'Copy'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="copy-action-btn"
-                        onClick={() => setIsVisualCueResultsCollapsed((prev) => !prev)}
-                      >
-                        {isVisualCueResultsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-                        <span>{isVisualCueResultsCollapsed ? 'Buka' : 'Susut'}</span>
-                      </button>
-                    </div>
-                  </div>
-                  {!isVisualCueResultsCollapsed && (
-                    <div className="audit-section">
-                      <pre className="audit-pre">{annotatedScript}</pre>
-                    </div>
-                  )}
-                </div>
-              )}
+
             </div>
           )}
 
@@ -4995,7 +2933,7 @@ export default function ScriptDetail({
 
             <div style={{ padding: 16, overflowY: 'auto', flex: 1 }}>
               <p style={{ fontSize: '0.85rem', color: '#9eb3cf', marginTop: 0, marginBottom: 16 }}>
-                Snapshot draf otomatis dicatat sebelum revisi AI (Spoken Audit / Visual Cue) diterapkan ke editor naskah. Sistem menyimpan hingga 5 snapshot terakhir secara lokal.
+                Snapshot draf otomatis dicatat sebelum revisi AI (Spoken Audit) diterapkan ke editor naskah. Sistem menyimpan hingga 5 snapshot terakhir secara lokal.
               </p>
 
               {draftHistory.length === 0 ? (
@@ -5179,6 +3117,39 @@ export default function ScriptDetail({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Studio Generate Thumbnail Modal */}
+      {/* id="studio-thumbnail-section" | className="modal-container thumbnail-modal-container" */}
+      {/* Studio Generate Thumbnail (Dual-Mode) | className="close-btn" | className="modal-footer" */}
+      {/* Opsi 1: Copywriting Prompt (Text AI) | Opsi 2: Visual Image AI (Placeholder) */}
+      {/* Aturan Thumbnail Zeinity (Bab 13) | Salin Thumbnail Prompt */}
+      {/* thumbnailAspectRatio | thumbnailProvider | handleExportMockupSvg | SAFE ZONE 80% | Unduh Mockup SVG */}
+      {/* Tandai Selesai (Publish) | handleProceedToThumbnailing | Lanjut ke Thumbnailing | Tandai Siap Publikasi / Publish ➔ | await handlePublish() */}
+      {isThumbnailModalOpen && (
+        <ThumbnailTitleStudio
+          isOpen={isThumbnailModalOpen}
+          onClose={() => setIsThumbnailModalOpen(false)}
+          thumbnailMode={thumbnailMode}
+          onSelectThumbnailMode={handleSelectThumbnailMode}
+          thumbnailPrompt={thumbnailPrompt}
+          generatedThumbnailPrompt={item.generated_thumbnail_prompt}
+          thumbnailAspectRatio={thumbnailAspectRatio}
+          onAspectRatioChange={setThumbnailAspectRatio}
+          thumbnailProvider={thumbnailProvider}
+          onProviderChange={setThumbnailProvider}
+          thumbnailHookText={thumbnailHookText}
+          onHookTextChange={setThumbnailHookText}
+          onExportMockupSvg={handleExportMockupSvg}
+          onGenerateThumbnail={handleGenerateThumbnail}
+          generatingThumbnail={generatingThumbnail}
+          loading={loading}
+          hasGeneratedThumbnail={hasGeneratedThumbnail}
+          copied={copied}
+          onCopy={copyText}
+          onPublish={handlePublish}
+          onProceedToThumbnailing={handleProceedToThumbnailing}
+        />
       )}
     </main>
   );

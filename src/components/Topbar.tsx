@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   Menu,
   Search,
@@ -8,10 +8,11 @@ import {
   Check,
   ExternalLink,
   Zap,
+  RefreshCw,
 } from 'lucide-react';
 import { useTerminal } from './Terminal';
 import type { AIProvider, NineRouterCatalog } from '@/types';
-import { getProviderLabel } from '@/lib/gemini';
+import { getProviderLabel, fetchNineRouterCatalog, NINEROUTER_CATALOG_STORAGE_KEY } from '@/lib/gemini';
 import zeinityLogo from '@/assets/zeinity-logo.png';
 
 interface TopbarProps {
@@ -73,7 +74,7 @@ export default function Topbar({
   const [cachedCatalog, setCachedCatalog] = useState<NineRouterCatalog | null>(() => {
     if (typeof window === 'undefined') return null;
     try {
-      const raw = localStorage.getItem('zeinity_9router_catalog');
+      const raw = localStorage.getItem(NINEROUTER_CATALOG_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && Array.isArray(parsed.combos)) return parsed;
@@ -82,25 +83,51 @@ export default function Topbar({
     return null;
   });
 
-  // Re-read catalog whenever dropdown opens
-  useEffect(() => {
-    if (dropdownOpen && typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem('zeinity_9router_catalog');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && Array.isArray(parsed.combos)) setCachedCatalog(parsed);
-        }
-      } catch { /* ignore */ }
+  const [isRefreshingCatalog, setIsRefreshingCatalog] = useState(false);
+
+  const refreshCatalog = useCallback(async () => {
+    setIsRefreshingCatalog(true);
+    try {
+      const endpoint = settings.custom_gateway_endpoint || 'http://localhost:20128/v1';
+      const apiKey = settings.custom_gateway_api_key;
+      const catalog = await fetchNineRouterCatalog(endpoint, apiKey);
+      if (catalog && Array.isArray(catalog.combos)) {
+        setCachedCatalog(catalog);
+        try {
+          localStorage.setItem(NINEROUTER_CATALOG_STORAGE_KEY, JSON.stringify(catalog));
+        } catch { /* ignore */ }
+      }
+    } catch (err) {
+      console.warn('Gagal memperbarui katalog 9Router:', err);
+    } finally {
+      setIsRefreshingCatalog(false);
     }
-  }, [dropdownOpen]);
+  }, [settings.custom_gateway_endpoint, settings.custom_gateway_api_key]);
+
+  // Initial mount prefetch
+  useEffect(() => {
+    refreshCatalog();
+  }, [refreshCatalog]);
+
+  // Re-read catalog and background revalidate whenever dropdown opens
+  useEffect(() => {
+    if (dropdownOpen) {
+      if (typeof window !== 'undefined') {
+        try {
+          const raw = localStorage.getItem(NINEROUTER_CATALOG_STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && Array.isArray(parsed.combos)) setCachedCatalog(parsed);
+          }
+        } catch { /* ignore */ }
+      }
+      refreshCatalog();
+    }
+  }, [dropdownOpen, refreshCatalog]);
 
   const defaultCombos = useMemo(() => [
-    { id: 'Creator-Combo', label: 'Creator-Combo', desc: '3-Tier Auto-Fallback', badge: 'Default' },
-    { id: 'Jarvis_Creator', label: 'Jarvis_Creator', desc: 'Content Creator', badge: 'Creator' },
-    { id: 'Jarvis_Standard', label: 'Jarvis_Standard', desc: 'Balanced Performance', badge: 'Standard' },
-    { id: 'Jarvis_Analyst', label: 'Jarvis_Analyst', desc: 'Deep Reasoning', badge: 'Analyst' },
-    { id: 'Jarvis_Fast', label: 'Jarvis_Fast', desc: 'Low Latency', badge: 'Fast' },
+    { id: 'Creator-Combo', label: 'Creator-Combo', desc: 'Gemini 3.8/3.7 -> OpenRouter -> Ollama', badge: 'Naskah & Riset' },
+    { id: 'Zeinity-Audit-Combo', label: 'Zeinity-Audit-Combo', desc: 'Groq Llama 3.3 70B -> GPT-OSS -> Gemini Lite', badge: 'Fast Audit & Hooks' },
   ], []);
 
   const comboOptions = useMemo(() => {
@@ -113,8 +140,8 @@ export default function Topbar({
         existing || {
           id,
           label: id,
-          desc: id === 'Creator-Combo' ? '3-Tier Auto-Fallback' : '9Router Combo Preset',
-          badge: id === 'Creator-Combo' ? 'Default' : 'Combo',
+          desc: id === 'Creator-Combo' ? 'Gemini 3.8/3.7 -> OpenRouter -> Ollama' : '9Router Combo Preset',
+          badge: id === 'Creator-Combo' ? 'Naskah & Riset' : id === 'Zeinity-Audit-Combo' ? 'Fast Audit & Hooks' : 'Combo',
         }
       );
     });
@@ -131,9 +158,9 @@ export default function Topbar({
 
   const defaultDirects = useMemo(() => [
     { id: 'groq/llama-3.3-70b-versatile', label: 'Llama 3.3 70B', desc: 'Groq Cloud High Speed', badge: 'Groq' },
-    { id: 'google/gemini-2.0-flash-exp', label: 'Gemini 2.0 Flash', desc: 'Google Cloud Free/Paid', badge: 'Gemini' },
+    { id: 'gemini/gemini-3.8-flash', label: 'Gemini 3.8 Flash', desc: 'Google Cloud 1M Context', badge: 'Gemini' },
     { id: 'openrouter/auto', label: 'OpenRouter Auto', desc: 'Best Free Available Router', badge: 'OpenRouter' },
-    { id: 'ollama/llama3', label: 'Llama 3 8B', desc: 'Ollama 100% Offline Local', badge: 'Ollama' },
+    { id: 'ollama-local/qwen3:8b', label: 'Qwen 3 8B', desc: 'Ollama 100% Offline Local', badge: 'Ollama' },
   ], []);
 
   const directOptions = useMemo(() => {
@@ -307,9 +334,35 @@ export default function Topbar({
               }}
             >
               <span>9ROUTER AI GATEWAY</span>
-              <span style={{ color: isGatewayOnline ? 'var(--green)' : 'var(--red, #ef4444)', fontSize: '0.68rem', fontWeight: 700 }}>
-                {isGatewayOnline ? 'PORT 20128 ONLINE 🟢' : 'OFFLINE 🔴'}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    refreshCatalog();
+                  }}
+                  title="Segarkan katalog combo & model dari 9Router"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: isRefreshingCatalog ? 'var(--cyan)' : 'var(--muted)',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: 2,
+                    borderRadius: 4,
+                  }}
+                >
+                  <RefreshCw size={12} className={isRefreshingCatalog ? 'spin' : ''} />
+                </button>
+                <span style={{ color: isGatewayOnline ? 'var(--green)' : 'var(--red, #ef4444)', fontSize: '0.68rem', fontWeight: 700 }}>
+                  {isGatewayOnline
+                    ? (settings.custom_gateway_endpoint && !settings.custom_gateway_endpoint.includes('localhost')
+                      ? 'TUNNEL ONLINE 🟢'
+                      : 'PORT 20128 ONLINE 🟢')
+                    : 'OFFLINE 🔴'}
+                </span>
+              </div>
             </div>
 
             {/* Mode Switcher Tabs */}
@@ -319,6 +372,7 @@ export default function Topbar({
                 onClick={() => {
                   onSaveSetting?.('custom_gateway_model_mode', 'combo');
                   onSaveSetting?.('active_provider', 'custom');
+                  onSelectProvider?.('custom');
                 }}
                 style={{
                   padding: '5px 8px',
@@ -339,6 +393,7 @@ export default function Topbar({
                 onClick={() => {
                   onSaveSetting?.('custom_gateway_model_mode', 'direct');
                   onSaveSetting?.('active_provider', 'custom');
+                  onSelectProvider?.('custom');
                 }}
                 style={{
                   padding: '5px 8px',
@@ -373,6 +428,7 @@ export default function Topbar({
                         onSaveSetting?.('custom_gateway_direct_model', opt.id);
                       }
                       onSaveSetting?.('active_provider', 'custom');
+                      onSelectProvider?.('custom');
                       setDropdownOpen(false);
                     }}
                     style={{

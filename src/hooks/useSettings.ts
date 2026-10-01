@@ -213,6 +213,17 @@ export const initialGeminiApiKey: string =
     ? (import.meta.env.VITE_GEMINI_API_KEY as string).trim()
     : '';
 
+// Endpoint dan API Key 9Router dari environment variable untuk mendukung remote deployment (Vercel/Netlify)
+export const initialCustomGatewayEndpoint: string =
+  typeof import.meta !== 'undefined' && import.meta.env && typeof import.meta.env.VITE_CUSTOM_GATEWAY_ENDPOINT === 'string' && (import.meta.env.VITE_CUSTOM_GATEWAY_ENDPOINT as string).trim()
+    ? (import.meta.env.VITE_CUSTOM_GATEWAY_ENDPOINT as string).trim()
+    : 'http://localhost:20128/v1';
+
+export const initialCustomGatewayApiKey: string =
+  typeof import.meta !== 'undefined' && import.meta.env && typeof import.meta.env.VITE_CUSTOM_GATEWAY_API_KEY === 'string'
+    ? (import.meta.env.VITE_CUSTOM_GATEWAY_API_KEY as string).trim()
+    : '';
+
 /**
  * F-005: Mem-parsing daftar Chat ID / User ID Telegram yang diizinkan (whitelist).
  * Mengembalikan array string ID unik yang bersih dari spasi dan tanda koma.
@@ -260,13 +271,13 @@ export function parseFallbackChain(rawChain?: string | null): AIProvider[] {
 export const DEFAULT_SETTINGS: Record<string, string> = {
   active_provider: 'custom',
   gemini_api_key: initialGeminiApiKey,
-  gemini_model_version: 'gemini-1.5-flash',
+  gemini_model_version: 'gemini-3.8-flash',
   openrouter_api_key: '',
   openrouter_model_version: 'openrouter/free',
   ollama_endpoint: 'http://localhost:11434',
   ollama_model_version: 'llama3',
-  custom_gateway_endpoint: 'http://localhost:20128/v1',
-  custom_gateway_api_key: '',
+  custom_gateway_endpoint: initialCustomGatewayEndpoint || 'http://localhost:20128/v1',
+  custom_gateway_api_key: initialCustomGatewayApiKey || '',
   custom_gateway_model_version: 'Creator-Combo',
   custom_gateway_model_mode: 'combo',
   custom_gateway_direct_model: 'groq/llama-3.3-70b-versatile',
@@ -332,6 +343,12 @@ export function removeStoredSensitiveKey(key: string): void {
 // Memuat snapshot lengkap settings lokal peramban (menyaring kunci sensitif dari SETTINGS_STORAGE_KEY)
 export function loadLocalSettings(): Record<string, string> {
   const merged = { ...DEFAULT_SETTINGS };
+  if (initialCustomGatewayEndpoint && initialCustomGatewayEndpoint !== 'http://localhost:20128/v1') {
+    merged.custom_gateway_endpoint = initialCustomGatewayEndpoint;
+  }
+  if (initialCustomGatewayApiKey) {
+    merged.custom_gateway_api_key = initialCustomGatewayApiKey;
+  }
   if (typeof window === 'undefined') return merged;
 
   try {
@@ -347,12 +364,36 @@ export function loadLocalSettings(): Record<string, string> {
     // Ignore
   }
 
+  // Jika web app dibuka pada domain remote (bukan localhost/127.0.0.1) dan endpoint di local storage
+  // masih mengarah ke localhost:20128, alihkan otomatis ke endpoint remote dari env jika tersedia
+  const isRemoteOrigin =
+    typeof window !== 'undefined' &&
+    typeof window.location !== 'undefined' &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1';
+
+  if (isRemoteOrigin) {
+    if (
+      merged.custom_gateway_endpoint.includes('localhost') ||
+      merged.custom_gateway_endpoint.includes('127.0.0.1')
+    ) {
+      if (initialCustomGatewayEndpoint && !initialCustomGatewayEndpoint.includes('localhost')) {
+        merged.custom_gateway_endpoint = initialCustomGatewayEndpoint;
+      }
+    }
+  }
+
   // Kunci sensitif lokal selalu mengambil prioritas utama dari SENSITIVE_STORAGE_KEY
   const sensitive = getStoredSensitiveKeys();
   for (const k of SENSITIVE_SETTINGS_KEYS) {
     if (sensitive[k] !== undefined && sensitive[k] !== '') {
       merged[k] = sensitive[k];
     }
+  }
+
+  // Jika kunci API gateway lokal belum ada tetapi diatur di environment variable, gunakan dari env
+  if (!merged.custom_gateway_api_key && initialCustomGatewayApiKey) {
+    merged.custom_gateway_api_key = initialCustomGatewayApiKey;
   }
 
   return merged;

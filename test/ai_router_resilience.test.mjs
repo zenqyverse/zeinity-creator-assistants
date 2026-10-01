@@ -14,6 +14,11 @@ import {
   parseNineRouterModels,
   normalizeGatewayEndpoint,
   getProviderLabel,
+  resolveTargetModelForTask,
+  isProviderConfigured,
+  NINEROUTER_CATALOG_STORAGE_KEY,
+  DEFAULT_GEMINI_MODELS,
+  DEFAULT_NINEROUTER_CATALOG,
 } from '../src/lib/gemini.ts';
 
 describe('AI Router & 100% 9Router Resilience Engine Verification Suite', () => {
@@ -33,6 +38,20 @@ describe('AI Router & 100% 9Router Resilience Engine Verification Suite', () => 
       'DEFAULT_SETTINGS must have default model Creator-Combo'
     );
     assert.equal(
+      DEFAULT_SETTINGS.gemini_model_version,
+      'gemini-3.8-flash',
+      'DEFAULT_SETTINGS must have non-deprecated default gemini_model_version gemini-3.8-flash'
+    );
+    assert.ok(
+      DEFAULT_GEMINI_MODELS.includes('gemini-3.8-flash'),
+      'DEFAULT_GEMINI_MODELS must include active flagship gemini-3.8-flash'
+    );
+    assert.deepEqual(
+      DEFAULT_NINEROUTER_CATALOG.combos,
+      ['Creator-Combo', 'Zeinity-Audit-Combo'],
+      'DEFAULT_NINEROUTER_CATALOG must feature Creator-Combo and Zeinity-Audit-Combo'
+    );
+    assert.equal(
       DEFAULT_SETTINGS.custom_gateway_model_mode,
       'combo',
       'DEFAULT_SETTINGS must have default model mode combo'
@@ -41,6 +60,11 @@ describe('AI Router & 100% 9Router Resilience Engine Verification Suite', () => 
       DEFAULT_SETTINGS.active_provider,
       'custom',
       'DEFAULT_SETTINGS must have active_provider set to custom for 100% 9Router'
+    );
+    assert.equal(
+      NINEROUTER_CATALOG_STORAGE_KEY,
+      'zeinity_9router_catalog',
+      'NINEROUTER_CATALOG_STORAGE_KEY must match persistent local storage key'
     );
   });
 
@@ -77,21 +101,22 @@ describe('AI Router & 100% 9Router Resilience Engine Verification Suite', () => 
 
     const mockData = [
       { id: 'Creator-Combo', owned_by: 'combo' },
-      { id: 'Jarvis_Creator', owned_by: 'combo' },
+      { id: 'Zeinity-Audit-Combo', owned_by: 'combo' },
       { id: 'groq/llama-3.3-70b-versatile', owned_by: 'groq' },
-      { id: 'google/gemini-2.0-flash-exp', owned_by: 'Google Gemini' },
+      { id: 'gemini/gemini-3.8-flash', owned_by: 'Google Gemini' },
       { id: 'openrouter/auto', owned_by: 'openrouter' },
-      { id: 'ollama/llama3', owned_by: 'ollama-local' },
+      { id: 'ollama-local/qwen3:8b', owned_by: 'ollama-local' },
       'groq/mixtral-8x7b-32768', // String item fallback test
     ];
 
     const catalog = parseNineRouterModels(mockData);
-    assert.deepEqual(catalog.combos, ['Creator-Combo', 'Jarvis_Creator']);
+    assert.deepEqual(catalog.combos, ['Creator-Combo', 'Zeinity-Audit-Combo']);
     assert.ok(catalog.allModels.includes('Creator-Combo'));
+    assert.ok(catalog.allModels.includes('Zeinity-Audit-Combo'));
     assert.ok(catalog.allModels.includes('groq/llama-3.3-70b-versatile'));
     assert.ok(catalog.allModels.includes('groq/mixtral-8x7b-32768'));
     assert.ok(catalog.directModels['groq']?.includes('groq/llama-3.3-70b-versatile'));
-    assert.ok(catalog.directModels['Google Gemini']?.includes('google/gemini-2.0-flash-exp'));
+    assert.ok(catalog.directModels['Google Gemini']?.includes('gemini/gemini-3.8-flash'));
     assert.ok(catalog.directModels['Groq']?.includes('groq/mixtral-8x7b-32768'));
   });
 
@@ -142,7 +167,7 @@ describe('AI Router & 100% 9Router Resilience Engine Verification Suite', () => 
           JSON.stringify({
             data: [
               { id: 'Creator-Combo', owned_by: 'combo' },
-              { id: 'Jarvis_Creator', owned_by: 'combo' },
+              { id: 'Zeinity-Audit-Combo', owned_by: 'combo' },
               { id: 'groq/llama-3.3-70b-versatile', owned_by: 'Groq' },
             ],
           })
@@ -191,7 +216,7 @@ describe('AI Router & 100% 9Router Resilience Engine Verification Suite', () => 
     try {
       // 1. Test fetchNineRouterCatalog against live mock
       const catalog = await fetchNineRouterCatalog(mockEndpoint, 'sk-test-token');
-      assert.deepEqual(catalog.combos, ['Creator-Combo', 'Jarvis_Creator']);
+      assert.deepEqual(catalog.combos, ['Creator-Combo', 'Zeinity-Audit-Combo']);
       assert.ok(catalog.directModels['Groq']?.includes('groq/llama-3.3-70b-versatile'));
       assert.equal(receivedAuth, 'Bearer sk-test-token');
 
@@ -263,5 +288,79 @@ describe('AI Router & 100% 9Router Resilience Engine Verification Suite', () => 
     } finally {
       await new Promise((resolve) => server.close(resolve));
     }
+  });
+
+  it('Layer 6: Smart Task-Based Routing (Creator-Combo for Script vs Zeinity-Audit-Combo for Audit)', () => {
+    const baseConfig = {
+      provider: 'custom',
+      endpoint: 'http://localhost:20128/v1',
+      modelVersion: 'Creator-Combo',
+      modelMode: 'combo',
+      allSettings: {
+        custom_gateway_model_mode: 'combo',
+        custom_gateway_model_version: 'Creator-Combo',
+      },
+    };
+
+    // 1. Script task routing targets Creator-Combo
+    const scriptConfig = resolveTargetModelForTask('script', baseConfig);
+    assert.equal(scriptConfig.modelVersion, 'Creator-Combo');
+    assert.equal(scriptConfig.allSettings?.custom_gateway_model_version, 'Creator-Combo');
+
+    // 2. Audit task routing targets Zeinity-Audit-Combo
+    const auditConfig = resolveTargetModelForTask('audit', baseConfig);
+    assert.equal(auditConfig.modelVersion, 'Zeinity-Audit-Combo');
+    assert.equal(auditConfig.allSettings?.custom_gateway_model_version, 'Zeinity-Audit-Combo');
+
+    // 3. User explicit Direct Model choice is preserved (not overwritten)
+    const directConfig = {
+      provider: 'custom',
+      modelMode: 'direct',
+      modelVersion: 'groq/llama-3.3-70b-versatile',
+      allSettings: {
+        custom_gateway_model_mode: 'direct',
+        custom_gateway_direct_model: 'groq/llama-3.3-70b-versatile',
+      },
+    };
+    const resolvedDirectScript = resolveTargetModelForTask('script', directConfig);
+    assert.equal(resolvedDirectScript.modelVersion, 'groq/llama-3.3-70b-versatile');
+    assert.equal(resolvedDirectScript.modelMode, 'direct');
+
+    const resolvedDirectAudit = resolveTargetModelForTask('audit', directConfig);
+    assert.equal(resolvedDirectAudit.modelVersion, 'groq/llama-3.3-70b-versatile');
+    assert.equal(resolvedDirectAudit.modelMode, 'direct');
+
+    // 4. Non-custom provider (e.g. Google Gemini directly) is preserved
+    const geminiConfig = {
+      provider: 'gemini',
+      modelVersion: 'gemini-3.8-flash',
+    };
+    const resolvedGemini = resolveTargetModelForTask('audit', geminiConfig);
+    assert.equal(resolvedGemini.provider, 'gemini');
+    assert.equal(resolvedGemini.modelVersion, 'gemini-3.8-flash');
+  });
+
+  it('Layer 7: Provider Readiness & Zero-Auth Local Exemption (9Router & Ollama)', () => {
+    // 1. 9Router (custom) does NOT require an API Key
+    assert.equal(isProviderConfigured({ provider: 'custom', apiKey: '' }), true);
+    assert.equal(isProviderConfigured({ provider: 'custom' }), true);
+    assert.equal(isProviderConfigured({ provider: 'custom', apiKey: 'sk-optional-key' }), true);
+
+    // 2. Ollama does NOT require an API Key
+    assert.equal(isProviderConfigured({ provider: 'ollama', apiKey: '' }), true);
+    assert.equal(isProviderConfigured({ provider: 'ollama' }), true);
+
+    // 3. Gemini REQUIRES a non-empty API Key
+    assert.equal(isProviderConfigured({ provider: 'gemini', apiKey: '' }), false);
+    assert.equal(isProviderConfigured({ provider: 'gemini', apiKey: '   ' }), false);
+    assert.equal(isProviderConfigured({ provider: 'gemini', apiKey: 'AIzaSyTestKey' }), true);
+
+    // 4. OpenRouter REQUIRES a non-empty API Key
+    assert.equal(isProviderConfigured({ provider: 'openrouter', apiKey: '' }), false);
+    assert.equal(isProviderConfigured({ provider: 'openrouter', apiKey: 'sk-or-test' }), true);
+
+    // 5. Null or undefined config returns false safely
+    assert.equal(isProviderConfigured(null), false);
+    assert.equal(isProviderConfigured(undefined), false);
   });
 });

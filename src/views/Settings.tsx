@@ -1,10 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   Save,
-  Bot,
   Key,
   MessageSquare,
-  Link2,
   Cpu,
   Download,
   Check,
@@ -16,39 +14,24 @@ import {
   Users,
   HelpCircle,
   Zap,
-  RotateCcw,
-  Globe,
-  HardDrive,
-  CheckCircle2,
-  ShieldCheck,
   Clock,
-  RefreshCw,
-  ArrowUp,
-  ArrowDown,
+  Sliders,
 } from 'lucide-react';
 import {
   fetchNineRouterCatalog,
   DEFAULT_NINEROUTER_CATALOG,
-  fetchAvailableCustomGatewayModels,
-  DEFAULT_CUSTOM_MODELS,
-  fetchAvailableGeminiModels,
-  DEFAULT_GEMINI_MODELS,
-  fetchAvailableOpenRouterModels,
-  DEFAULT_OPENROUTER_MODELS,
-  fetchAvailableOllamaModels,
-  DEFAULT_OLLAMA_MODELS,
-  getDynamicRecommendations,
-  getProviderLabel,
+  NINEROUTER_CATALOG_STORAGE_KEY,
 } from '@/lib/gemini';
 import { useAlert } from '@/components/AlertModal';
 import { useTerminal } from '@/components/Terminal';
 import {
   isValidTelegramToken,
   verifyTelegramBotToken,
-  parseFallbackChain,
   type TelegramVerificationResult,
+  initialCustomGatewayEndpoint,
+  initialCustomGatewayApiKey,
 } from '@/hooks/useSettings';
-import type { AIProvider, NineRouterCatalog } from '@/types';
+import type { NineRouterCatalog } from '@/types';
 
 interface SettingsProps {
   settings: Record<string, string>;
@@ -58,14 +41,7 @@ interface SettingsProps {
   onShowToast?: (msg: string) => void;
 }
 
-const providers = [
-  { key: 'gemini_api_key', label: 'Google Gemini API Key', icon: Bot, placeholder: 'AIza…', mask: 'gemini' },
-  { key: 'openrouter_api_key', label: 'OpenRouter / Groq API Key', icon: Link2, placeholder: 'sk-or-…', mask: 'openrouter' },
-  { key: 'custom_gateway_endpoint', label: '9Router Gateway Endpoint URL', icon: Zap, placeholder: 'http://localhost:20128/v1', mask: 'custom_ep' },
-  { key: 'custom_gateway_api_key', label: '9Router Gateway API Key (Opsional)', icon: Key, placeholder: 'sk-dummy… (kosongkan jika tanpa auth)', mask: 'custom_key' },
-  { key: 'ollama_endpoint', label: 'Ollama Local Endpoint', icon: HardDrive, placeholder: 'http://localhost:11434', mask: 'ollama' },
-];
-
+/* eslint-disable-next-line react-refresh/only-export-components */
 export function checkIsPasswordKey(p: { key: string }) {
   const isPassword = p.key !== 'ollama_endpoint' && p.key !== 'custom_gateway_endpoint';
   return isPassword;
@@ -76,7 +52,7 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
   const { startActivity, addLog, finishActivity, errorActivity } = useTerminal();
   const [values, setValues] = useState<Record<string, string>>({
     gemini_api_key: settings.gemini_api_key || '',
-    gemini_model_version: settings.gemini_model_version || 'gemini-1.5-flash',
+    gemini_model_version: settings.gemini_model_version || 'gemini-3.8-flash',
     openrouter_api_key: settings.openrouter_api_key || '',
     openrouter_model_version: settings.openrouter_model_version || 'openrouter/free',
     ollama_endpoint: settings.ollama_endpoint || 'http://localhost:11434',
@@ -128,8 +104,6 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
   const [testingCustomGateway, setTestingCustomGateway] = useState(false);
   const [importingModels, setImportingModels] = useState(false);
 
-  const NINEROUTER_CATALOG_STORAGE_KEY = 'zeinity_9router_catalog';
-
   const [catalog, setCatalog] = useState<NineRouterCatalog>(() => {
     try {
       const cached = localStorage.getItem(NINEROUTER_CATALOG_STORAGE_KEY);
@@ -141,33 +115,66 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
     return DEFAULT_NINEROUTER_CATALOG;
   });
 
-  const MODELS_CACHE_KEY = 'zeinity_imported_models';
-
-  const [providerModels, setProviderModels] = useState<Record<string, string[]>>(() => {
-    try {
-      const cached = localStorage.getItem(MODELS_CACHE_KEY);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        return {
-          gemini: Array.isArray(parsed.gemini) && parsed.gemini.length > 0 ? parsed.gemini : DEFAULT_GEMINI_MODELS,
-          openrouter: Array.isArray(parsed.openrouter) && parsed.openrouter.length > 0 ? parsed.openrouter : DEFAULT_OPENROUTER_MODELS,
-          custom: Array.isArray(parsed.custom) && parsed.custom.length > 0 ? parsed.custom : DEFAULT_CUSTOM_MODELS,
-          ollama: Array.isArray(parsed.ollama) && parsed.ollama.length > 0 ? parsed.ollama : DEFAULT_OLLAMA_MODELS,
-        };
-      }
-    } catch { /* ignore */ }
-    return {
-      gemini: DEFAULT_GEMINI_MODELS,
-      openrouter: DEFAULT_OPENROUTER_MODELS,
-      custom: DEFAULT_CUSTOM_MODELS,
-      ollama: DEFAULT_OLLAMA_MODELS,
-    };
-  });
-  const [importingProvider, setImportingProvider] = useState<string | null>(null);
-  const [importStatuses, setImportStatuses] = useState<Record<string, string>>({});
-
   const [savingAll, setSavingAll] = useState(false);
   const [savedAll, setSavedAll] = useState(false);
+
+  // Custom request timeout helpers & state
+  const PRESET_TIMEOUTS = useMemo(
+    () => [
+      { sec: '60', label: '60 Detik', badge: 'Cepat', desc: 'Cocok untuk ideasi & model cloud ringan' },
+      { sec: '90', label: '90 Detik', badge: 'Rekomendasi', desc: 'Seimbang untuk naskah standar & 9Router' },
+      { sec: '120', label: '120 Detik', badge: 'Naskah Panjang', desc: 'Ideal untuk Full Script 2000 kata & failover' },
+      { sec: '180', label: '180 Detik', badge: 'Ekstra Sabar', desc: 'Untuk model penalaran tinggi / LLM lokal' },
+      { sec: '300', label: '300 Detik', badge: '5 Menit', desc: 'Deep Reasoning / Multi-Tier Failover' },
+    ],
+    []
+  );
+
+  const formatTimeoutDuration = (secondsStr: string): string => {
+    const num = Number(secondsStr);
+    if (!num || isNaN(num) || num <= 0) return `${secondsStr || 90} Detik`;
+    if (num < 60) return `${num} Detik`;
+    const mins = Math.floor(num / 60);
+    const rem = num % 60;
+    if (rem === 0) return `${mins} Menit`;
+    return `${mins}m ${rem}s`;
+  };
+
+  const activeTimeoutSec = values.ai_request_timeout || '90';
+  const isCustomTimeoutActive = !PRESET_TIMEOUTS.some((p) => p.sec === activeTimeoutSec);
+  const [customTimeoutInput, setCustomTimeoutInput] = useState<string>(
+    isCustomTimeoutActive ? activeTimeoutSec : '240'
+  );
+  const [showCustomTimeout, setShowCustomTimeout] = useState<boolean>(isCustomTimeoutActive);
+
+  useEffect(() => {
+    if (isCustomTimeoutActive) {
+      setShowCustomTimeout(true);
+      setCustomTimeoutInput(activeTimeoutSec);
+    }
+  }, [activeTimeoutSec, isCustomTimeoutActive]);
+
+  const handleSelectPresetTimeout = (sec: string) => {
+    setValues((v) => ({ ...v, ai_request_timeout: sec }));
+    onSave('ai_request_timeout', sec);
+    onShowToast?.(`Batas waktu timeout diatur ke ${sec} detik (${formatTimeoutDuration(sec)}).`);
+  };
+
+  const handleApplyCustomTimeout = (rawVal: string) => {
+    const num = parseInt(rawVal.trim(), 10);
+    if (isNaN(num) || num < 10) {
+      showWarning('Durasi Terlalu Singkat', 'Batas waktu minimal adalah 10 detik agar permintaan AI tidak langsung terputus.');
+      return;
+    }
+    if (num > 3600) {
+      showWarning('Durasi Terlalu Lama', 'Batas waktu maksimal yang didukung adalah 3.600 detik (60 menit).');
+      return;
+    }
+    const secStr = String(num);
+    setValues((v) => ({ ...v, ai_request_timeout: secStr }));
+    onSave('ai_request_timeout', secStr);
+    onShowToast?.(`Batas waktu timeout kustom berhasil diatur ke ${secStr} detik (${formatTimeoutDuration(secStr)}).`);
+  };
 
   // F-12: Deteksi status perubahan konfigurasi (dirty state)
   const isDirty = useMemo(() => {
@@ -412,57 +419,6 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
     }
   };
 
-  const modelConfigs: Array<{
-    provider: AIProvider;
-    label: string;
-    key: string;
-    defaultModel: string;
-    isConfigured: boolean;
-    unconfiguredHint: string;
-    fetchModels: () => Promise<string[]>;
-  }> = [
-    {
-      provider: 'gemini',
-      label: 'Google Gemini',
-      key: 'gemini_model_version',
-      defaultModel: 'gemini-1.5-flash',
-      isConfigured: Boolean(values.gemini_api_key?.trim()),
-      unconfiguredHint: 'Isi Google Gemini API Key terlebih dahulu untuk auto import',
-      fetchModels: () => fetchAvailableGeminiModels(values.gemini_api_key || ''),
-    },
-    {
-      provider: 'openrouter',
-      label: 'OpenRouter / Groq-Llama',
-      key: 'openrouter_model_version',
-      defaultModel: 'openrouter/free',
-      isConfigured: Boolean(values.openrouter_api_key?.trim()),
-      unconfiguredHint: 'Isi OpenRouter API Key terlebih dahulu untuk auto import',
-      fetchModels: () => fetchAvailableOpenRouterModels(values.openrouter_api_key || ''),
-    },
-    {
-      provider: 'custom',
-      label: '9Router / Custom Gateway',
-      key: 'custom_gateway_model_version',
-      defaultModel: 'openrouter/auto',
-      isConfigured: Boolean((values.custom_gateway_endpoint || 'http://localhost:20128/v1').trim()),
-      unconfiguredHint: 'Isi Gateway Endpoint terlebih dahulu untuk auto import',
-      fetchModels: () =>
-        fetchAvailableCustomGatewayModels(
-          values.custom_gateway_endpoint || 'http://localhost:20128/v1',
-          values.custom_gateway_api_key || ''
-        ),
-    },
-    {
-      provider: 'ollama',
-      label: 'Ollama Local',
-      key: 'ollama_model_version',
-      defaultModel: 'llama3',
-      isConfigured: Boolean(values.ollama_endpoint?.trim()),
-      unconfiguredHint: 'Isi Ollama Endpoint terlebih dahulu untuk auto import',
-      fetchModels: () => fetchAvailableOllamaModels(values.ollama_endpoint || 'http://localhost:11434'),
-    },
-  ];
-
   const handleTestCustomGateway = async () => {
     const ep = (values.custom_gateway_endpoint || 'http://localhost:20128/v1').trim();
     setTestingCustomGateway(true);
@@ -483,7 +439,9 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
       const msg = err instanceof Error ? err.message : String(err);
       errorActivity(`Koneksi 9Router gagal: ${msg}`);
       showError('Koneksi 9Router Gagal 🔴', msg, {
-        solution: 'Pastikan 9Router proxy server sudah berjalan di komputer Anda (jalankan perintah: 9router start di terminal) dan port 20128 tidak terblokir firewall.',
+        solution: ep.includes('localhost')
+          ? 'Pastikan 9Router proxy server sudah berjalan di komputer Anda (jalankan perintah: 9router di terminal) dan port 20128 tidak terblokir firewall.'
+          : 'Untuk endpoint remote / tunnel publik, pastikan Tunnel di 9Router sedang aktif (ON) dan 9Router Bearer API Key telah dimasukkan.',
       });
     } finally {
       setTestingCustomGateway(false);
@@ -512,87 +470,14 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
       const msg = err instanceof Error ? err.message : String(err);
       errorActivity(`Import model gagal: ${msg}`);
       showError('Gagal Mengimpor Model 9Router', msg, {
-        solution: 'Pastikan server 9Router aktif di terminal (perintah: 9router start) sebelum mengimpor model.',
+        solution: ep.includes('localhost')
+          ? 'Pastikan server 9Router aktif di terminal (perintah: 9router di terminal) sebelum mengimpor model.'
+          : 'Untuk endpoint remote / tunnel publik, pastikan Tunnel di 9Router aktif dan Bearer API Key sudah dimasukkan.',
       });
     } finally {
       setImportingModels(false);
     }
   };
-
-  const fallbackChainList: AIProvider[] = useMemo(() => {
-    return parseFallbackChain(values.fallback_provider_order);
-  }, [values.fallback_provider_order]);
-
-  const moveFallbackItem = (index: number, direction: -1 | 1) => {
-    const current = [...fallbackChainList];
-    const target = index + direction;
-    if (target < 0 || target >= current.length) return;
-    const temp = current[index];
-    current[index] = current[target];
-    current[target] = temp;
-    const newOrderStr = current.join(',');
-    setValues((v) => ({ ...v, fallback_provider_order: newOrderStr }));
-    onSave('fallback_provider_order', newOrderStr);
-  };
-
-  function groupModelsByVendor(models: string[]): Record<string, string[]> {
-    const groups: Record<string, string[]> = {};
-    for (const m of models) {
-      let group = 'Lainnya / Umum';
-      const lower = m.toLowerCase();
-      if (lower.includes('anthropic') || lower.includes('claude')) group = 'Anthropic Claude';
-      else if (lower.includes('google') || lower.includes('gemini') || lower.includes('gemma')) group = 'Google Gemini & Gemma';
-      else if (lower.includes('deepseek')) group = 'DeepSeek';
-      else if (lower.includes('openai') || lower.includes('gpt')) group = 'OpenAI';
-      else if (lower.includes('meta') || lower.includes('llama')) group = 'Meta Llama';
-      else if (lower.includes('mistral')) group = 'Mistral AI';
-      else if (lower.includes('qwen')) group = 'Qwen';
-
-      if (!groups[group]) groups[group] = [];
-      groups[group].push(m);
-    }
-    return groups;
-  }
-
-  const handleImportModelsForProvider = async (provider: string) => {
-    const config = modelConfigs.find((c) => c.provider === provider);
-    if (!config) return;
-    if (!config.isConfigured) {
-      showWarning('Konfigurasi Belum Lengkap', config.unconfiguredHint, {
-        solution: `Masukkan ${config.label} API Key / Endpoint terlebih dahulu pada kolom input di atas, lalu klik Simpan sebelum menjalankan Auto Import.`,
-      });
-      setImportStatuses((prev) => ({ ...prev, [provider]: config.unconfiguredHint }));
-      return;
-    }
-    setImportingProvider(provider);
-    setImportStatuses((prev) => ({ ...prev, [provider]: '' }));
-    startActivity(`Model Importer Log (${config.label})`, `Menghubungkan ke API ${config.label}...`);
-    addLog('Meminta katalog model yang tersedia dari endpoint...', 45);
-
-    try {
-      const models = await config.fetchModels();
-      const updated = { ...providerModels, [provider]: models };
-      setProviderModels(updated);
-      try {
-        localStorage.setItem(MODELS_CACHE_KEY, JSON.stringify(updated));
-      } catch { /* ignore storage errors */ }
-      const msg = `Berhasil mengimpor ${models.length} model ${config.label}.`;
-      setImportStatuses((prev) => ({ ...prev, [provider]: msg }));
-      finishActivity(`Berhasil mengimpor dan memperbarui ${models.length} model ${config.label}!`);
-      onShowToast?.(msg);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Gagal mengimpor daftar model.';
-      errorActivity(`Gagal mengimpor model: ${msg}`);
-      showError(`Gagal Mengimpor Model ${config.label}`, msg, {
-        solution: 'Pastikan koneksi internet aktif dan API Key / Endpoint yang Anda masukkan valid serta memiliki izin akses.',
-      });
-      setImportStatuses((prev) => ({ ...prev, [provider]: msg }));
-    } finally {
-      setImportingProvider(null);
-    }
-  };
-
-  const activeProvider = values.active_provider || 'gemini';
 
   return (
     <main className="main-content">
@@ -711,19 +596,61 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
                 style={{
                   fontSize: '0.78rem',
                   padding: '6px 12px',
-                  background: (values.custom_gateway_endpoint || '').includes('tunnel') || (values.custom_gateway_endpoint || '').includes('zeinity.com') ? 'rgba(79, 232, 255, 0.15)' : undefined,
-                  borderColor: (values.custom_gateway_endpoint || '').includes('tunnel') || (values.custom_gateway_endpoint || '').includes('zeinity.com') ? 'var(--cyan)' : undefined,
-                  color: (values.custom_gateway_endpoint || '').includes('tunnel') || (values.custom_gateway_endpoint || '').includes('zeinity.com') ? 'var(--cyan)' : undefined,
+                  background: (values.custom_gateway_endpoint || '').includes('abc-tunnel.us') ? 'rgba(79, 232, 255, 0.15)' : undefined,
+                  borderColor: (values.custom_gateway_endpoint || '').includes('abc-tunnel.us') ? 'var(--cyan)' : undefined,
+                  color: (values.custom_gateway_endpoint || '').includes('abc-tunnel.us') ? 'var(--cyan)' : undefined,
                 }}
                 onClick={() => {
-                  const tunnelUrl = 'https://ai.zeinity.com/v1';
-                  setValues((v) => ({ ...v, custom_gateway_endpoint: tunnelUrl, active_provider: 'custom' }));
+                  const tunnelUrl = initialCustomGatewayEndpoint?.includes('abc-tunnel.us')
+                    ? initialCustomGatewayEndpoint
+                    : 'https://rje2m9z.abc-tunnel.us/v1';
+                  const defaultKey = initialCustomGatewayApiKey || 'sk-aae08e472832982c-ocd8hb-aff3c45d';
+                  const nextKey = values.custom_gateway_api_key || defaultKey;
+                  setValues((v) => ({
+                    ...v,
+                    custom_gateway_endpoint: tunnelUrl,
+                    custom_gateway_api_key: nextKey,
+                    active_provider: 'custom',
+                  }));
                   onSave('custom_gateway_endpoint', tunnelUrl);
+                  if (!values.custom_gateway_api_key) {
+                    onSave('custom_gateway_api_key', defaultKey);
+                  }
                   onSave('active_provider', 'custom');
-                  onShowToast?.('Endpoint diatur ke Cloudflare Tunnel / Remote.');
+                  onShowToast?.('Endpoint diatur ke 9Router Remote Tunnel (abc-tunnel.us) - CORS Safe.');
                 }}
               >
-                🌐 Cloudflare Tunnel / Remote
+                🌐 9Router Remote (abc-tunnel.us) ⚡
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{
+                  fontSize: '0.78rem',
+                  padding: '6px 12px',
+                  background: (values.custom_gateway_endpoint || '').includes('trycloudflare.com') ? 'rgba(79, 232, 255, 0.15)' : undefined,
+                  borderColor: (values.custom_gateway_endpoint || '').includes('trycloudflare.com') ? 'var(--cyan)' : undefined,
+                  color: (values.custom_gateway_endpoint || '').includes('trycloudflare.com') ? 'var(--cyan)' : undefined,
+                }}
+                onClick={() => {
+                  const tunnelUrl = 'https://watt-membrane-beds-customise.trycloudflare.com/v1';
+                  const defaultKey = initialCustomGatewayApiKey || 'sk-aae08e472832982c-ocd8hb-aff3c45d';
+                  const nextKey = values.custom_gateway_api_key || defaultKey;
+                  setValues((v) => ({
+                    ...v,
+                    custom_gateway_endpoint: tunnelUrl,
+                    custom_gateway_api_key: nextKey,
+                    active_provider: 'custom',
+                  }));
+                  onSave('custom_gateway_endpoint', tunnelUrl);
+                  if (!values.custom_gateway_api_key) {
+                    onSave('custom_gateway_api_key', defaultKey);
+                  }
+                  onSave('active_provider', 'custom');
+                  onShowToast?.('Endpoint diatur ke Cloudflare Direct Tunnel.');
+                }}
+              >
+                ☁️ Cloudflare Direct Tunnel
               </button>
             </div>
           </div>
@@ -809,13 +736,16 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
 
           {/* Batas Waktu Permintaan (Request Timeout) */}
           <div className="field" style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
               <label htmlFor="ai_request_timeout" style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
                 <Clock size={16} style={{ color: 'var(--cyan)' }} />
                 Batas Waktu Permintaan (Request Timeout)
               </label>
               <span style={{ fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 600 }}>
-                Aktif: <span style={{ color: 'var(--cyan)' }}>{values.ai_request_timeout || '90'} Detik</span>
+                Aktif:{' '}
+                <span style={{ color: 'var(--cyan)' }}>
+                  {activeTimeoutSec} Detik ({formatTimeoutDuration(activeTimeoutSec)}{isCustomTimeoutActive ? ' • Kustom' : ''})
+                </span>
               </span>
             </div>
             <p className="subtitle" style={{ fontSize: '0.78rem', marginBottom: 10 }}>
@@ -823,22 +753,13 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8, marginTop: 8 }}>
-              {[
-                { sec: '60', label: '60 Detik', badge: 'Cepat', desc: 'Cocok untuk ideasi & model cloud ringan' },
-                { sec: '90', label: '90 Detik', badge: 'Rekomendasi', desc: 'Seimbang untuk naskah standar & 9Router' },
-                { sec: '120', label: '120 Detik', badge: 'Naskah Panjang', desc: 'Ideal untuk Full Script 2000 kata & failover' },
-                { sec: '180', label: '180 Detik', badge: 'Ekstra Sabar', desc: 'Untuk model penalaran tinggi / LLM lokal' },
-              ].map((opt) => {
-                const isSelected = (values.ai_request_timeout || '90') === opt.sec;
+              {PRESET_TIMEOUTS.map((opt) => {
+                const isSelected = !isCustomTimeoutActive && activeTimeoutSec === opt.sec;
                 return (
                   <button
                     key={opt.sec}
                     type="button"
-                    onClick={() => {
-                      setValues((v) => ({ ...v, ai_request_timeout: opt.sec }));
-                      onSave('ai_request_timeout', opt.sec);
-                      onShowToast?.(`Batas waktu timeout diatur ke ${opt.sec} detik.`);
-                    }}
+                    onClick={() => handleSelectPresetTimeout(opt.sec)}
                     style={{
                       padding: '10px 12px',
                       borderRadius: 8,
@@ -874,7 +795,175 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
                   </button>
                 );
               })}
+
+              {/* Opsi Custom Timeout Card */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCustomTimeout(true);
+                  if (!isCustomTimeoutActive) {
+                    handleApplyCustomTimeout(customTimeoutInput || '240');
+                  }
+                }}
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  border: isCustomTimeoutActive ? '1px solid var(--cyan)' : '1px solid var(--border)',
+                  background: isCustomTimeoutActive ? 'rgba(79, 232, 255, 0.12)' : 'rgba(255, 255, 255, 0.02)',
+                  color: isCustomTimeoutActive ? 'var(--cyan)' : 'var(--foreground)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 4,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.84rem' }}>
+                    {isCustomTimeoutActive ? `${activeTimeoutSec} Detik` : 'Kustom…'}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 600,
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      background: isCustomTimeoutActive ? 'var(--cyan)' : 'rgba(255, 255, 255, 0.08)',
+                      color: isCustomTimeoutActive ? '#000' : 'var(--muted)',
+                    }}
+                  >
+                    {isCustomTimeoutActive ? 'Kustom Aktif' : 'Bebas'}
+                  </span>
+                </div>
+                <span style={{ fontSize: '0.70rem', color: isCustomTimeoutActive ? 'rgba(255, 255, 255, 0.85)' : 'var(--muted)', lineHeight: 1.3 }}>
+                  {isCustomTimeoutActive
+                    ? `Durasi kustom aktif (${formatTimeoutDuration(activeTimeoutSec)})`
+                    : 'Tentukan durasi detik sesuai kebutuhan'}
+                </span>
+              </button>
             </div>
+
+            {/* Custom Timeout Input Panel */}
+            {showCustomTimeout && (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: '12px 14px',
+                  borderRadius: 8,
+                  background: 'rgba(79, 232, 255, 0.04)',
+                  border: '1px solid rgba(79, 232, 255, 0.22)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
+                  <span style={{ fontSize: '0.80rem', fontWeight: 700, color: 'var(--cyan)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Sliders size={14} /> Atur Durasi Timeout Kustom (Detik):
+                  </span>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
+                    Rentang yang didukung: 10 s/d 3.600 detik (1 menit - 60 menit)
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: '1 1 200px' }}>
+                    <input
+                      id="ai_request_timeout_custom_input"
+                      type="number"
+                      min={10}
+                      max={3600}
+                      step={10}
+                      value={customTimeoutInput}
+                      onChange={(e) => setCustomTimeoutInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleApplyCustomTimeout(customTimeoutInput);
+                        }
+                      }}
+                      placeholder="Contoh: 240"
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        border: '1px solid var(--border)',
+                        background: 'rgba(0, 0, 0, 0.25)',
+                        color: '#fff',
+                        fontSize: '0.86rem',
+                        fontWeight: 600,
+                        width: '120px',
+                      }}
+                    />
+                    <span style={{ fontSize: '0.80rem', color: 'var(--muted)', fontWeight: 600 }}>Detik</span>
+                    <span
+                      style={{
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        padding: '3px 8px',
+                        borderRadius: 4,
+                        background: 'rgba(79, 232, 255, 0.15)',
+                        color: 'var(--cyan)',
+                        marginLeft: 4,
+                      }}
+                    >
+                      ≈ {formatTimeoutDuration(customTimeoutInput || '0')}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => handleApplyCustomTimeout(customTimeoutInput)}
+                    style={{
+                      padding: '8px 16px',
+                      fontSize: '0.80rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontWeight: 600,
+                    }}
+                  >
+                    <Check size={14} /> Terapkan Timeout
+                  </button>
+                </div>
+
+                {/* Quick Suggestion Pills */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', paddingTop: 6, borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                  <span style={{ fontSize: '0.70rem', color: 'var(--muted)', fontWeight: 600, marginRight: 2 }}>
+                    Pilihan Cepat:
+                  </span>
+                  {[
+                    { sec: '240', label: '240s (4 Menit)' },
+                    { sec: '360', label: '360s (6 Menit)' },
+                    { sec: '480', label: '480s (8 Menit)' },
+                    { sec: '600', label: '600s (10 Menit)' },
+                    { sec: '900', label: '900s (15 Menit)' },
+                  ].map((chip) => (
+                    <button
+                      key={chip.sec}
+                      type="button"
+                      onClick={() => {
+                        setCustomTimeoutInput(chip.sec);
+                        handleApplyCustomTimeout(chip.sec);
+                      }}
+                      style={{
+                        fontSize: '0.70rem',
+                        fontWeight: 600,
+                        padding: '3px 8px',
+                        borderRadius: 4,
+                        border: activeTimeoutSec === chip.sec ? '1px solid var(--cyan)' : '1px solid rgba(255, 255, 255, 0.1)',
+                        background: activeTimeoutSec === chip.sec ? 'rgba(79, 232, 255, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+                        color: activeTimeoutSec === chip.sec ? 'var(--cyan)' : 'var(--muted)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
@@ -1023,11 +1112,8 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
                 </div>
                 <div className="recommendation-chips">
                   {[
-                    { id: 'Creator-Combo', name: 'Creator-Combo', badge: '3-Tier Auto-Fallback', desc: 'Prioritas Groq 70B -> Gemini Flash -> OpenRouter -> Ollama' },
-                    { id: 'Jarvis_Creator', name: 'Jarvis_Creator', badge: 'Content Creator', desc: 'Disesuaikan untuk scriptwriting dan narasi mendalam' },
-                    { id: 'Jarvis_Standard', name: 'Jarvis_Standard', badge: 'Balanced', desc: 'Keseimbangan kecepatan dan kecerdasan analisis' },
-                    { id: 'Jarvis_Analyst', name: 'Jarvis_Analyst', badge: 'Deep Reasoning', desc: 'Cocok untuk bedah fenomena dan data riset' },
-                    { id: 'Jarvis_Fast', name: 'Jarvis_Fast', badge: 'Ultra Fast', desc: 'Latensi ultra rendah untuk ideasi instan' },
+                    { id: 'Creator-Combo', name: 'Creator-Combo', badge: 'Naskah & Riset', desc: 'Gemini 3.8/3.7 -> OpenRouter -> Ollama (Riset & Naskah)' },
+                    { id: 'Zeinity-Audit-Combo', name: 'Zeinity-Audit-Combo', badge: 'Fast Audit & Hooks', desc: 'Groq Llama 3.3 70B -> GPT-OSS -> Gemini Lite (Audit & Packaging)' },
                   ].map((preset) => {
                     const isSelected = (values.custom_gateway_model_version || 'Creator-Combo') === preset.id;
                     return (

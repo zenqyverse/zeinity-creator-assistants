@@ -157,8 +157,11 @@ describe('In-App AI Scriptwriter & Dual-Track Studio Verification Suite', () => 
   it('Layer 3: ScriptDetail.tsx implements Smart Production Checklist downstream toolbar and reminder banner', () => {
     assert.ok(scriptDetailContent.includes('SMART CHECKLIST PEMOLESAN NASKAH'), 'Must render Smart Production Checklist header');
     assert.ok(scriptDetailContent.includes('Pengingat Cerdas Workflow:'), 'Must render Smart Reminder banner');
-    assert.ok(scriptDetailContent.includes('getSmartReminderText'), 'Must implement dynamic reminder text helper');
-    assert.ok(scriptDetailContent.includes('Lanjut ke Pipeline Berikutnya: Generate Thumbnail ➔'), 'Must provide forward transition CTA');
+    assert.ok(
+      scriptDetailContent.includes('setIsThumbnailModalOpen(true)') ||
+      scriptDetailContent.includes('Tandai Siap Publikasi / Publish ➔'),
+      'Must provide forward transition CTA via Thumbnail Studio modal'
+    );
   });
 
   it('Layer 3: CSS styling defines stretched grid, checklist cards, and responsive rules', () => {

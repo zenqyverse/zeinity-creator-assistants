@@ -210,22 +210,18 @@ describe('Tahap 1 (Stabilitas & Integritas Data) Verification Suite', () => {
       'ScriptDetail must reset showAuditResults to new item value'
     );
     assert.ok(
-      scriptDetailContent.includes('setAnnotatedScript(item.visual_cue_prompt || \'\')'),
-      'ScriptDetail must reset annotatedScript to new item value'
+      scriptDetailContent.includes('setTitlesList('),
+      'ScriptDetail must reset titlesList to new item value'
     );
     assert.ok(
-      scriptDetailContent.includes('setShowVisualCueResults(Boolean(item.visual_cue_prompt))'),
-      'ScriptDetail must reset showVisualCueResults to new item value'
+      scriptDetailContent.includes('setThumbnailMode(item.thumbnail_mode || \'prompt\')'),
+      'ScriptDetail must reset thumbnailMode to new item value'
     );
 
     // 3. Reset of summary badges and visual cues on switch
     assert.ok(
       scriptDetailContent.includes('setAuditSummary(null)'),
       'ScriptDetail must reset auditSummary to null on item switch'
-    );
-    assert.ok(
-      scriptDetailContent.includes('setVisualCueSummary(null)'),
-      'ScriptDetail must reset visualCueSummary to null on item switch'
     );
     assert.ok(
       scriptDetailContent.includes('setHandoffSummary(null)'),

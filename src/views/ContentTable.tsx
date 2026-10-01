@@ -227,9 +227,15 @@ export default function ContentTable({
         );
       case 'Validating':
         return (
-          <span style={{ color: '#f9d777', fontSize: '.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Loader2 size={14} className="spinner" /> Memproses...
-          </span>
+          <button
+            className="row-action"
+            type="button"
+            onClick={() => onValidate(item)}
+            title="Lanjutkan / Ulangi Validasi AI"
+            aria-label={`Lanjutkan Validasi AI untuk ide: ${item.title}`}
+          >
+            <Zap size={14} /> Validasi AI
+          </button>
         );
       case 'Researching':
         return (
@@ -462,7 +468,10 @@ export default function ContentTable({
                               fontFamily: 'inherit',
                             }}
                           >
-                            {statuses.filter((s) => s !== 'Validating').map((s) => (
+                            {(item.status === 'Validating'
+                              ? (['Validating', ...statuses.filter((s) => s !== 'Validating')] as ContentStatus[])
+                              : statuses.filter((s) => s !== 'Validating')
+                            ).map((s) => (
                               <option key={s} value={s} style={{ background: '#0d1526', color: '#e2edff' }}>
                                 {s}
                               </option>

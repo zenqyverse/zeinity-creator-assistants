@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import type { ContentItem, ContentStatus } from '@/types';
+import { CONTENT_STATUSES } from '@/types';
 import {
   ArrowLeft,
   Eye,
@@ -20,8 +22,12 @@ import {
   FileDown,
   AlertTriangle,
 } from 'lucide-react';
-import { CONTENT_STATUSES, type ContentItem, type ContentStatus } from '@/types';
-import { generateAlternativeTitles, type ProviderConfig } from '@/lib/gemini';
+import {
+  generateAlternativeTitles,
+  resolveTargetModelForTask,
+  isProviderConfigured,
+  type ProviderConfig,
+} from '@/lib/gemini';
 import { useAlert, parseAIError } from '@/components/AlertModal';
 import { useTerminal } from '@/components/Terminal';
 import { formatDate } from '@/lib/date';
@@ -195,7 +201,7 @@ export default function PublishedDetail({
 
   const handleGenerateTitles = async () => {
     if (!providerConfig) return;
-    if (!providerConfig.apiKey?.trim() && providerConfig.provider !== 'ollama') {
+    if (!isProviderConfigured(providerConfig)) {
       showError(
         'Kunci API Belum Dikonfigurasi',
         `API Key untuk provider ${providerConfig.provider.toUpperCase()} belum diatur di menu Settings.`,
@@ -209,14 +215,16 @@ export default function PublishedDetail({
       return;
     }
 
+    const targetConfig = resolveTargetModelForTask('audit', providerConfig);
+    const modelLabel = targetConfig.modelVersion || targetConfig.provider.toUpperCase();
     setGeneratingTitles(true);
-    startActivity('AI Title Generator Log', `Menghubungkan ke ${providerConfig.provider.toUpperCase()}...`);
+    startActivity('AI Title Generator Log', `Menghubungkan ke ${modelLabel}...`);
     addLog('Menganalisis naskah video & topik konten...', 35);
     addLog('Merumuskan Mode A (Curiosity & Mobile 5–8 kata) & Mode B (SEO Keyword & Authority)...', 75);
 
     try {
       const res = await generateAlternativeTitles(
-        providerConfig,
+        targetConfig,
         item.title,
         item.category || 'Umum',
         item.external_script_output || item.research_text
@@ -239,6 +247,7 @@ export default function PublishedDetail({
       showError(parsed.title, parsed.message, {
         technicalDetails: parsed.technicalDetails,
         solution: parsed.solution,
+        diagnostics: parsed.diagnostics,
         actionButton: onNavigateSettings
           ? { label: 'Buka Settings', onClick: onNavigateSettings }
           : undefined,
@@ -259,7 +268,11 @@ export default function PublishedDetail({
       });
     } catch (err: unknown) {
       const parsed = parseAIError(err);
-      showError(parsed.title, parsed.message);
+      showError(parsed.title, parsed.message, {
+        technicalDetails: parsed.technicalDetails,
+        solution: parsed.solution,
+        diagnostics: parsed.diagnostics,
+      });
     }
   };
 

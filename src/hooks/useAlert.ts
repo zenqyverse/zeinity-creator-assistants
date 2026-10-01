@@ -1,6 +1,9 @@
 import { createContext, useContext } from 'react';
+import type { AlertDiagnostics } from '@/types';
 
 export type AlertType = 'error' | 'warning' | 'info' | 'success';
+
+export type { AlertDiagnostics };
 
 export interface AlertOptions {
   title: string;
@@ -8,6 +11,7 @@ export interface AlertOptions {
   type?: AlertType;
   technicalDetails?: string;
   solution?: string;
+  diagnostics?: AlertDiagnostics;
   confirmText?: string;
   cancelText?: string;
   actionButton?: {

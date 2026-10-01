@@ -72,13 +72,10 @@ describe('6 Prompt Features Alignment with implementation_plan_Gambaran_Output_P
     assert.ok(geminiContent.includes('ALASAN:'), 'Must require ALASAN:');
   });
 
-  it('Fitur 5: Visual Cue Annotation implements functional tagging with [BUKTI], [JELASKAN], [KONTEKS], [TEKANKAN], [RITME]', () => {
-    assert.ok(geminiContent.includes('runVisualCueAnnotation'), 'Must export runVisualCueAnnotation');
-    assert.ok(geminiContent.includes('[BUKTI]'), 'Must include [BUKTI] tag');
-    assert.ok(geminiContent.includes('[JELASKAN]'), 'Must include [JELASKAN] tag');
-    assert.ok(geminiContent.includes('[KONTEKS]'), 'Must include [KONTEKS] tag');
-    assert.ok(geminiContent.includes('[TEKANKAN]'), 'Must include [TEKANKAN] tag');
-    assert.ok(geminiContent.includes('[RITME]'), 'Must include [RITME] tag');
+  it('Fitur 5: Visual Cue Annotation permanently removed as standalone AI action per user request', () => {
+    assert.ok(!geminiContent.includes('export async function runVisualCueAnnotation('), 'gemini.ts must not export runVisualCueAnnotation');
+    assert.ok(!scriptDetailContent.includes('handleRunVisualCueAnnotation'), 'ScriptDetail must not define handleRunVisualCueAnnotation');
+    assert.ok(!scriptDetailContent.includes('Anotasi Visual Cue ✨'), 'ScriptDetail must not render visual cue action button');
   });
 
   it('Fitur 6: Thumbnail Copy Prompt implements 3 CTR options, stakes vs question, and 2-4 words uppercase', () => {
@@ -89,15 +86,14 @@ describe('6 Prompt Features Alignment with implementation_plan_Gambaran_Output_P
     assert.ok(geminiContent.includes('stakes'), 'Must focus on stakes and consequences');
   });
 
-  it('UI & Data Integration: ScriptDetail.tsx and useContent.ts handle all 6 prompt features', () => {
+  it('UI & Data Integration: ScriptDetail.tsx and useContent.ts handle Thumbnail Studio and 5 Titles', () => {
     // ScriptDetail.tsx imports & handlers
-    assert.ok(scriptDetailContent.includes('runVisualCueAnnotation'), 'ScriptDetail must import runVisualCueAnnotation');
-    assert.ok(scriptDetailContent.includes('handleRunVisualCueAnnotation'), 'ScriptDetail must define handleRunVisualCueAnnotation');
-    assert.ok(scriptDetailContent.includes('Anotasi Visual Cue ✨'), 'ScriptDetail must render action button for visual cues');
+    assert.ok(scriptDetailContent.includes('Studio Generate Thumbnail'), 'ScriptDetail must render Studio Generate Thumbnail');
+    assert.ok(scriptDetailContent.includes('Generate Rekomendasi Judul ✨'), 'ScriptDetail must render Generate Rekomendasi Judul ✨');
+    assert.ok(scriptDetailContent.includes('handleGenerateTitles'), 'ScriptDetail must define handleGenerateTitles');
 
-    // Types & LocalStorage Fallback
-    assert.ok(typesContent.includes('visual_cue_prompt'), 'types.ts must include visual_cue_prompt');
-    assert.ok(useContentContent.includes('visual_cue_prompt'), 'useContent.ts must handle visual_cue_prompt');
-    assert.ok(useContentContent.includes('VISUAL_CUE_STORAGE_PREFIX'), 'useContent.ts must have localStorage prefix for visual cues');
+    // Types & LocalStorage
+    assert.ok(typesContent.includes('generated_titles'), 'types.ts must include generated_titles');
+    assert.ok(useContentContent.includes('TITLES_STORAGE_PREFIX'), 'useContent.ts must have localStorage prefix for generated titles');
   });
 });

@@ -27,7 +27,8 @@ describe('Transform D: Rename UI Framing Verification', () => {
     assert.ok(!content.includes('Thumbnail Prompt (High CTR)</h4>'), 'Must eliminate "Thumbnail Prompt (High CTR)" title');
 
     assert.ok(content.includes('Audit Spoken & TTS ✨'), 'Audit button must have sparkles ✨');
-    assert.ok(content.includes('Anotasi Visual Cue ✨'), 'Visual cue button must be "Anotasi Visual Cue ✨"');
+    assert.ok(!content.includes('Anotasi Visual Cue ✨'), 'Visual cue button must be removed per user request');
+    assert.ok(content.includes('Generate Rekomendasi Judul ✨'), 'Must render "Generate Rekomendasi Judul ✨" button');
     assert.ok(content.includes('Generate Ulang Handoff'), 'Regenerate button must be "Generate Ulang Handoff"');
     assert.ok(content.includes('Lanjut: Generate Scriptwriter Handoff'), 'Advance button must be "Lanjut: Generate Scriptwriter Handoff"');
 
