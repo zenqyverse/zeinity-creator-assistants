@@ -40,6 +40,7 @@ import {
   toggleRssSourceActive,
   updateRssSource,
   clearFeedCache,
+  fetchOpenGraphImage,
 } from '@/lib/rssService';
 import { useAlert } from '@/components/AlertModal';
 
@@ -487,6 +488,38 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
 
   // Slice for progressive disclosure
   const displayedItems = filteredItems.slice(0, visibleCount);
+
+  // Background OpenGraph image enrichment for items without XML thumbnails (e.g. Gamebrott / minimalist feeds)
+  useEffect(() => {
+    const missingThumbnails = displayedItems.filter((i) => !i.thumbnail && i.link);
+    if (missingThumbnails.length === 0) return;
+
+    let active = true;
+
+    const enrichThumbnails = async () => {
+      const batchSize = 3;
+      for (let i = 0; i < missingThumbnails.length; i += batchSize) {
+        if (!active) break;
+        const batch = missingThumbnails.slice(i, i + batchSize);
+        await Promise.allSettled(
+          batch.map(async (item) => {
+            const ogImage = await fetchOpenGraphImage(item.link);
+            if (active && ogImage) {
+              setItems((prev) =>
+                prev.map((it) => (it.id === item.id ? { ...it, thumbnail: ogImage } : it))
+              );
+            }
+          })
+        );
+      }
+    };
+
+    enrichThumbnails();
+
+    return () => {
+      active = false;
+    };
+  }, [displayedItems]);
 
   const unreadCount = useMemo(() => {
     return items.filter((i) => !i.isRead).length;

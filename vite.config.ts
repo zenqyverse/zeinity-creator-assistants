@@ -9,19 +9,24 @@ function feedProxyPlugin(): Plugin {
       server.middlewares.use('/api/feed-proxy', async (req, res) => {
         try {
           const parsedUrl = new URL(req.url || '', 'http://localhost');
-          const targetUrl = parsedUrl.searchParams.get('url');
+          const ogUrl = parsedUrl.searchParams.get('og');
+          const targetUrl = ogUrl || parsedUrl.searchParams.get('url');
+
           if (!targetUrl) {
             res.statusCode = 400;
             res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-            res.end('Missing "url" query parameter');
+            res.end('Missing "url" or "og" query parameter');
             return;
           }
 
+          const isOgMode = Boolean(ogUrl);
           const response = await fetch(targetUrl, {
             headers: {
               'User-Agent':
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
+              Accept: isOgMode
+                ? 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+                : 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
             },
           });
 
@@ -33,9 +38,34 @@ function feedProxyPlugin(): Plugin {
           }
 
           const text = await response.text();
+          res.setHeader('Access-Control-Allow-Origin', '*');
+
+          if (isOgMode) {
+            const ogMatch =
+              text.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+              text.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i) ||
+              text.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i) ||
+              text.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i) ||
+              text.match(/<link[^>]+rel=["']image_src["'][^>]+href=["']([^"']+)["']/i);
+
+            let imageUrl = ogMatch ? ogMatch[1].trim() : null;
+            if (imageUrl && imageUrl.startsWith('/') && !imageUrl.startsWith('//')) {
+              try {
+                const origin = new URL(targetUrl).origin;
+                imageUrl = `${origin}${imageUrl}`;
+              } catch {
+                // ignore
+              }
+            }
+
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(JSON.stringify({ image: imageUrl }));
+            return;
+          }
+
           res.statusCode = 200;
           res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-          res.setHeader('Access-Control-Allow-Origin', '*');
           res.end(text);
         } catch (err: unknown) {
           res.statusCode = 500;

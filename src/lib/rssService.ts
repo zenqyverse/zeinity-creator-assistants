@@ -254,8 +254,72 @@ function isTrackingPixel(url: string): boolean {
   );
 }
 
+// In-memory and local cache for OpenGraph images
+const ogCache = new Map<string, string>();
+const STORAGE_KEY_OG_CACHE = 'zeinity_rss_og_cache';
+
+export function getCachedOgImage(url: string): string | undefined {
+  if (!url) return undefined;
+  if (ogCache.has(url)) return ogCache.get(url);
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_OG_CACHE);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed[url]) {
+        ogCache.set(url, parsed[url]);
+        return parsed[url];
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return undefined;
+}
+
+export function saveCachedOgImage(url: string, imageUrl: string): void {
+  if (!url || !imageUrl) return;
+  ogCache.set(url, imageUrl);
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_OG_CACHE);
+    const parsed = raw ? JSON.parse(raw) : {};
+    parsed[url] = imageUrl;
+    localStorage.setItem(STORAGE_KEY_OG_CACHE, JSON.stringify(parsed));
+  } catch {
+    // ignore
+  }
+}
+
 /**
- * Extracts thumbnail from item XML element (media:content, media:thumbnail, enclosure, or <img src>)
+ * Fetches OpenGraph/Twitter card image for articles that do not include images in their RSS XML.
+ */
+export async function fetchOpenGraphImage(articleUrl: string): Promise<string | undefined> {
+  if (!articleUrl) return undefined;
+  const cached = getCachedOgImage(articleUrl);
+  if (cached) return cached;
+
+  try {
+    const proxyUrl = `/api/feed-proxy?og=${encodeURIComponent(articleUrl)}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(proxyUrl, { signal: controller.signal });
+    clearTimeout(timer);
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.image && typeof data.image === 'string' && !isTrackingPixel(data.image)) {
+        saveCachedOgImage(articleUrl, data.image);
+        return data.image;
+      }
+    }
+  } catch {
+    // ignore network errors
+  }
+  return undefined;
+}
+
+/**
+ * Extracts thumbnail from item XML element:
+ * media:content, media:thumbnail, enclosure, link[rel="enclosure"], itunes:image, image>url,
+ * and <img src|data-src|data-lazy-src> inside HTML.
  */
 function extractThumbnail(el: Element, description: string): string | undefined {
   // 1. media:content
@@ -310,21 +374,47 @@ function extractThumbnail(el: Element, description: string): string | undefined 
     }
   }
 
-  // 5. regex from description/content (decode HTML entities first, skipping 1x1 tracking pixels)
+  // 5. itunes:image href or image > url tag
+  const itunesImage = Array.from(el.getElementsByTagNameNS('*', 'image')).find((x) => x.getAttribute('href'));
+  if (itunesImage) {
+    const href = itunesImage.getAttribute('href');
+    if (href && !isTrackingPixel(href)) return href;
+  }
+
+  const elImgUrl =
+    el.getElementsByTagName('image')[0]?.getElementsByTagName('url')[0]?.textContent?.trim() ||
+    el.getElementsByTagName('image')[0]?.textContent?.trim();
+  if (elImgUrl && !isTrackingPixel(elImgUrl) && /\.(jpg|jpeg|png|webp|gif|avif)/i.test(elImgUrl)) {
+    return elImgUrl;
+  }
+
+  // 6. regex from description/content (checks src, data-src, data-lazy-src, data-original)
   const decodedDescription = decodeHtmlEntities(description);
-  const imgTags = decodedDescription.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi) || [];
+  const imgTags = decodedDescription.match(/<img[^>]+>/gi) || [];
   for (const imgTag of imgTags) {
     if (/width=["']?1["']?/i.test(imgTag) || /height=["']?1["']?/i.test(imgTag)) {
       continue;
     }
+
+    // Prefer data-src / data-lazy-src if src is placeholder (e.g. data:image/svg or 1x1)
+    const lazyMatch =
+      imgTag.match(/data-src=["']([^"']+)["']/i) ||
+      imgTag.match(/data-lazy-src=["']([^"']+)["']/i) ||
+      imgTag.match(/data-original=["']([^"']+)["']/i);
+
+    if (lazyMatch && lazyMatch[1] && !isTrackingPixel(lazyMatch[1])) {
+      return lazyMatch[1];
+    }
+
     const srcMatch = imgTag.match(/src=["']([^"']+)["']/i);
-    if (srcMatch && srcMatch[1] && !isTrackingPixel(srcMatch[1])) {
+    if (srcMatch && srcMatch[1] && !isTrackingPixel(srcMatch[1]) && !srcMatch[1].startsWith('data:image/')) {
       return srcMatch[1];
     }
   }
 
   return undefined;
 }
+
 
 /**
  * Parses RSS 2.0 or Atom XML string into RSSItem[].
@@ -378,13 +468,13 @@ export function parseFeedXml(xmlString: string, source: RSSSource): RSSItem[] {
           '';
         const creator = decodeHtmlEntities(rawCreator);
 
-        const rawDescription =
-          el.getElementsByTagNameNS('*', 'encoded')[0]?.textContent ||
-          el.querySelector('description')?.textContent ||
-          '';
+        const encodedText = el.getElementsByTagNameNS('*', 'encoded')[0]?.textContent || '';
+        const descText = el.querySelector('description')?.textContent || '';
+        const rawDescription = encodedText || descText || '';
 
         const contentSnippet = cleanSnippet(rawDescription);
-        const thumbnail = extractThumbnail(el, rawDescription);
+        const combinedHtml = `${descText} ${encodedText}`;
+        const thumbnail = extractThumbnail(el, combinedHtml);
 
         // Generate a consistent ID
         const safeId = `${source.id}-${link || title || index}`.replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -452,7 +542,8 @@ export function parseFeedXml(xmlString: string, source: RSSSource): RSSItem[] {
         const rawContent = summaryText || contentText;
 
         const contentSnippet = cleanSnippet(rawContent);
-        const thumbnail = extractThumbnail(el, contentText || rawContent);
+        const combinedHtml = `${summaryText} ${contentText}`;
+        const thumbnail = extractThumbnail(el, combinedHtml);
 
         const safeId = `${source.id}-${link || title || index}`.replace(/[^a-zA-Z0-9_-]/g, '_');
 
