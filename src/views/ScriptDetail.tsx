@@ -24,7 +24,7 @@ import {
   Rss,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { CONTENT_STATUSES, type ContentItem, type ContentStatus, type TitleRecommendationItem } from '@/types';
+import { CONTENT_STATUSES, type ContentItem, type ContentStatus, type TitleRecommendationItem, type HookRecommendationResult } from '@/types';
 import { saveUploadedFile } from '@/hooks/useFiles';
 import { extractTextFromFile } from '@/lib/docx';
 import {
@@ -44,6 +44,9 @@ import {
   resolveTargetModelForTask,
   isProviderConfigured,
   type ProviderConfig,
+  recommendZeinityHook,
+  generateZeinityHook,
+  applyHookToOutline,
 } from '@/lib/gemini';
 import {
   ScriptPreflightBar,
@@ -221,6 +224,14 @@ export default function ScriptDetail({
   const [generatingFullScript, setGeneratingFullScript] = useState<boolean>(false);
   const [generatingBeatNumber, setGeneratingBeatNumber] = useState<ScriptBeatNumber | null>(null);
 
+  // Hook-First Pipeline state (Tahap 1)
+  const [selectedHookType, setSelectedHookType] = useState<string>(item.script_hook_type || '');
+  const [hookDraft, setHookDraft] = useState<string>(item.script_hook_draft || '');
+  const [hookNotes, setHookNotes] = useState<string>(item.script_hook_notes || '');
+  const [hookRecommendation, setHookRecommendation] = useState<HookRecommendationResult | null>(null);
+  const [recommendingHook, setRecommendingHook] = useState<boolean>(false);
+  const [generatingHook, setGeneratingHook] = useState<boolean>(false);
+
   // Modals for Track Switch & Overwrite Guard
   const [showSwitchTrackModal, setShowSwitchTrackModal] = useState<boolean>(false);
   const [pendingTrack, setPendingTrack] = useState<'in_app' | 'external' | null>(null);
@@ -230,6 +241,8 @@ export default function ScriptDetail({
   const lastSavedScriptRef = useRef<string>(item.external_script_output || '');
   const lastSavedOutlineRef = useRef<string>(item.script_outline || '');
   const lastSavedAngleNotesRef = useRef<string>(item.script_angle_notes || '');
+  const lastSavedHookDraftRef = useRef<string>(item.script_hook_draft || '');
+  const lastSavedHookNotesRef = useRef<string>(item.script_hook_notes || '');
   const researchOutputRef = useRef<string>(researchOutput);
   researchOutputRef.current = researchOutput;
   const scriptOutputRef = useRef<string>(scriptOutput);
@@ -238,6 +251,12 @@ export default function ScriptDetail({
   outlineTextRef.current = outlineText;
   const angleNotesRef = useRef<string>(angleNotes);
   angleNotesRef.current = angleNotes;
+  const hookDraftRef = useRef<string>(hookDraft);
+  hookDraftRef.current = hookDraft;
+  const hookNotesRef = useRef<string>(hookNotes);
+  hookNotesRef.current = hookNotes;
+  const selectedHookTypeRef = useRef<string>(selectedHookType);
+  selectedHookTypeRef.current = selectedHookType;
   const isOutlineApprovedRef = useRef<boolean>(isOutlineApproved);
   isOutlineApprovedRef.current = isOutlineApproved;
   const itemRef = useRef(item);
@@ -263,6 +282,12 @@ export default function ScriptDetail({
       if (angleNotesRef.current !== lastSavedAngleNotesRef.current) {
         onUpdate(prevId, { script_angle_notes: angleNotesRef.current }, { immediate: true });
       }
+      if (hookDraftRef.current !== lastSavedHookDraftRef.current) {
+        onUpdate(prevId, { script_hook_draft: hookDraftRef.current }, { immediate: true });
+      }
+      if (hookNotesRef.current !== lastSavedHookNotesRef.current) {
+        onUpdate(prevId, { script_hook_notes: hookNotesRef.current }, { immediate: true });
+      }
 
       currentItemIdRef.current = item.id;
       setResearchOutput(item.external_research_output || '');
@@ -271,6 +296,11 @@ export default function ScriptDetail({
       lastSavedScriptRef.current = item.external_script_output || '';
       lastSavedOutlineRef.current = item.script_outline || '';
       lastSavedAngleNotesRef.current = item.script_angle_notes || '';
+      lastSavedHookDraftRef.current = item.script_hook_draft || '';
+      lastSavedHookNotesRef.current = item.script_hook_notes || '';
+      hookDraftRef.current = item.script_hook_draft || '';
+      hookNotesRef.current = item.script_hook_notes || '';
+      selectedHookTypeRef.current = item.script_hook_type || '';
       setResearchSaveStatus('idle');
       setScriptSaveStatus('idle');
 
@@ -348,6 +378,12 @@ export default function ScriptDetail({
       setGeneratingOutline(false);
       setGeneratingFullScript(false);
       setGeneratingBeatNumber(null);
+      setSelectedHookType(item.script_hook_type || '');
+      setHookDraft(item.script_hook_draft || '');
+      setHookNotes(item.script_hook_notes || '');
+      setHookRecommendation(null);
+      setRecommendingHook(false);
+      setGeneratingHook(false);
       setShowSwitchTrackModal(false);
       setShowOverwriteDraftModal(false);
       setPendingTrack(null);
@@ -432,6 +468,26 @@ export default function ScriptDetail({
       setAngleNotes(item.script_angle_notes || '');
       lastSavedAngleNotesRef.current = item.script_angle_notes || '';
     }
+    if (item.script_hook_type !== undefined && item.script_hook_type !== selectedHookTypeRef.current) {
+      setSelectedHookType(item.script_hook_type || '');
+      selectedHookTypeRef.current = item.script_hook_type || '';
+    }
+    if (
+      item.script_hook_draft !== undefined &&
+      item.script_hook_draft !== lastSavedHookDraftRef.current &&
+      hookDraftRef.current === lastSavedHookDraftRef.current
+    ) {
+      setHookDraft(item.script_hook_draft || '');
+      lastSavedHookDraftRef.current = item.script_hook_draft || '';
+    }
+    if (
+      item.script_hook_notes !== undefined &&
+      item.script_hook_notes !== lastSavedHookNotesRef.current &&
+      hookNotesRef.current === lastSavedHookNotesRef.current
+    ) {
+      setHookNotes(item.script_hook_notes || '');
+      lastSavedHookNotesRef.current = item.script_hook_notes || '';
+    }
   }, [
     item.id,
     item.external_research_output,
@@ -450,6 +506,9 @@ export default function ScriptDetail({
     item.script_target_duration,
     item.script_target_words,
     item.script_angle_notes,
+    item.script_hook_type,
+    item.script_hook_draft,
+    item.script_hook_notes,
     onUpdate,
   ]);
 
@@ -546,6 +605,40 @@ export default function ScriptDetail({
     return () => clearTimeout(timer);
   }, [angleNotes, item.id, onUpdate]);
 
+  // Debounced auto-save for hookDraft (~900ms)
+  useEffect(() => {
+    if (hookDraft === lastSavedHookDraftRef.current) return;
+
+    const timer = setTimeout(async () => {
+      const draftToSave = hookDraft;
+      try {
+        await onUpdate(item.id, { script_hook_draft: draftToSave }, { silent: true });
+        lastSavedHookDraftRef.current = draftToSave;
+      } catch (err) {
+        console.error('Failed to auto-save hook draft:', err);
+      }
+    }, 900);
+
+    return () => clearTimeout(timer);
+  }, [hookDraft, item.id, onUpdate]);
+
+  // Debounced auto-save for hookNotes (~900ms)
+  useEffect(() => {
+    if (hookNotes === lastSavedHookNotesRef.current) return;
+
+    const timer = setTimeout(async () => {
+      const notesToSave = hookNotes;
+      try {
+        await onUpdate(item.id, { script_hook_notes: notesToSave }, { silent: true });
+        lastSavedHookNotesRef.current = notesToSave;
+      } catch (err) {
+        console.error('Failed to auto-save hook notes:', err);
+      }
+    }, 900);
+
+    return () => clearTimeout(timer);
+  }, [hookNotes, item.id, onUpdate]);
+
   // Flush unsaved changes on unmount or before window unload
   useEffect(() => {
     const flushPending = () => {
@@ -553,7 +646,9 @@ export default function ScriptDetail({
         researchOutputRef.current !== lastSavedResearchRef.current ||
         scriptOutputRef.current !== lastSavedScriptRef.current ||
         outlineTextRef.current !== lastSavedOutlineRef.current ||
-        angleNotesRef.current !== lastSavedAngleNotesRef.current
+        angleNotesRef.current !== lastSavedAngleNotesRef.current ||
+        hookDraftRef.current !== lastSavedHookDraftRef.current ||
+        hookNotesRef.current !== lastSavedHookNotesRef.current
       ) {
         onUpdate(itemRef.current.id, {
           external_research_output: researchOutputRef.current,
@@ -561,11 +656,16 @@ export default function ScriptDetail({
           script_outline: outlineTextRef.current,
           script_angle_notes: angleNotesRef.current,
           script_outline_approved: isOutlineApprovedRef.current,
+          script_hook_type: selectedHookTypeRef.current || undefined,
+          script_hook_draft: hookDraftRef.current,
+          script_hook_notes: hookNotesRef.current,
         }, { immediate: true });
         lastSavedResearchRef.current = researchOutputRef.current;
         lastSavedScriptRef.current = scriptOutputRef.current;
         lastSavedOutlineRef.current = outlineTextRef.current;
         lastSavedAngleNotesRef.current = angleNotesRef.current;
+        lastSavedHookDraftRef.current = hookDraftRef.current;
+        lastSavedHookNotesRef.current = hookNotesRef.current;
       }
     };
 
@@ -1419,7 +1519,9 @@ export default function ScriptDetail({
         angleNotes,
         computedTargetWords,
         targetDuration,
-        isRegenerate ? revisionNoteInput : null
+        isRegenerate ? revisionNoteInput : null,
+        selectedHookType || null,
+        hookDraft || null
       );
 
       setOutlineText(generated);
@@ -1434,6 +1536,9 @@ export default function ScriptDetail({
         script_target_words: computedTargetWords,
         script_angle_notes: angleNotes,
         script_production_track: productionTrack,
+        script_hook_type: selectedHookType || undefined,
+        script_hook_draft: hookDraft || undefined,
+        script_hook_notes: hookNotes || undefined,
       });
 
       finishActivity(
@@ -1511,6 +1616,9 @@ export default function ScriptDetail({
         script_target_duration: targetDuration,
         script_target_words: computedTargetWords,
         script_angle_notes: angleNotes,
+        script_hook_type: selectedHookType || undefined,
+        script_hook_draft: hookDraft || undefined,
+        script_hook_notes: hookNotes || undefined,
       });
 
       const fullScript = await generateZeinityFullScript(
@@ -1522,7 +1630,9 @@ export default function ScriptDetail({
         computedTargetWords,
         angleNotes,
         item.category,
-        item.research_text
+        item.research_text,
+        selectedHookType || null,
+        hookDraft || null
       );
 
       setScriptOutput(fullScript);
@@ -1643,11 +1753,193 @@ export default function ScriptDetail({
     }
   };
 
+  const handleSelectHookType = async (hookType: string) => {
+    setSelectedHookType(hookType);
+    selectedHookTypeRef.current = hookType;
+    try {
+      await onUpdate(item.id, { script_hook_type: hookType });
+    } catch (err) {
+      console.error('Failed to update hook type:', err);
+    }
+  };
+
+  const handleHookDraftChange = (val: string) => {
+    setHookDraft(val);
+  };
+
+  const handleHookNotesChange = (val: string) => {
+    setHookNotes(val);
+  };
+
+  const handleRecommendHook = async () => {
+    if (!isProviderConfigured(providerConfig)) {
+      showError(
+        'Kunci API Belum Dikonfigurasi',
+        `API Key untuk provider ${providerConfig.provider.toUpperCase()} belum diatur di menu Settings.`,
+        {
+          solution: 'Buka menu Settings dan masukkan API Key Anda, lalu klik Simpan.',
+          actionButton: onNavigateSettings
+            ? { label: 'Buka Settings', onClick: onNavigateSettings }
+            : undefined,
+        }
+      );
+      return;
+    }
+
+    const targetConfig = resolveTargetModelForTask('script', providerConfig);
+    const modelLabel = targetConfig.modelVersion || targetConfig.provider.toUpperCase();
+    setRecommendingHook(true);
+    startActivity('Hook Recommendation Log', `Menganalisis sudut konten dengan ${modelLabel}...`);
+    addLog('Mengevaluasi 6 Formula Hook Zeinity berdasarkan riset & judul...', 40);
+
+    try {
+      const rec = await recommendZeinityHook(
+        targetConfig,
+        item.title,
+        researchOutput,
+        item.category,
+        item.research_text,
+        angleNotes
+      );
+
+      setHookRecommendation(rec);
+      setSelectedHookType(rec.hookId);
+      selectedHookTypeRef.current = rec.hookId;
+      await onUpdate(item.id, { script_hook_type: rec.hookId });
+
+      finishActivity(`Rekomendasi Hook: ${rec.hookName} dipilih!`);
+    } catch (err: unknown) {
+      const parsed = parseAIError(err);
+      errorActivity(`Gagal merekomendasikan hook: ${parsed.title}`);
+      showError(parsed.title, parsed.message, {
+        technicalDetails: parsed.technicalDetails,
+        solution: parsed.solution,
+        diagnostics: parsed.diagnostics,
+        actionButton: onNavigateSettings
+          ? { label: 'Buka Settings', onClick: onNavigateSettings }
+          : undefined,
+      });
+    } finally {
+      setRecommendingHook(false);
+    }
+  };
+
+  const handleGenerateHook = async (isRegenerate = false) => {
+    if (!isProviderConfigured(providerConfig)) {
+      showError(
+        'Kunci API Belum Dikonfigurasi',
+        `API Key untuk provider ${providerConfig.provider.toUpperCase()} belum diatur di menu Settings.`,
+        {
+          solution: 'Buka menu Settings dan masukkan API Key Anda, lalu klik Simpan.',
+          actionButton: onNavigateSettings
+            ? { label: 'Buka Settings', onClick: onNavigateSettings }
+            : undefined,
+        }
+      );
+      return;
+    }
+
+    if (!selectedHookType) {
+      showWarning(
+        'Varian Hook Belum Dipilih',
+        'Pilih salah satu dari 6 Varian Hook Zeinity sebelum melakukan generate teks hook.'
+      );
+      return;
+    }
+
+    const targetConfig = resolveTargetModelForTask('script', providerConfig);
+    const modelLabel = targetConfig.modelVersion || targetConfig.provider.toUpperCase();
+    setGeneratingHook(true);
+    startActivity('Hook Studio Log', `Menghubungkan ke ${modelLabel}...`);
+    addLog(
+      isRegenerate
+        ? 'Menulis ulang Hook Pembuka Zeinity (0–30 detik, spoken-first)...'
+        : 'Menulis draf Hook Pembuka Zeinity (0–30 detik, spoken-first)...',
+      50
+    );
+
+    try {
+      const draft = await generateZeinityHook(
+        targetConfig,
+        item.title,
+        selectedHookType,
+        researchOutput,
+        {
+          hookNotes,
+          angleNotes,
+          category: item.category,
+          initialNotes: item.research_text,
+        }
+      );
+
+      setHookDraft(draft);
+      lastSavedHookDraftRef.current = draft;
+
+      await onUpdate(item.id, {
+        script_hook_type: selectedHookType,
+        script_hook_draft: draft,
+        script_hook_notes: hookNotes,
+      });
+
+      finishActivity(
+        isRegenerate
+          ? 'Hook Pembuka berhasil digenerate ulang!'
+          : 'Hook Pembuka berhasil dibuat!'
+      );
+    } catch (err: unknown) {
+      const parsed = parseAIError(err);
+      errorActivity(`Gagal membuat hook: ${parsed.title}`);
+      showError(parsed.title, parsed.message, {
+        technicalDetails: parsed.technicalDetails,
+        solution: parsed.solution,
+        diagnostics: parsed.diagnostics,
+        actionButton: onNavigateSettings
+          ? { label: 'Buka Settings', onClick: onNavigateSettings }
+          : undefined,
+      });
+    } finally {
+      setGeneratingHook(false);
+    }
+  };
+
+  const handleApplyHookToOutline = async () => {
+    if (!hookDraft.trim()) {
+      showWarning(
+        'Draf Hook Masih Kosong',
+        'Generate atau tulis teks hook terlebih dahulu sebelum menerapkan ke kerangka.'
+      );
+      return;
+    }
+
+    const updatedOutline = applyHookToOutline(outlineText, hookDraft, selectedHookType);
+    setOutlineText(updatedOutline);
+    lastSavedOutlineRef.current = updatedOutline;
+
+    try {
+      await onUpdate(item.id, { script_outline: updatedOutline });
+      showAlert({
+        type: 'success',
+        title: 'Hook Diterapkan ke Kerangka',
+        message: 'Babak 1 pada kerangka naskah berhasil diperbarui dengan draf Hook tanpa mengubah babak lainnya.',
+      });
+    } catch (err) {
+      console.error('Gagal menyimpan outline setelah apply hook:', err);
+    }
+  };
+
   const handleApproveAndGenerateScript = async () => {
     if (!outlineText.trim()) {
       showWarning(
         'Kerangka Belum Tersedia',
         'Silakan buat kerangka (outline) terlebih dahulu sebelum menulis naskah.'
+      );
+      return;
+    }
+
+    if (!selectedHookType) {
+      showWarning(
+        'Varian Hook Belum Dipilih',
+        'Silakan pilih salah satu varian Hook di Tahap 1 terlebih dahulu sebelum menyetujui kerangka dan menulis naskah.'
       );
       return;
     }
@@ -1825,10 +2117,19 @@ export default function ScriptDetail({
       onUpdate(itemRef.current.id, { script_angle_notes: angleNotesRef.current }, { immediate: true });
       lastSavedAngleNotesRef.current = angleNotesRef.current;
     }
+    if (hookDraftRef.current !== lastSavedHookDraftRef.current) {
+      onUpdate(itemRef.current.id, { script_hook_draft: hookDraftRef.current }, { immediate: true });
+      lastSavedHookDraftRef.current = hookDraftRef.current;
+    }
+    if (hookNotesRef.current !== lastSavedHookNotesRef.current) {
+      onUpdate(itemRef.current.id, { script_hook_notes: hookNotesRef.current }, { immediate: true });
+      lastSavedHookNotesRef.current = hookNotesRef.current;
+    }
     onUpdate(itemRef.current.id, {
       script_outline_approved: isOutlineApproved,
       script_target_duration: targetDuration,
       script_target_words: computedTargetWords,
+      script_hook_type: selectedHookTypeRef.current || undefined,
     }, { immediate: true });
     onBack();
   };
@@ -2119,6 +2420,18 @@ export default function ScriptDetail({
               loading={loading}
               onGenerateBeat={handleGenerateBeat}
               generatingBeatNumber={generatingBeatNumber}
+              selectedHookType={selectedHookType}
+              onSelectHookType={handleSelectHookType}
+              hookDraft={hookDraft}
+              onHookDraftChange={handleHookDraftChange}
+              hookNotes={hookNotes}
+              onHookNotesChange={handleHookNotesChange}
+              hookRecommendation={hookRecommendation}
+              recommendingHook={recommendingHook}
+              onRecommendHook={handleRecommendHook}
+              generatingHook={generatingHook}
+              onGenerateHook={handleGenerateHook}
+              onApplyHookToOutline={handleApplyHookToOutline}
             />
 
             {/* PANEL KANAN: DRAFT STUDIO (RUANG KERJA PRODUKSI) */}

@@ -1,7 +1,19 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import type { AIProvider, CallAIResult, NineRouterCatalog, NineRouterModelItem, AlertDiagnostics, TitleRecommendationItem } from '@/types';
+import {
+  type AIProvider,
+  type CallAIResult,
+  type NineRouterCatalog,
+  type NineRouterModelItem,
+  type AlertDiagnostics,
+  type TitleRecommendationItem,
+  type ZeinityHookFormula,
+  type HookRecommendationResult,
+  ZEINITY_HOOK_FORMULAS,
+  CONTENT_PILLARS,
+} from '../types.ts';
 
-export type { AlertDiagnostics };
+export type { AlertDiagnostics, ZeinityHookFormula, HookRecommendationResult };
+export { ZEINITY_HOOK_FORMULAS };
 
 export interface ParsedAIErrorInfo {
   title: string;
@@ -1645,6 +1657,267 @@ export function calculateTargetWords(
   return 1200;
 }
 
+export function getHookFormulaById(idOrLabel?: string | null): ZeinityHookFormula | undefined {
+  if (!idOrLabel || !idOrLabel.trim()) return undefined;
+  const target = idOrLabel.trim().toLowerCase();
+  return ZEINITY_HOOK_FORMULAS.find(
+    (f) =>
+      f.id.toLowerCase() === target ||
+      f.name.toLowerCase() === target ||
+      f.label.toLowerCase() === target ||
+      f.label.replace(' ⭐', '').toLowerCase() === target
+  );
+}
+
+export async function recommendZeinityHook(
+  config: ProviderConfig,
+  title: string,
+  researchOutput: string,
+  category?: string | null,
+  initialNotes?: string | null,
+  angleNotes?: string | null
+): Promise<HookRecommendationResult> {
+  const isOllama = config.provider === 'ollama';
+  const boundedResearch = extractSmartScriptContext(
+    researchOutput || '',
+    isOllama
+      ? { maxTotal: 6000, headChars: 3000, tailChars: 3000 }
+      : { maxTotal: 15000, headChars: 7500, tailChars: 7500 }
+  );
+
+  const formulasDescription = ZEINITY_HOOK_FORMULAS.map(
+    (f, idx) => `${idx + 1}. ID: "${f.id}" | Nama: "${f.name}" | Formula: "${f.pattern}"`
+  ).join('\n');
+
+  const prompt = `Anda adalah Senior Executive Content Strategist Zeinity.
+Tugas Anda: Analisis topik video dan data riset di bawah ini, lalu rekomendasikan SATU jenis Hook pembuka terbaik dari 6 Formula Hook Resmi Zeinity yang paling tajam dan memikat untuk topik ini.
+
+<topic>${title}</topic>
+<category>${category || 'Umum'}</category>
+${initialNotes ? `<initial_notes>${initialNotes}</initial_notes>\n` : ''}${angleNotes ? `<angle_khusus>${angleNotes}</angle_khusus>\n` : ''}<research_data>
+${boundedResearch || '(Data riset topik)'}
+</research_data>
+
+6 Formula Hook Resmi Zeinity:
+${formulasDescription}
+
+Kriteria Penilaian:
+- Jika data riset memiliki paradoks atau hasil yang bertentangan dengan ekspektasi umum -> 'contradiction'
+- Jika ada keyakinan luas masyarakat yang salah kaprah atau tidak lengkap -> 'broken_assumption'
+- Jika sebuah alat, fitur, regulasi, atau tren bergeser dari tujuan awalnya -> 'function_drift'
+- Jika ada satu fakta angka/kasus konkret aneh yang langsung memicu rasa ingin tahu -> 'evidence_first'
+- Jika ada insentif ekonomi, bisnis, atau psikologis tersembunyi di balik sistem -> 'hidden_incentive'
+- Jika ada 2-3 kejadian terpisah yang mengarah ke pola mencurigakan -> 'pattern'
+
+Format Output WAJIB JSON murni tanpa pengantar atau penutup:
+{
+  "hookId": "contradiction|broken_assumption|function_drift|evidence_first|hidden_incentive|pattern",
+  "hookName": "Nama Hook Terpilih",
+  "reason": "1 kalimat ringkas dan tajam (maksimal 25 kata) alasan analitis mengapa hook ini paling cocok untuk topik ini."
+}`;
+
+  try {
+    const res = await callAI(prompt, config);
+    const jsonMatch = res.match(/\{[\s\S]*?\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      const matchedFormula = ZEINITY_HOOK_FORMULAS.find(
+        (f) =>
+          f.id === parsed.hookId ||
+          f.name.toLowerCase() === (parsed.hookName || '').toLowerCase() ||
+          f.label.toLowerCase() === (parsed.hookName || '').toLowerCase()
+      ) || ZEINITY_HOOK_FORMULAS[0];
+
+      return {
+        hookId: matchedFormula.id,
+        hookName: matchedFormula.label,
+        reason: parsed.reason?.trim() || 'Formula paling tajam sesuai sudut pandang data riset.',
+      };
+    }
+  } catch (err) {
+    console.warn('Gagal mem-parse JSON rekomendasi hook, fallback default:', err);
+  }
+
+  // Fallback aman
+  return {
+    hookId: ZEINITY_HOOK_FORMULAS[0].id,
+    hookName: ZEINITY_HOOK_FORMULAS[0].label,
+    reason: 'Formula kontradiksi tajam untuk menguji paradoks data riset.',
+  };
+}
+
+export interface GenerateHookOptions {
+  hookNotes?: string | null;
+  angleNotes?: string | null;
+  category?: string | null;
+  initialNotes?: string | null;
+}
+
+export async function generateZeinityHook(
+  config: ProviderConfig,
+  title: string,
+  hookType: string,
+  researchOutput: string,
+  optionsOrHookNotesOrCategory?: string | null | GenerateHookOptions,
+  angleNotesOrInitialNotes?: string | null,
+  categoryOrAngleNotes?: string | null,
+  initialNotesOrHookNotes?: string | null
+): Promise<string> {
+  const isOllama = config.provider === 'ollama';
+  const boundedResearch = extractSmartScriptContext(
+    researchOutput || '',
+    isOllama
+      ? { maxTotal: 8000, headChars: 4000, tailChars: 4000 }
+      : { maxTotal: 20000, headChars: 10000, tailChars: 10000 }
+  );
+
+  let category: string | null = null;
+  let initialNotes: string | null = null;
+  let angleNotes: string | null = null;
+  let hookNotes: string | null = null;
+
+  if (
+    optionsOrHookNotesOrCategory &&
+    typeof optionsOrHookNotesOrCategory === 'object'
+  ) {
+    hookNotes = optionsOrHookNotesOrCategory.hookNotes || null;
+    angleNotes = optionsOrHookNotesOrCategory.angleNotes || null;
+    category = optionsOrHookNotesOrCategory.category || null;
+    initialNotes = optionsOrHookNotesOrCategory.initialNotes || null;
+  } else {
+    const param5 = typeof optionsOrHookNotesOrCategory === 'string' ? optionsOrHookNotesOrCategory : null;
+    const param6 = angleNotesOrInitialNotes || null;
+    const param7 = categoryOrAngleNotes || null;
+    const param8 = initialNotesOrHookNotes || null;
+
+    const isParam7Category =
+      Boolean(param7 &&
+      (CONTENT_PILLARS.some((p: string) => p.toLowerCase() === param7.toLowerCase()) ||
+        /^(Umum|Teknologi|Bisnis|Edukasi|Kreator|Opini)/i.test(param7)));
+
+    if (isParam7Category || (param5 && param5.length > 30)) {
+      // Called as: (hookNotes, angleNotes, category, initialNotes)
+      hookNotes = param5;
+      angleNotes = param6;
+      category = param7;
+      initialNotes = param8;
+    } else {
+      // Called as: (category, initialNotes, angleNotes, hookNotes)
+      category = param5;
+      initialNotes = param6;
+      angleNotes = param7;
+      hookNotes = param8;
+    }
+  }
+
+  const hookInfo = getHookFormulaById(hookType);
+  const hookName = hookInfo?.label || hookType;
+  const hookPattern = hookInfo?.pattern || '';
+
+  const hookNotesSection = hookNotes && hookNotes.trim()
+    ? `\n<arahan_khusus_hook>\n${hookNotes.trim()}\n</arahan_khusus_hook>`
+    : '';
+
+  const prompt = `Anda adalah Lead Spoken-First Scriptwriter & Executive Narrator untuk channel YouTube Zeinity.
+Tugas Anda: Tulis draf NARASI PEMBUKA (HOOK & CLICK VALIDATION / BABAK 1) berdurasi 20–30 detik (sekitar 80–180 kata) yang mengunci retensi penonton sejak detik pertama.
+
+<context>
+<topic>${title}</topic>
+<category>${category || 'Umum'}</category>
+<formula_hook_terpilih>${hookName}</formula_hook_terpilih>
+<pola_formula>${hookPattern}</pola_formula>${hookNotesSection}
+${initialNotes ? `<initial_notes>${initialNotes}</initial_notes>\n` : ''}${angleNotes ? `<angle_khusus>${angleNotes}</angle_khusus>\n` : ''}<research_data>
+${boundedResearch || '(Data riset topik)'}
+</research_data>
+</context>
+
+<aturan_penulisan_hook>
+1. STRUKTUR & FORMULA:
+   - Wajib menerapkan formula ${hookName} ("${hookPattern}").
+   - Langsung validasi janji judul dalam 5 detik pertama dengan fakta empiris/angka konkret terkuat (Strongest Opening Evidence) dari <research_data>.
+   - Buka rasa penasaran (curiosity loop) dan akhiri pembukaan 30 detik ini dengan pertanyaan penuntun (guiding analytical question) yang membuat penonton harus menonton sampai selesai.
+
+2. GAYA BICARA SPOKEN-FIRST & TTS PROSODY:
+   - Seperti sedang berbicara langsung dengan teman diskusi cerdas dan setara.
+   - Mengalir alami saat diucapkan dengan keras (breathe-friendly).
+   - Tanda koma (,) untuk jeda napas ringan, tanda titik (.) untuk intonasi turun natural.
+   - Panjang narasi: Sekitar 80–180 kata (durasi baca 20–30 detik).
+
+3. PANTANGAN KERAS (NEGATIVE CONSTRAINTS):
+   - DILARANG menggunakan em dash (—) (ganti koma atau titik).
+   - DILARANG menggunakan tanda titik dua (:) dalam kalimat narasi voice-over.
+   - DILARANG kalimat klise pembuka AI seperti "Di era digital yang serba cepat ini...", "Pernahkah Anda membayangkan...", dll.
+   - DILARANG pola kalimat klise AI: "Bukan X, melainkan Y", "Ini bukan soal X tapi Y", "dan BOOM", "eh bentar deh".
+   - DILARANG salam pembuka klise ("Halo semuanya", "Selamat datang kembali di channel").
+   - DILARANG kalimat basa-basi pengantar ("Berikut adalah draf hook:").
+   - DILARANG mengarang fakta di luar <research_data>.
+</aturan_penulisan_hook>
+
+Mulai langsung dengan kalimat pertama narasi pembuka:`.trim();
+
+  const res = await callAI(prompt, config);
+  const formatted = formatStructuredPrompt(res);
+  return formatted.replace(/[\u2014\u2015]/g, ', ').replace(/—/g, ', ');
+}
+
+export function applyHookToOutline(
+  currentOutline: string,
+  hookDraft: string,
+  hookType?: string | null
+): string {
+  const trimmedDraft = hookDraft?.trim() || '';
+  if (!trimmedDraft) return currentOutline;
+
+  const hookInfo = hookType ? getHookFormulaById(hookType) : null;
+  const hookLabel = hookInfo?.label || hookType || 'Hook Pembuka';
+
+  const newHookSection = `### I. HOOK & CLICK VALIDATION (0–30s)\n- **Formula Hook**: ${hookLabel}\n- **Draf Narasi Pembuka**:\n${trimmedDraft}`;
+
+  if (!currentOutline || !currentOutline.trim()) {
+    return newHookSection;
+  }
+
+  // Cari batas awal babak berikutnya yang paling awal (Babak 2, 3, 4, atau 5)
+  let earliestNextBeatIndex = -1;
+  for (let next = 2 as ScriptBeatNumber; next <= 5; next = (next + 1) as ScriptBeatNumber) {
+    const nextRegex = getBeatHeadingPattern(next);
+    const matchNext = currentOutline.search(nextRegex);
+    if (matchNext !== -1) {
+      if (earliestNextBeatIndex === -1 || matchNext < earliestNextBeatIndex) {
+        earliestNextBeatIndex = matchNext;
+      }
+    }
+  }
+
+  const beat1Regex = getBeatHeadingPattern(1);
+  const matchBeat1 = currentOutline.search(beat1Regex);
+
+  if (earliestNextBeatIndex !== -1) {
+    let prefix = '';
+    if (matchBeat1 !== -1 && matchBeat1 < earliestNextBeatIndex) {
+      prefix = currentOutline.slice(0, matchBeat1).trimEnd();
+    }
+
+    const restOfOutline = currentOutline.slice(earliestNextBeatIndex).trimStart();
+    if (prefix) {
+      return `${prefix}\n\n${newHookSection}\n\n${restOfOutline}`;
+    }
+    return `${newHookSection}\n\n${restOfOutline}`;
+  }
+
+  // Jika tidak ditemukan babak 2-5, cek apakah ada Babak 1
+  if (matchBeat1 !== -1) {
+    const prefix = currentOutline.slice(0, matchBeat1).trimEnd();
+    if (prefix) {
+      return `${prefix}\n\n${newHookSection}`;
+    }
+    return newHookSection;
+  }
+
+  // Jika tidak ada marker babak sama sekali, sisipkan di atas outline yang ada
+  return `${newHookSection}\n\n${currentOutline.trim()}`;
+}
+
 export async function generateZeinityOutline(
   config: ProviderConfig,
   title: string,
@@ -1654,7 +1927,9 @@ export async function generateZeinityOutline(
   angleNotes?: string | null,
   targetWords?: number | null,
   targetDuration?: string | null,
-  revisionNotes?: string | null
+  revisionNotes?: string | null,
+  hookType?: string | null,
+  hookDraft?: string | null
 ): Promise<string> {
   const isOllama = config.provider === 'ollama';
   const boundedResearch = extractSmartScriptContext(
@@ -1679,12 +1954,17 @@ export async function generateZeinityOutline(
     ? `\n<catatan_revisi_kreator>\nPERHATIAN: Kreator meminta revisi kerangka sebelumnya dengan catatan berikut:\n${revisionNotes.trim()}\nWajib perbarui kerangka 5 babak di bawah sesuai arahan koreksi ini.\n</catatan_revisi_kreator>`
     : '';
 
+  const hookInfo = hookType ? getHookFormulaById(hookType) : null;
+  const hookSection = (hookType || hookDraft)
+    ? `\n<hook_direction>\nFormula Hook Terpilih: ${hookInfo?.label || hookType}\nPola Formula: ${hookInfo?.pattern || ''}\n${hookDraft && hookDraft.trim() ? `Draf Narasi Hook Pembuka (Babak 1):\n${hookDraft.trim()}\n` : ''}PETUNJUK UTAMA: Wajib susun Babak I (Hook & Click Validation 0–30s) berpusat pada formula Hook terpilih di atas. Seluruh alur Babak 2-5 harus mengalir secara konsisten memperdalam dan menguji premis dari Hook ini.\n</hook_direction>`
+    : '';
+
   const prompt = `Anda adalah Senior Executive Content Strategist & Story Architect (Zeinity).
 Tugas Anda: susun KERANGKA NASKAH NARRATIVE ENGINE 5 TAHAP ZEINITY (Logika Narasi Dinamis) yang presisi, mendalam, dan berbasis data riset aktual untuk video analitis (Target Durasi: ${durationStr} | Estimasi: ~${wordsTarget} Kata).
 
 <context>
 <topic>${title}</topic>
-<category>${category || 'Umum'}</category>${notesSection}${angleSection}${revisionSection}
+<category>${category || 'Umum'}</category>${notesSection}${angleSection}${hookSection}${revisionSection}
 <research_data>
 ${boundedResearch}
 </research_data>
@@ -1692,14 +1972,13 @@ ${boundedResearch}
 
 <instructions>
 Susun kerangka naskah menggunakan Narrative Engine Zeinity (5 Beat Dinamis, hindari template administratif yang kaku):
-1. I. HOOK & CLICK VALIDATION (0–30s): Provocative Evidence Hook yang langsung membuktikan janji judul memanfaatkan Strongest Opening Evidence dari data riset. Validasi langsung mengapa penonton harus peduli sekarang tanpa latar belakang umum yang bertele-tele.
+1. I. HOOK & CLICK VALIDATION (0–30s): Provocative Evidence Hook yang langsung membuktikan janji judul memanfaatkan Strongest Opening Evidence dari data riset. Validasi langsung mengapa penonton harus peduli sekarang tanpa latar belakang umum yang bertele-tele.${hookType ? ` WAJIB berpusat pada formula: ${hookInfo?.label || hookType}.` : ''}
 2. II. OBVIOUS ANSWER VS REALITY: Broken assumption — hadapkan dugaan awam/jawaban umum penonton (Obvious Answer) dengan realita paradoksal dan keanehan (Central Contradiction) berdasarkan bukti riset.
 3. III. THE HIDDEN MECHANISM & INCENTIVES: Bedah mekanisme teknis sistemik, algoritma, atau arsitektur insentif ekonomi/psikologi yang bekerja di balik layar (Hidden Mechanism & Hidden Incentive/Cost). Jelaskan mekanisme sebelum memberi penghakiman (Mechanism before Judgment).
 4. IV. COMPLICATION & HUMAN IMPACT: Eskalasi dampak nyata bagi manusia/kreator/industri (Human Impact), bukti eskalasi (Escalation Evidence), serta masukkan Best Counterargument (argumen tandingan terkuat) yang menguji analisis.
 5. V. SYNTHESIS & BIGGER PICTURE: Delayed judgment, benang merah analitis yang mencerahkan dan proporsional dengan evidence, Bigger Picture yang menghubungkan fenomena ke pola industri/perilaku digital yang lebih luas, dan pertanyaan reflektif penutup.
 
-${angleNotes && angleNotes.trim() ? `PENTING: Wajib integrasikan sudut pandang khusus dari <angle_khusus> di atas ("${angleNotes.trim()}") ke dalam alur babak yang relevan.\n` : ''}
-
+${angleNotes && angleNotes.trim() ? `PENTING: Wajib integrasikan sudut pandang khusus dari <angle_khusus> di atas ("${angleNotes.trim()}") ke dalam alur babak yang relevan.\n` : ''}${(hookType || hookDraft) ? `PENTING: Bangun alur kerangka 5 babak dengan bertumpu pada formula Hook pembuka yang telah ditentukan di <hook_direction>.\n` : ''}
 Wajib Manfaatkan 10 NARRATIVE ASSETS dari riset:
 (1) Strongest Opening Evidence, (2) Central Contradiction, (3) Obvious Answer, (4) Mechanism, (5) Escalation Evidence, (6) Hidden Incentive/Cost, (7) Best Counterargument, (8) Analogy Candidate, (9) Bigger Picture, (10) Unresolved Question.
 
@@ -1735,7 +2014,9 @@ export async function generateZeinityFullScript(
   targetWords?: number | null,
   angleNotes?: string | null,
   category?: string | null,
-  initialNotes?: string | null
+  initialNotes?: string | null,
+  hookType?: string | null,
+  hookDraft?: string | null
 ): Promise<string> {
   const isOllama = config.provider === 'ollama';
   const boundedResearch = extractSmartScriptContext(
@@ -1759,6 +2040,11 @@ export async function generateZeinityFullScript(
     ? `\n<angle_khusus>\n${angleNotes.trim()}\n</angle_khusus>`
     : '';
 
+  const hookInfo = hookType ? getHookFormulaById(hookType) : null;
+  const hookSection = (hookType || hookDraft)
+    ? `\n<hook_specification>\nFormula Hook Terpilih: ${hookInfo?.label || hookType}\nPola Formula: ${hookInfo?.pattern || ''}\n${hookDraft && hookDraft.trim() ? `Draf Hook Pembuka (Babak 1):\n${hookDraft.trim()}\nINSTRUKSI BABAK 1: Gunakan atau kembangkan draf hook pembuka ini untuk Babak 1 (0–30 detik).` : `INSTRUKSI BABAK 1: Terapkan formula ${hookInfo?.label || hookType} ("${hookInfo?.pattern || ''}") secara disiplin pada pembukaan 0–30 detik.`}\n</hook_specification>`
+    : '';
+
   const prompt = `Anda adalah Lead Spoken-First Scriptwriter & Executive Narrator untuk channel YouTube Zeinity.
 Tugas Anda: Tulis NASKAH VIDEO LENGKAP UTUH yang siap dibacakan langsung oleh voice-over talent / AI TTS, berdasarkan Kerangka Dinamis Narrative Engine 5 Tahap Zeinity yang telah disetujui kreator dan data riset empiris.
 Target Panjang Naskah: Sekitar ${targetWordCount} Kata.
@@ -1773,7 +2059,7 @@ ${boundedResearch}
 </research_data>
 <channel_identity_and_voice>
 ${identityText || '(Identitas Zeinity: Analitis, lugas, santai elegan)'}
-</channel_identity_and_voice>${angleSection}
+</channel_identity_and_voice>${angleSection}${hookSection}
 </context>
 
 <spoken_first_and_tts_rules>
@@ -1917,7 +2203,14 @@ export function getBeatHeadingPattern(beatNumber: ScriptBeatNumber): RegExp {
   };
   const roman = romanMap[beatNumber];
   return new RegExp(
-    `(^|\\n)(?:#{1,4}\\s*|\\*{1,2}\\s*)?(?:(?:BABAK|Babak|Stage|Tahap)\\s*(?:${beatNumber}|${roman})\\b|(?:#{1,4}\\s*|\\*{1,2}\\s*)(?:${beatNumber}|${roman})\\.)[:\\s\\-\\.\\)\\*]`,
+    `(^|\\n)\\s*(?:` +
+      // Case 1: Explicit keyword BABAK / Babak / Stage / Tahap / Beat
+      `(?:#{1,4}\\s*|\\*{1,2}\\s*)?(?:BABAK|Babak|Stage|Tahap|Beat)\\s*(?:${beatNumber}|${roman})\\b[:\\s\\-\\.\\)\\*]*|` +
+      // Case 2: Markdown header # or bold ** followed by number or roman (e.g., "### I: ", "### II. ", "### 2 - ", "**Babak 2**")
+      `(?:#{1,4}\\s*|\\*{1,2}\\s*)(?:(?:${beatNumber}\\s*[\\.\\)]\\s*)?${roman}|${beatNumber})[:\\s\\-\\.\\)\\*]+|` +
+      // Case 3: Prompt format with stage number + roman, e.g. "1. I. HOOK" or "2. II. OBVIOUS ANSWER"
+      `\\b${beatNumber}\\s*[\\.\\)]\\s*${roman}\\b[:\\s\\-\\.\\)\\*]+` +
+    `)`,
     'i'
   );
 }
@@ -2169,10 +2462,19 @@ export function formatExternalOutlinePrompt(
   initialNotes?: string | null,
   angleNotes?: string | null,
   targetWords?: number | null,
-  targetDuration?: string | null
+  targetDuration?: string | null,
+  hookType?: string | null,
+  hookDraft?: string | null
 ): string {
   const durationStr = targetDuration?.trim() || '5-8m';
   const wordsTarget = targetWords || 1200;
+  const hookInfo = hookType ? getHookFormulaById(hookType) : null;
+  const hookBlock = (hookType || hookDraft)
+    ? `### FORMULA HOOK PEMBUKA (0–30s)
+- **Formula Hook**: ${hookInfo?.label || hookType || 'Hook Terpilih'}
+- **Pola Formula**: ${hookInfo?.pattern || ''}
+${hookDraft && hookDraft.trim() ? `- **Draf Hook Awal**: ${hookDraft.trim()}\n` : ''}*Instruksi: Bangun Babak 1 dan kesinambungan alur berdasarkan formula hook ini.*\n\n`
+    : '';
 
   return `Anda adalah Senior Executive Content Strategist & Story Architect (Zeinity).
 Tugas Anda: susun KERANGKA NASKAH NARRATIVE ENGINE 5 TAHAP ZEINITY untuk video analitis (Target Durasi: ${durationStr} | Estimasi: ~${wordsTarget} Kata).
@@ -2181,7 +2483,7 @@ Tugas Anda: susun KERANGKA NASKAH NARRATIVE ENGINE 5 TAHAP ZEINITY untuk video a
 - **Topik / Judul**: ${title}
 - **Pilar Kategori**: ${category || 'Umum'}
 ${initialNotes && initialNotes.trim() ? `- **Catatan Ide Awal**: ${initialNotes.trim()}\n` : ''}${angleNotes && angleNotes.trim() ? `- **Fokus / Angle Khusus**: ${angleNotes.trim()}\n` : ''}
-### DATA RISET
+${hookBlock}### DATA RISET
 ${researchOutput && researchOutput.trim() ? researchOutput.trim() : '(Gunakan data riset pendukung)'}
 
 ### NARRATIVE ENGINE ZEINITY (Logika Narasi Dinamis - 5 Tahap Zeinity):
@@ -2212,14 +2514,18 @@ export function formatExternalScriptingPrompt(
   researchOutput: string,
   identityText: string,
   targetWords?: number | null,
-  angleNotes?: string | null
+  angleNotes?: string | null,
+  hookType?: string | null,
+  hookDraft?: string | null
 ): string;
 export function formatExternalScriptingPrompt(
   title: string,
   approvedOutline: string,
   identityText: string,
   targetWords?: number | null,
-  angleNotes?: string | null
+  angleNotes?: string | null,
+  hookType?: string | null,
+  hookDraft?: string | null
 ): string;
 export function formatExternalScriptingPrompt(
   title: string,
@@ -2227,67 +2533,54 @@ export function formatExternalScriptingPrompt(
   researchOutputOrIdentity: string,
   identityOrTargetWords?: string | number | null,
   targetWordsOrAngleNotes?: number | string | null,
-  angleNotesParam?: string | null
+  angleNotesParam?: string | null,
+  hookTypeParam?: string | null,
+  hookDraftParam?: string | null
 ): string {
-  // Support both 5-param legacy call (title, outline, identityText, targetWords, angleNotes)
-  // and 6-param call (title, outline, researchOutput, identityText, targetWords, angleNotes)
   let researchText = '';
   let identityText = '';
   let wordsTarget = 1200;
   let angleNotes = '';
+  let hookType = '';
+  let hookDraft = '';
 
-  if (angleNotesParam !== undefined) {
-    // Explicit 6-argument call
+  const isLegacy5ArgForm =
+    typeof identityOrTargetWords === 'number' ||
+    (typeof identityOrTargetWords === 'string' && /^\d+$/.test(identityOrTargetWords.trim())) ||
+    ((identityOrTargetWords === null || identityOrTargetWords === undefined) &&
+      typeof targetWordsOrAngleNotes !== 'number');
+
+  if (isLegacy5ArgForm) {
+    // 5-arg legacy signature: (title, outline, identity, targetWords, angleNotes, hookType, hookDraft)
+    researchText = '';
+    identityText = researchOutputOrIdentity || '';
+    wordsTarget =
+      (typeof identityOrTargetWords === 'number'
+        ? identityOrTargetWords
+        : Number(identityOrTargetWords)) || 1200;
+    angleNotes = typeof targetWordsOrAngleNotes === 'string' ? targetWordsOrAngleNotes : '';
+    hookType = typeof angleNotesParam === 'string' ? angleNotesParam : '';
+    hookDraft = typeof hookTypeParam === 'string' ? hookTypeParam : '';
+  } else {
+    // 6-arg (or 8-arg with hook) signature: (title, outline, research, identity, targetWords, angleNotes, hookType, hookDraft)
     researchText = researchOutputOrIdentity || '';
     identityText = typeof identityOrTargetWords === 'string' ? identityOrTargetWords : '';
     wordsTarget =
       (typeof targetWordsOrAngleNotes === 'number'
         ? targetWordsOrAngleNotes
         : Number(targetWordsOrAngleNotes)) || 1200;
-    angleNotes = angleNotesParam || '';
-  } else if (
-    typeof targetWordsOrAngleNotes === 'number' ||
-    (typeof targetWordsOrAngleNotes === 'string' && /^\d+$/.test(targetWordsOrAngleNotes.trim()))
-  ) {
-    // 5 arguments passed for 6-arg signature: (title, outline, research, identity, targetWords)
-    researchText = researchOutputOrIdentity || '';
-    identityText = typeof identityOrTargetWords === 'string' ? identityOrTargetWords : '';
-    wordsTarget = Number(targetWordsOrAngleNotes) || 1200;
-    angleNotes = '';
-  } else if (
-    typeof identityOrTargetWords === 'number' ||
-    (typeof identityOrTargetWords === 'string' && /^\d+$/.test(identityOrTargetWords.trim()))
-  ) {
-    // 5-arg legacy signature with numeric words: (title, outline, identity, targetWords, angleNotes)
-    researchText = '';
-    identityText = researchOutputOrIdentity || '';
-    wordsTarget = Number(identityOrTargetWords) || 1200;
-    angleNotes = typeof targetWordsOrAngleNotes === 'string' ? targetWordsOrAngleNotes : '';
-  } else if (
-    (identityOrTargetWords === null || identityOrTargetWords === undefined) &&
-    typeof targetWordsOrAngleNotes === 'string'
-  ) {
-    // 5-arg legacy signature with null targetWords: (title, outline, identity, null, angleNotes)
-    researchText = '';
-    identityText = researchOutputOrIdentity || '';
-    wordsTarget = 1200;
-    angleNotes = targetWordsOrAngleNotes;
-  } else if (
-    typeof identityOrTargetWords === 'string' &&
-    !/^\d+$/.test(identityOrTargetWords.trim())
-  ) {
-    // 6-arg signature without angleNotes: (title, outline, research, identity)
-    researchText = researchOutputOrIdentity || '';
-    identityText = identityOrTargetWords;
-    wordsTarget = 1200;
-    angleNotes = '';
-  } else {
-    // Default fallback
-    researchText = researchOutputOrIdentity || '';
-    identityText = typeof identityOrTargetWords === 'string' ? identityOrTargetWords : '';
-    wordsTarget = 1200;
-    angleNotes = '';
+    angleNotes = typeof angleNotesParam === 'string' ? angleNotesParam : '';
+    hookType = typeof hookTypeParam === 'string' ? hookTypeParam : '';
+    hookDraft = typeof hookDraftParam === 'string' ? hookDraftParam : '';
   }
+
+  const hookInfo = hookType ? getHookFormulaById(hookType) : null;
+  const hookSection = (hookType || hookDraft)
+    ? `### FORMULA HOOK PEMBUKA TERPILIH (BABAK 1)
+- **Formula Hook**: ${hookInfo?.label || hookType || 'Hook Terpilih'}
+- **Pola Formula**: ${hookInfo?.pattern || ''}
+${hookDraft && hookDraft.trim() ? `- **Draf Hook Awal**: ${hookDraft.trim()}\n` : ''}*Instruksi: Terapkan formula hook ini secara disiplin pada pembukaan 0–30 detik.*\n\n`
+    : '';
 
   const researchSection = researchText.trim()
     ? `### DATA RISET EMPIRIS LENGKAP (SUMBER KEBENARAN FAKTA & 10 NARRATIVE ASSETS)
@@ -2304,7 +2597,7 @@ Target Panjang Naskah: Sekitar ${wordsTarget} Kata.
 - **Topik / Judul**: ${title}
 - **Target Panjang**: ~${wordsTarget} Kata
 ${angleNotes && angleNotes.trim() ? `- **Fokus / Angle Khusus**: ${angleNotes.trim()}\n` : ''}
-### IDENTITAS & PRINSIP CHANNEL (ZEINITY)
+${hookSection}### IDENTITAS & PRINSIP CHANNEL (ZEINITY)
 ${identityText || '(Identitas Zeinity: Analitis, lugas, santai elegan)'}
 
 ### KERANGKA NASKAH YANG TELAH DISETUJUI

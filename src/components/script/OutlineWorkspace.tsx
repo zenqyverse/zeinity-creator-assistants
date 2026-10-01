@@ -7,14 +7,21 @@ import {
   RotateCcw,
   Sparkles,
   Loader2,
+  Target,
 } from 'lucide-react';
-import type { ContentItem, ScriptBeatNumber } from '@/types';
+import {
+  type ContentItem,
+  type ScriptBeatNumber,
+  type HookRecommendationResult,
+  ZEINITY_HOOK_FORMULAS,
+} from '@/types';
 import {
   formatStructuredPrompt,
   formatExternalOutlinePrompt,
   formatExternalScriptingPrompt,
   SCRIPT_BEATS,
   calculateBeatTargetWords,
+  getHookFormulaById,
 } from '@/lib/gemini';
 
 export interface OutlineWorkspaceProps {
@@ -49,6 +56,19 @@ export interface OutlineWorkspaceProps {
   // Per-Beat generation props
   onGenerateBeat?: (beatNumber: ScriptBeatNumber, beatRevisionNotes?: string) => void;
   generatingBeatNumber?: number | null;
+  // Hook-First Pipeline props
+  selectedHookType?: string;
+  onSelectHookType?: (hookType: string) => void;
+  hookDraft?: string;
+  onHookDraftChange?: (val: string) => void;
+  hookNotes?: string;
+  onHookNotesChange?: (val: string) => void;
+  hookRecommendation?: HookRecommendationResult | null;
+  recommendingHook?: boolean;
+  onRecommendHook?: () => void;
+  generatingHook?: boolean;
+  onGenerateHook?: (isRegenerate?: boolean) => void;
+  onApplyHookToOutline?: () => void;
 }
 
 export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
@@ -82,10 +102,23 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
   loading = false,
   onGenerateBeat,
   generatingBeatNumber = null,
+  selectedHookType = '',
+  onSelectHookType,
+  hookDraft = '',
+  onHookDraftChange,
+  hookNotes = '',
+  onHookNotesChange,
+  hookRecommendation = null,
+  recommendingHook = false,
+  onRecommendHook,
+  generatingHook = false,
+  onGenerateHook,
+  onApplyHookToOutline,
 }) => {
   const formatPromptText = formatStructuredPrompt;
   const [selectedBeatForRevision, setSelectedBeatForRevision] = useState<ScriptBeatNumber | null>(null);
   const [beatRevisionNote, setBeatRevisionNote] = useState<string>('');
+  const hookDraftWords = hookDraft && hookDraft.trim() ? hookDraft.trim().split(/\s+/).filter(Boolean).length : 0;
 
   const handleTriggerBeatGen = (beatNum: ScriptBeatNumber) => {
     if (onGenerateBeat) {
@@ -111,7 +144,286 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
       {productionTrack === 'in_app' ? (
         /* IN-APP TRACK */
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Tahap 1: Outline Generator Header */}
+          {/* Tahap 1: Tentukan & Generate Hook Pembuka (0–30 Detik) */}
+          <div
+            style={{
+              background: '#0a1628',
+              border: '1.2px solid #1e3a63',
+              borderRadius: 8,
+              padding: 14,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+            }}
+          >
+            {/* Header: Title + Rekomendasi Hook Button */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+              <div>
+                <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--cyan)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Sparkles size={16} />
+                  <span>Tahap 1: Tentukan &amp; Generate Hook Pembuka (0–30 Detik)</span>
+                </div>
+                <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: 2 }}>
+                  Pilih formula hook 20–30 detik (~80–180 kata) untuk mengunci retensi penonton sejak awal.
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onRecommendHook}
+                disabled={recommendingHook}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                  color: '#f8fafc',
+                  borderColor: 'rgba(79, 232, 255, 0.4)',
+                  background: 'rgba(79, 232, 255, 0.08)',
+                }}
+                title="AI menganalisis topik dan riset untuk merekomendasikan varian hook terbaik"
+              >
+                {recommendingHook ? (
+                  <>
+                    <Loader2 size={13} className="spin" /> Menganalisis...
+                  </>
+                ) : (
+                  <>
+                    <Target size={14} /> 🎯 Rekomendasikan Hook
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Smart Recommendation Reason Card (if available) */}
+            {hookRecommendation && (
+              <div
+                style={{
+                  background: 'rgba(79, 232, 255, 0.08)',
+                  border: '1px solid rgba(79, 232, 255, 0.3)',
+                  borderRadius: 6,
+                  padding: '8px 12px',
+                  fontSize: '0.76rem',
+                  color: '#e2edff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <span style={{ fontWeight: 700, color: 'var(--cyan)', whiteSpace: 'nowrap' }}>
+                  💡 Rekomendasi AI ({hookRecommendation.hookName}):
+                </span>
+                <span style={{ color: '#cbd5e1' }}>{hookRecommendation.reason}</span>
+              </div>
+            )}
+
+            {/* 6 Formula Varian Hook Interactive Grid */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: 8,
+              }}
+            >
+              {ZEINITY_HOOK_FORMULAS.map((formula) => {
+                const isSelected =
+                  selectedHookType === formula.id ||
+                  selectedHookType === formula.label ||
+                  selectedHookType === formula.name;
+                return (
+                  <div
+                    key={formula.id}
+                    onClick={() => onSelectHookType && onSelectHookType(formula.id)}
+                    style={{
+                      background: isSelected ? 'rgba(79, 232, 255, 0.12)' : '#07101e',
+                      border: isSelected ? '1.5px solid var(--cyan)' : '1px solid #1a2a44',
+                      borderRadius: 6,
+                      padding: 10,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 6,
+                      transition: 'all 0.15s ease',
+                      boxShadow: isSelected ? '0 0 12px rgba(79, 232, 255, 0.15)' : 'none',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: isSelected ? '#f8fafc' : '#cbd5e1', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span>{formula.name}</span>
+                        {formula.isStarred && <span style={{ color: '#fbbf24' }}>⭐</span>}
+                      </div>
+                      {isSelected ? (
+                        <span style={{ fontSize: '0.68rem', color: 'var(--cyan)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Check size={12} /> Dipilih
+                        </span>
+                      ) : null}
+                    </div>
+                    <div style={{ fontSize: '0.71rem', color: isSelected ? '#93c5fd' : '#7e92ad', lineHeight: 1.35, fontStyle: 'italic' }}>
+                      {formula.pattern}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Catatan / Arahan Khusus Hook (Opsional) */}
+            <div>
+              <label
+                htmlFor="hookNotesInput"
+                style={{ fontSize: '0.72rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: 4 }}
+              >
+                Arahan Khusus Hook (Opsional):
+              </label>
+              <input
+                id="hookNotesInput"
+                type="text"
+                value={hookNotes || ''}
+                onChange={(e) => onHookNotesChange && onHookNotesChange(e.target.value)}
+                placeholder='Misal: "Fokuskan kontras pada paradoks waktu vs biaya..."'
+                style={{
+                  width: '100%',
+                  padding: '6px 10px',
+                  background: '#070f1d',
+                  border: '1px solid #1e3352',
+                  borderRadius: 6,
+                  color: '#f1f5f9',
+                  fontSize: '0.78rem',
+                  fontFamily: 'inherit',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            {/* Tombol Generate Hook */}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => onGenerateHook && onGenerateHook(Boolean(hookDraft && hookDraft.trim()))}
+                disabled={generatingHook || !selectedHookType}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '7px 14px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  opacity: !selectedHookType ? 0.6 : 1,
+                }}
+                title={!selectedHookType ? 'Pilih salah satu varian hook di atas terlebih dahulu' : 'Generate draf naskah pembuka 20-30 detik'}
+              >
+                {generatingHook ? (
+                  <>
+                    <Loader2 size={14} className="spin" /> Menulis Draf Hook...
+                  </>
+                ) : hookDraft && hookDraft.trim() ? (
+                  <>
+                    <RotateCw size={14} /> 🔄 Regenerate Hook
+                  </>
+                ) : (
+                  <>
+                    ⚡ Generate Hook
+                  </>
+                )}
+              </button>
+              {!selectedHookType && (
+                <span style={{ fontSize: '0.72rem', color: '#f59e0b' }}>
+                  * Pilih salah satu formula hook di atas untuk men-generate
+                </span>
+              )}
+            </div>
+
+            {/* Inline Preview Box (ketika draft hook ada atau sedang di-generate) */}
+            {Boolean(hookDraft && hookDraft.trim()) && (
+              <div
+                style={{
+                  background: '#060c18',
+                  border: '1px solid #1d3356',
+                  borderRadius: 6,
+                  padding: 10,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                  <div style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--cyan)' }}>
+                    Draf Narasi Pembuka (Babak 1):
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                    {hookDraftWords} kata • Est. durasi: ~{Math.round(hookDraftWords / 2.5)} detik (Ideal: 20–30s)
+                  </div>
+                </div>
+
+                <textarea
+                  value={hookDraft || ''}
+                  onChange={(e) => onHookDraftChange && onHookDraftChange(e.target.value)}
+                  placeholder="Draf teks hook akan muncul di sini..."
+                  rows={4}
+                  style={{
+                    width: '100%',
+                    background: '#091222',
+                    border: '1px solid #203554',
+                    color: '#e2edff',
+                    padding: 8,
+                    borderRadius: 6,
+                    fontFamily: 'inherit',
+                    fontSize: '0.8rem',
+                    lineHeight: 1.5,
+                    resize: 'vertical',
+                    boxSizing: 'border-box',
+                  }}
+                />
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => onCopy(hookDraft || '', 'hookDraftCopy')}
+                    style={{ padding: '5px 10px', fontSize: '0.74rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                  >
+                    {copied === 'hookDraftCopy' ? <Check size={12} /> : <Copy size={12} />}
+                    <span>{copied === 'hookDraftCopy' ? 'Tersalin' : '📋 Salin Hook'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => onGenerateHook && onGenerateHook(true)}
+                    disabled={generatingHook || !selectedHookType}
+                    style={{ padding: '5px 10px', fontSize: '0.74rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <RotateCw size={12} className={generatingHook ? 'spin' : ''} />
+                    <span>🔄 Regenerate Hook</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={onApplyHookToOutline}
+                    style={{
+                      padding: '5px 12px',
+                      fontSize: '0.74rem',
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      background: 'rgba(52, 211, 153, 0.2)',
+                      borderColor: 'var(--green)',
+                      color: 'var(--green)',
+                    }}
+                    title="Perbarui Babak 1 di dalam Textarea Kerangka tanpa merusak Babak 2-5"
+                  >
+                    📥 Terapkan ke Kerangka
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Tahap 2: Susun Kerangka Berdasarkan Hook & Riset */}
           <div
             style={{
               background: '#121f36',
@@ -124,10 +436,13 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
             }}
           >
             <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--cyan)' }}>
-              Tahap 1: Susun Kerangka Berdasarkan Riset + Konteks Ide
+              Tahap 2: Susun Kerangka Berdasarkan Hook &amp; Riset
             </div>
             <div style={{ fontSize: '0.78rem', color: '#cbd5e1', lineHeight: 1.4 }}>
-              AI menganalisis data riset aktual &amp; memasukkan angle spesifik ke 5 Babak Zeinity.
+              AI menganalisis data riset aktual &amp; menyusun 5 Babak Zeinity berpusat pada premis Hook{(() => {
+                const activeFormula = getHookFormulaById(selectedHookType);
+                return activeFormula ? ` (${activeFormula.label})` : (selectedHookType ? ` (${selectedHookType})` : '');
+              })()}.
             </div>
             <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
               Target: ~{computedTargetWords.toLocaleString('id-ID')} Kata • 0 Token halusinasi • Mempertahankan fakta riset.
@@ -160,7 +475,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
             </div>
           </div>
 
-          {/* Tahap 2: Human Approval Gate */}
+          {/* Tahap 3: Human Approval Gate */}
           <div
             style={{
               background: '#0a1322',
@@ -174,7 +489,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
               <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>Tahap 2: Human Approval Gate (Kreator Meninjau Kerangka)</span>
+                <span>Tahap 3: Human Approval Gate (Kreator Meninjau Kerangka)</span>
               </div>
               <div>
                 {isOutlineApproved ? (
@@ -267,35 +582,53 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                 <span>↩️ Undo Terakhir</span>
               </button>
 
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={onApproveAndGenerateScript}
-                disabled={generatingFullScript || !outlineText.trim()}
-                style={{
-                  marginLeft: 'auto',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  fontSize: '0.86rem',
-                  fontWeight: 700,
-                  padding: '9px 16px',
-                  background: 'var(--green)',
-                  borderColor: 'var(--green)',
-                  color: '#041a10',
-                }}
-                title="Setujui kerangka ini dan mulai tulis naskah narasi video"
-              >
-                {generatingFullScript ? (
-                  <>
-                    <Loader2 size={15} className="spin" /> Menulis Naskah Utuh...
-                  </>
-                ) : (
-                  <>
-                    <Check size={16} /> ✅ Setujui & Tulis Naskah
-                  </>
-                )}
-              </button>
+              {/* GATEKEEPER BUTTON: Setujui & Tulis Naskah */}
+              {(() => {
+                const isHookSelected = Boolean(selectedHookType && selectedHookType.trim());
+                const isOutlineReady = Boolean(outlineText.trim());
+                const isDisabled = generatingFullScript || !isOutlineReady || !isHookSelected;
+
+                const tooltipTitle = !isHookSelected
+                  ? 'Pilih salah satu jenis Hook di Tahap 1 terlebih dahulu'
+                  : !isOutlineReady
+                  ? 'Buat kerangka naskah di textarea terlebih dahulu'
+                  : 'Setujui kerangka ini dan mulai tulis naskah narasi video';
+
+                return (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={onApproveAndGenerateScript}
+                    disabled={isDisabled}
+                    style={{
+                      marginLeft: 'auto',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontSize: '0.86rem',
+                      fontWeight: 700,
+                      padding: '9px 16px',
+                      background: !isHookSelected || !isOutlineReady ? '#1a293f' : 'var(--green)',
+                      borderColor: !isHookSelected || !isOutlineReady ? '#294368' : 'var(--green)',
+                      color: !isHookSelected || !isOutlineReady ? '#7e93af' : '#041a10',
+                      cursor: isDisabled ? 'not-allowed' : 'pointer',
+                      opacity: isDisabled ? 0.65 : 1,
+                      transition: 'all 0.2s ease',
+                    }}
+                    title={tooltipTitle}
+                  >
+                    {generatingFullScript ? (
+                      <>
+                        <Loader2 size={15} className="spin" /> Menulis Naskah Utuh...
+                      </>
+                    ) : (
+                      <>
+                        <Check size={16} /> ✅ Setujui &amp; Tulis Naskah
+                      </>
+                    )}
+                  </button>
+                );
+              })()}
             </div>
           </div>
 
@@ -579,7 +912,9 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                         item.research_text,
                         angleNotes,
                         computedTargetWords,
-                        targetDuration
+                        targetDuration,
+                        selectedHookType,
+                        hookDraft
                       );
                       onCopy(p, 'extOutlinePrompt');
                     }}
@@ -597,7 +932,9 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                       item.research_text,
                       angleNotes,
                       computedTargetWords,
-                      targetDuration
+                      targetDuration,
+                      selectedHookType,
+                      hookDraft
                     )}
                   </pre>
                 </div>
@@ -707,7 +1044,9 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                           researchOutput || item.external_research_output || '',
                           identityText,
                           computedTargetWords,
-                          angleNotes
+                          angleNotes,
+                          selectedHookType,
+                          hookDraft
                         );
                         onCopy(p, 'extScriptPrompt');
                       }}
@@ -724,7 +1063,9 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                         researchOutput || item.external_research_output || '',
                         identityText,
                         computedTargetWords,
-                        angleNotes
+                        angleNotes,
+                        selectedHookType,
+                        hookDraft
                       )}
                     </pre>
                   </div>

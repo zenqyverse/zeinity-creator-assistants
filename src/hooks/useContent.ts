@@ -12,6 +12,9 @@ import {
 export const CACHED_CONTENT_STORAGE_KEY = 'zeinity_cached_content_items';
 const AUDIT_STORAGE_PREFIX = 'zeinity_audit_prompt_';
 const TITLES_STORAGE_PREFIX = 'zeinity_generated_titles_';
+const HOOK_TYPE_STORAGE_PREFIX = 'zeinity_hook_type_';
+const HOOK_DRAFT_STORAGE_PREFIX = 'zeinity_hook_draft_';
+const HOOK_NOTES_STORAGE_PREFIX = 'zeinity_hook_notes_';
 
 // Bersihkan key residual visual cue yang sudah dihapus permanen dari localStorage
 if (typeof window !== 'undefined') {
@@ -103,10 +106,77 @@ function setStoredGeneratedTitles(id: string, titles: TitleRecommendationItem[] 
   }
 }
 
+function getStoredHookType(id: string): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem(HOOK_TYPE_STORAGE_PREFIX + id);
+  } catch {
+    return null;
+  }
+}
+
+function setStoredHookType(id: string, val: string | null | undefined): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (val) {
+      localStorage.setItem(HOOK_TYPE_STORAGE_PREFIX + id, val);
+    } else {
+      localStorage.removeItem(HOOK_TYPE_STORAGE_PREFIX + id);
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function getStoredHookDraft(id: string): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem(HOOK_DRAFT_STORAGE_PREFIX + id);
+  } catch {
+    return null;
+  }
+}
+
+function setStoredHookDraft(id: string, val: string | null | undefined): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (val) {
+      localStorage.setItem(HOOK_DRAFT_STORAGE_PREFIX + id, val);
+    } else {
+      localStorage.removeItem(HOOK_DRAFT_STORAGE_PREFIX + id);
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function getStoredHookNotes(id: string): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem(HOOK_NOTES_STORAGE_PREFIX + id);
+  } catch {
+    return null;
+  }
+}
+
+function setStoredHookNotes(id: string, val: string | null | undefined): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (val) {
+      localStorage.setItem(HOOK_NOTES_STORAGE_PREFIX + id, val);
+    } else {
+      localStorage.removeItem(HOOK_NOTES_STORAGE_PREFIX + id);
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 /**
  * Menggabungkan data remote dari Supabase dengan metadata lokal di cache.
  * Memastikan metadata naskah lokal (script_target_duration, script_target_words,
  * script_angle_notes, script_production_track, script_outline_approved,
+ * script_hook_type, script_hook_draft, script_hook_notes,
  * generated_thumbnail_visual, thumbnail_mode, generated_titles, dll.) tetap dipertahankan
  * jika kolom tersebut tidak ada atau bernilai null di skema database Supabase.
  */
@@ -132,6 +202,18 @@ export function mergeContentItemWithCache(
       remoteItem.generated_thumbnail_visual !== undefined && remoteItem.generated_thumbnail_visual !== null
         ? remoteItem.generated_thumbnail_visual
         : (cachedItem?.generated_thumbnail_visual ?? null),
+    script_hook_type:
+      remoteItem.script_hook_type !== undefined && remoteItem.script_hook_type !== null
+        ? remoteItem.script_hook_type
+        : (cachedItem?.script_hook_type ?? getStoredHookType(remoteItem.id)),
+    script_hook_draft:
+      remoteItem.script_hook_draft !== undefined && remoteItem.script_hook_draft !== null
+        ? remoteItem.script_hook_draft
+        : (cachedItem?.script_hook_draft ?? getStoredHookDraft(remoteItem.id)),
+    script_hook_notes:
+      remoteItem.script_hook_notes !== undefined && remoteItem.script_hook_notes !== null
+        ? remoteItem.script_hook_notes
+        : (cachedItem?.script_hook_notes ?? getStoredHookNotes(remoteItem.id)),
     script_outline:
       remoteItem.script_outline !== undefined && remoteItem.script_outline !== null
         ? remoteItem.script_outline
@@ -168,6 +250,9 @@ const INITIAL_CONTENT_ITEMS: Omit<ContentItem, 'id'>[] = [
     research_text: 'Analisis perbandingan tools AI video generator untuk creator pemula vs profesional.',
     research_brief_prompt: null,
     external_research_output: null,
+    script_hook_type: null,
+    script_hook_draft: null,
+    script_hook_notes: null,
     script_outline: null,
     scriptwriter_brief_prompt: null,
     external_script_output: null,
@@ -192,6 +277,9 @@ const INITIAL_CONTENT_ITEMS: Omit<ContentItem, 'id'>[] = [
     research_text: 'Ide dari Telegram: Creator butuh rekomendasi tool riset kata kunci dan tren tanpa langganan mahal.',
     research_brief_prompt: 'Buat riset komparasi fitur gratis vs berbayar untuk 5 AI research tools di pasar kreator.',
     external_research_output: null,
+    script_hook_type: null,
+    script_hook_draft: null,
+    script_hook_notes: null,
     script_outline: null,
     scriptwriter_brief_prompt: null,
     external_script_output: null,
@@ -216,6 +304,9 @@ const INITIAL_CONTENT_ITEMS: Omit<ContentItem, 'id'>[] = [
     research_text: 'Dokumentasi arsitektur multi-agent untuk content planning dan scriptwriting.',
     research_brief_prompt: 'Lakukan riset mendalam tentang integrasi API LLM ke dalam alur kerja produksi video.',
     external_research_output: 'Poin Riset:\n1. Integrasi API memotong waktu drafting hingga 60%.\n2. Validasi manual human-in-the-loop tetap krusial untuk tone of voice.\n3. Model hybrid lokal + cloud memberikan efisiensi biaya optimal.',
+    script_hook_type: null,
+    script_hook_draft: null,
+    script_hook_notes: null,
     script_outline: null,
     scriptwriter_brief_prompt: null,
     external_script_output: null,
@@ -240,6 +331,9 @@ const INITIAL_CONTENT_ITEMS: Omit<ContentItem, 'id'>[] = [
     research_text: 'Studi kasus retensi video dengan naskah berbasis AI vs naskah murni buatan manusia.',
     research_brief_prompt: 'Riset teknik humanisasi naskah AI untuk YouTube long-form.',
     external_research_output: 'Data retensi menunjukkan hook 5 detik pertama menentukan 70% keberhasilan video.',
+    script_hook_type: 'Contradiction Hook ⭐',
+    script_hook_draft: 'Harusnya AI mempermudah penulisan naskah kita. Masalahnya, naskah yang keluar malah terasa hambar dan robotik. Kalau kita perhatikan retensi audiens, mereka kabur di lima detik pertama. Pertanyaannya, bagaimana membuat naskah AI mengalir alami?',
+    script_hook_notes: 'Fokuskan kontras pada paradoks efisiensi AI vs hilangnya sentuhan manusiawi',
     script_outline: 'I. Hook: Mengapa audiens kabur dalam 5 detik pertama\nII. Masalah: Bahasa AI yang kaku dan klise\nIII. Solusi: Formula 3 langkah humanisasi naskah\nIV. Contoh sebelum & sesudah\nV. CTA & Penutup',
     scriptwriter_brief_prompt: 'Tulis naskah video YouTube durasi 8 menit dengan gaya santai dan to-the-point khas Zeinity.',
     external_script_output: 'Halo creator! Pernah gak ngerasa script AI kalian kedengeran kayak dibaca robot kelurahan?...',
@@ -264,6 +358,9 @@ const INITIAL_CONTENT_ITEMS: Omit<ContentItem, 'id'>[] = [
     research_text: 'Review ergonomi ruang kerja, lighting minimalis, dan software pendukung.',
     research_brief_prompt: 'Riset tren aesthetic workspace creator YouTube dan pengaruh lingkungan fisik terhadap produktivitas.',
     external_research_output: 'Pencahayaan bias dan meja clean-desk meningkatkan durasi fokus hingga 40%.',
+    script_hook_type: 'Broken Assumption Hook ⭐',
+    script_hook_draft: null,
+    script_hook_notes: null,
     script_outline: '1. Masalah: Meja berantakan = otak berantakan\n2. 3 Elemen kunci setup minimalis\n3. Rekomendasi perlengkapan ramah kantong\n4. Routine harian',
     scriptwriter_brief_prompt: 'Naskah video santai 10 menit dengan breakdown perlengkapan kerja nyata.',
     external_script_output: 'Pernah nggak kalian duduk di depan meja kerja, niatnya mau produktif 4 jam ke depan...',
@@ -288,6 +385,9 @@ const INITIAL_CONTENT_ITEMS: Omit<ContentItem, 'id'>[] = [
     research_text: 'Dopamine loops dan reward schedule variabel pada platform Shorts & TikTok.',
     research_brief_prompt: 'Analisis riset neurosains tentang konsumsi konten vertikal dan durasi atensi manusia modern.',
     external_research_output: 'Studi menunjukkan dopamin terpicu bukan oleh konten yang disukai, melainkan oleh antisipasi konten berikutnya.',
+    script_hook_type: 'Hidden Incentive Hook',
+    script_hook_draft: null,
+    script_hook_notes: null,
     script_outline: 'I. Fenomena scrolling tanpa sadar\nII. Variabel Reward: Mesin judi di saku celana\nIII. Dampak kognitif jangka panjang\nIV. Cara merebut kembali kendali fokus',
     scriptwriter_brief_prompt: 'Naskah video esai dokumenter mendalam durasi 12 menit dengan sentuhan filosofis.',
     external_script_output: 'Rata-rata orang membuka ponsel mereka lebih dari 140 kali sehari...',
@@ -611,6 +711,9 @@ export function useContent() {
       telegram_sender_username: idea.telegram_sender_username ?? null,
       research_brief_prompt: null,
       external_research_output: null,
+      script_hook_type: null,
+      script_hook_draft: null,
+      script_hook_notes: null,
       script_outline: null,
       scriptwriter_brief_prompt: null,
       external_script_output: null,
@@ -707,6 +810,9 @@ export function useContent() {
       telegram_sender_username: idea.telegram_sender_username ?? null,
       research_brief_prompt: null,
       external_research_output: null,
+      script_hook_type: null,
+      script_hook_draft: null,
+      script_hook_notes: null,
       script_outline: null,
       scriptwriter_brief_prompt: null,
       external_script_output: null,
@@ -794,6 +900,15 @@ export function useContent() {
     if ('generated_titles' in updates) {
       setStoredGeneratedTitles(id, updates.generated_titles);
     }
+    if ('script_hook_type' in updates) {
+      setStoredHookType(id, updates.script_hook_type);
+    }
+    if ('script_hook_draft' in updates) {
+      setStoredHookDraft(id, updates.script_hook_draft);
+    }
+    if ('script_hook_notes' in updates) {
+      setStoredHookNotes(id, updates.script_hook_notes);
+    }
 
     const now = new Date().toISOString();
     const targetItem = itemsRef.current.find((item) => item.id === id);
@@ -814,6 +929,15 @@ export function useContent() {
           generated_thumbnail_visual: updates.generated_thumbnail_visual !== undefined
             ? updates.generated_thumbnail_visual
             : targetItem.generated_thumbnail_visual,
+          script_hook_type: updates.script_hook_type !== undefined
+            ? updates.script_hook_type
+            : (targetItem.script_hook_type ?? getStoredHookType(id)),
+          script_hook_draft: updates.script_hook_draft !== undefined
+            ? updates.script_hook_draft
+            : (targetItem.script_hook_draft ?? getStoredHookDraft(id)),
+          script_hook_notes: updates.script_hook_notes !== undefined
+            ? updates.script_hook_notes
+            : (targetItem.script_hook_notes ?? getStoredHookNotes(id)),
           script_outline: updates.script_outline !== undefined
             ? updates.script_outline
             : targetItem.script_outline,
@@ -858,7 +982,9 @@ export function useContent() {
       updates.external_script_output !== undefined ||
       updates.external_research_output !== undefined ||
       updates.script_outline !== undefined ||
-      updates.script_angle_notes !== undefined
+      updates.script_angle_notes !== undefined ||
+      updates.script_hook_draft !== undefined ||
+      updates.script_hook_notes !== undefined
     );
 
     if (options?.silent) {
@@ -907,6 +1033,9 @@ export function useContent() {
         delete fallbackUpdates.generated_titles;
         delete fallbackUpdates.thumbnail_mode;
         delete fallbackUpdates.generated_thumbnail_visual;
+        delete fallbackUpdates.script_hook_type;
+        delete fallbackUpdates.script_hook_draft;
+        delete fallbackUpdates.script_hook_notes;
         delete fallbackUpdates.script_target_duration;
         delete fallbackUpdates.script_target_words;
         delete fallbackUpdates.script_angle_notes;
@@ -939,6 +1068,15 @@ export function useContent() {
           generated_thumbnail_visual: updates.generated_thumbnail_visual !== undefined
             ? updates.generated_thumbnail_visual
             : (remoteItem.generated_thumbnail_visual ?? targetItem?.generated_thumbnail_visual ?? optimisticItem?.generated_thumbnail_visual),
+          script_hook_type: updates.script_hook_type !== undefined
+            ? updates.script_hook_type
+            : (remoteItem.script_hook_type ?? optimisticItem?.script_hook_type ?? getStoredHookType(id)),
+          script_hook_draft: updates.script_hook_draft !== undefined
+            ? updates.script_hook_draft
+            : (remoteItem.script_hook_draft ?? optimisticItem?.script_hook_draft ?? getStoredHookDraft(id)),
+          script_hook_notes: updates.script_hook_notes !== undefined
+            ? updates.script_hook_notes
+            : (remoteItem.script_hook_notes ?? optimisticItem?.script_hook_notes ?? getStoredHookNotes(id)),
           script_outline: updates.script_outline !== undefined
             ? updates.script_outline
             : (remoteItem.script_outline ?? optimisticItem?.script_outline),

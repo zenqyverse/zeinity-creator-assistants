@@ -127,6 +127,65 @@ export interface ScriptBeatInfo {
   targetRatio: number;
 }
 
+export interface ZeinityHookFormula {
+  id: string;
+  name: string;
+  label: string;
+  isStarred: boolean;
+  pattern: string;
+}
+
+export const ZEINITY_HOOK_FORMULAS: readonly ZeinityHookFormula[] = [
+  {
+    id: 'contradiction',
+    name: 'Contradiction Hook',
+    label: 'Contradiction Hook ⭐',
+    isStarred: true,
+    pattern: '“Harusnya X membuat Y. Masalahnya, yang terjadi malah Z. Kalau kita perhatikan... . Pertanyaannya, ... ?”',
+  },
+  {
+    id: 'broken_assumption',
+    name: 'Broken Assumption Hook',
+    label: 'Broken Assumption Hook ⭐',
+    isStarred: true,
+    pattern: 'Mulai dari sesuatu yang selama ini dianggap normal, lalu tunjukkan kenapa asumsi itu tidak lengkap',
+  },
+  {
+    id: 'function_drift',
+    name: 'Function Drift Hook',
+    label: 'Function Drift Hook ⭐',
+    isStarred: true,
+    pattern: '“Awalnya benda/sistem ini dibuat untuk A. Sekarang fungsinya sudah berubah... . Kalau kita perhatikan... . Pertanyaannya, ... ?”',
+  },
+  {
+    id: 'evidence_first',
+    name: 'Evidence-First Oddity',
+    label: 'Evidence-First Oddity',
+    isStarred: false,
+    pattern: 'Buka dengan satu fakta/kasus konkret yang terasa aneh, lalu ajukan pertanyaan',
+  },
+  {
+    id: 'hidden_incentive',
+    name: 'Hidden Incentive Hook',
+    label: 'Hidden Incentive Hook',
+    isStarred: false,
+    pattern: '“Kelihatannya ini cuma X. Tapi ada alasan lain kenapa sistemnya dibuat seperti ini.”',
+  },
+  {
+    id: 'pattern',
+    name: 'Pattern Hook',
+    label: 'Pattern Hook',
+    isStarred: false,
+    pattern: 'Hubungkan 2–3 kejadian yang tampaknya terpisah dan tanyakan kenapa semuanya mengarah ke pola yang sama',
+  },
+] as const;
+
+export interface HookRecommendationResult {
+  hookId: string;
+  hookName: string;
+  reason: string;
+}
+
 export interface ContentItem {
   id: string;
   title: string;
@@ -137,6 +196,9 @@ export interface ContentItem {
   research_brief_prompt?: string | null;
   external_research_output?: string | null;
   // Scripting Stage First-Class Fields
+  script_hook_type?: string | null;
+  script_hook_draft?: string | null;
+  script_hook_notes?: string | null;
   script_outline?: string | null;
   script_target_duration?: string | null;
   script_target_words?: number | null;
