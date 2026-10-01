@@ -16,6 +16,7 @@ dist-ssr
 # Environment & Secrets
 .env
 .env.*.local
+.vercel
 *.pem
 *.key
 
