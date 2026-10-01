@@ -93,6 +93,10 @@ const STORAGE_KEY_BOOKMARKS = 'zeinity_rss_bookmarks';
 const feedCache = new Map<string, { items: RSSItem[]; timestamp: number }>();
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
+export function clearFeedCache(): void {
+  feedCache.clear();
+}
+
 /**
  * Fetch raw XML string with hybrid CORS fallback pipeline:
  * 1. Direct fetch (fastest)

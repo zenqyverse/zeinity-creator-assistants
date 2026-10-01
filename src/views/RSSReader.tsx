@@ -31,6 +31,7 @@ import {
 import {
   getRssSources,
   loadMultipleSourceItems,
+  loadSourceItems,
   markItemAsRead,
   toggleBookmarkItem,
   getBookmarkedItems,
@@ -38,6 +39,7 @@ import {
   deleteRssSource,
   toggleRssSourceActive,
   updateRssSource,
+  clearFeedCache,
 } from '@/lib/rssService';
 import { useAlert } from '@/components/AlertModal';
 
@@ -89,7 +91,7 @@ function formatRelativeTime(dateStr?: string): string {
 }
 
 export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles }: RSSReaderProps) {
-  const { showWarning, showError } = useAlert();
+  const { showWarning, showError, showSuccess } = useAlert();
 
   // Navigation & filter state
   const [activeCategory, setActiveCategory] = useState<CategoryTab>('media');
@@ -183,15 +185,60 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
     [sources]
   );
 
-  // Manual refresh: invalidate active category cache then re-fetch
+  // Manual refresh: invalidate all caches, fetch all active sources, and give clear user feedback
   const fetchArticles = useCallback(
     async (force = false) => {
-      if (force) {
-        fetchedCategories.current.delete(activeCategory);
+      if (!force) {
+        await fetchCategoryArticles(activeCategory, false);
+        return;
       }
-      await fetchCategoryArticles(activeCategory, force);
+
+      const activeSources = sources.filter((s) => s.is_active);
+      if (activeSources.length === 0) {
+        showWarning('Tidak Ada Feed Aktif', 'Aktifkan atau tambahkan sumber feed di menu Kelola Sumber.');
+        return;
+      }
+
+      setLoading(true);
+      clearFeedCache();
+      fetchedCategories.current.clear();
+
+      try {
+        const res = await loadMultipleSourceItems(activeSources, true);
+        setItems(() => {
+          const sorted = [...res.items].sort((a, b) => {
+            const timeA = new Date(a.pubDate).getTime() || 0;
+            const timeB = new Date(b.pubDate).getTime() || 0;
+            return timeB - timeA;
+          });
+          return sorted;
+        });
+        setErrors(res.errors);
+
+        // Mark all categories with sources as fetched
+        for (const s of activeSources) {
+          fetchedCategories.current.add(s.category as CategoryTab);
+        }
+
+        const errorCount = Object.keys(res.errors).length;
+        if (errorCount > 0) {
+          showWarning(
+            'Sinkronisasi Selesai Sebagian',
+            `Berhasil memuat ${res.items.length} artikel. Namun terdapat ${errorCount} sumber feed yang gagal diakses. Periksa menu "Kelola Sumber Feed" untuk melihat detail.`
+          );
+        } else {
+          showSuccess(
+            'Sinkronisasi Sukses',
+            `Berhasil menyinkronkan ${res.items.length} artikel dari ${activeSources.length} sumber feed aktif.`
+          );
+        }
+      } catch (err) {
+        showError('Sinkronisasi Gagal', err instanceof Error ? err.message : 'Gagal menyinkronkan feed.');
+      } finally {
+        setLoading(false);
+      }
     },
-    [activeCategory, fetchCategoryArticles]
+    [activeCategory, fetchCategoryArticles, sources, showWarning, showSuccess, showError]
   );
 
   // Fetch active category when sources first become available
@@ -280,10 +327,60 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
 
       setSources((prev) => [created, ...prev]);
       setActiveCategory(created.category);
+      setSelectedPillar('all');
       setNewFeedUrl('');
       setNewFeedTitle('');
       setNewFeedCategory('custom');
       setNewFeedPillar('AI & Technology Impact');
+      setManageModalOpen(false);
+
+      // Immediately fetch items from this new feed!
+      try {
+        const newFeedItems = await loadSourceItems(created, true);
+        if (newFeedItems.length > 0) {
+          setItems((prev) => {
+            const merged = [...newFeedItems, ...prev.filter((i) => i.source_id !== created.id)];
+            merged.sort((a, b) => {
+              const timeA = new Date(a.pubDate).getTime() || 0;
+              const timeB = new Date(b.pubDate).getTime() || 0;
+              return timeB - timeA;
+            });
+            return merged;
+          });
+          setErrors((prev) => {
+            const next = { ...prev };
+            delete next[created.id];
+            return next;
+          });
+          fetchedCategories.current.add(created.category);
+
+          const catName =
+            created.category === 'media'
+              ? 'Media & Berita'
+              : created.category === 'tech'
+              ? 'Blog Teknologi & AI'
+              : created.category === 'forum'
+              ? 'Forum & Komunitas'
+              : 'Koleksi Saya';
+
+          showSuccess(
+            'Feed Berhasil Ditambahkan',
+            `Berhasil memuat ${newFeedItems.length} artikel dari "${created.title}". Kategori aktif dialihkan ke "${catName}".`
+          );
+        } else {
+          showWarning(
+            'Feed Ditambahkan Tanpa Artikel',
+            `Feed "${created.title}" berhasil disimpan, namun tidak ditemukan artikel di dalam XML feed tersebut.`
+          );
+        }
+      } catch (fetchErr) {
+        const errMsg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+        setErrors((prev) => ({ ...prev, [created.id]: errMsg }));
+        showWarning(
+          'Feed Tersimpan, Namun Gagal Dimuat',
+          `Feed "${created.title}" telah disimpan, namun aplikasi gagal mengambil data artikel (${errMsg}). Pastikan URL tersebut adalah feed XML RSS/Atom yang valid, bukan halaman web HTML biasa.`
+        );
+      }
     } catch (err) {
       showError(
         'Gagal Menambahkan Feed',
@@ -610,6 +707,41 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
 
         {/* Article Cards Grid */}
         <div style={{ padding: 20 }}>
+          {/* Active Category Errors Banner */}
+          {Object.entries(errors).filter(([srcId]) =>
+            sources.some((s) => s.id === srcId && s.category === activeCategory && s.is_active)
+          ).length > 0 && (
+            <div
+              style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: 8,
+                padding: '10px 14px',
+                marginBottom: 16,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', color: '#fca5a5' }}>
+                <AlertCircle size={16} style={{ color: '#ef4444', flexShrink: 0 }} />
+                <span>
+                  Ada sumber feed di kategori ini yang gagal dimuat. Periksa URL atau koneksi di menu{' '}
+                  <strong>Kelola Sumber</strong>.
+                </span>
+              </div>
+              <button
+                type="button"
+                className="small-btn"
+                onClick={() => setManageModalOpen(true)}
+                style={{ fontSize: '0.72rem', padding: '3px 8px', color: '#fca5a5', borderColor: '#ef4444' }}
+              >
+                Periksa Sumber
+              </button>
+            </div>
+          )}
+
           {loading && items.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
               <Loader2 size={36} className="spin" style={{ color: 'var(--cyan)', margin: '0 auto 14px' }} />
