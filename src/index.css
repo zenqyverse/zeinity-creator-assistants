@@ -1505,6 +1505,81 @@ tbody tr:hover {
   border-color: var(--cyan) !important;
 }
 
+/* Finishing & Packaging Studio (2-Panel Master-Detail) */
+.finishing-packaging-layout {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  align-items: stretch;
+}
+
+.finishing-stepper-panel {
+  width: 330px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.finishing-stepper-card {
+  background: #091322;
+  border: 1px solid #1a2f4c;
+  border-radius: 8px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.finishing-stepper-card:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+  background: #0b172a;
+}
+
+.finishing-stepper-card.active {
+  border-color: var(--cyan);
+  background: rgba(56, 189, 248, 0.08);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.15);
+}
+
+.finishing-substudio-canvas {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.interactive-diff-card {
+  background: #070f1e;
+  border: 1px solid #1a2f4c;
+  border-radius: 8px;
+  padding: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.interactive-diff-card:hover {
+  border-color: #274773;
+}
+
+.formula-card.active-title {
+  border-color: var(--green) !important;
+  background: rgba(52, 211, 153, 0.06) !important;
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.25) !important;
+}
+
+@media (max-width: 960px) {
+  .finishing-packaging-layout {
+    flex-direction: column;
+  }
+  .finishing-stepper-panel {
+    width: 100%;
+  }
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -2329,5 +2404,190 @@ tbody tr:hover {
   background: rgba(239, 68, 68, 0.2);
   color: #f87171;
   border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* ===== Scripting Workspace Redesign (Modern Studio) ===== */
+.preflight-compact-strip {
+  background: #0b1424;
+  border: 1px solid #1a2c47;
+  border-radius: 10px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.preflight-pill-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.preflight-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  background: #0f1c32;
+  border: 1px solid #1e3557;
+  color: #cbd5e1;
+  white-space: nowrap;
+}
+
+.preflight-pill.track-pill {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #7dd3fc;
+}
+
+.preflight-pill.duration-pill {
+  background: #0f1c30;
+  border-color: #223c63;
+  color: #e2edff;
+}
+
+.preflight-pill.context-pill {
+  background: #091222;
+  border-color: #1a2a44;
+  color: #94a3b8;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preflight-settings-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  background: rgba(56, 189, 248, 0.14);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.preflight-settings-btn:hover {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: var(--cyan);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+}
+
+/* Workflow Stage Tabs */
+.scripting-workflow-tabs-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #060c18;
+  border: 1px solid #16243b;
+  border-radius: 8px;
+  padding: 3px;
+  flex-wrap: wrap;
+}
+
+.workflow-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.workflow-tab-btn:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.workflow-tab-btn.active {
+  background: #14223b;
+  color: #ffffff;
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+/* Primary Hero CTA */
+.hero-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: 1px solid #34d399;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4), 0 0 16px rgba(16, 185, 129, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.hero-cta-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5), 0 0 24px rgba(16, 185, 129, 0.35);
+  filter: brightness(1.08);
+}
+
+.hero-cta-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.hero-cta-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #1a2c42;
+  border-color: #27405e;
+  color: #798fa8;
+  box-shadow: none;
+}
+
+/* Word Meter Pill */
+.word-meter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #08101e;
+  border: 1px solid #1b2d49;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.word-meter-track {
+  width: 50px;
+  height: 6px;
+  background: #14223b;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.word-meter-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #38bdf8, #10b981);
+  transition: width 0.3s ease;
 }
 

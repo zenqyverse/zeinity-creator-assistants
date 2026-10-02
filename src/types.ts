@@ -207,6 +207,7 @@ export interface ContentItem {
   script_outline_approved?: boolean | null;
   scriptwriter_brief_prompt?: string | null;
   audit_spoken_prompt?: string | null;
+  audit_casual_prompt?: string | null;
   external_script_output?: string | null;
   generated_title_a?: string | null;
   generated_title_b?: string | null;

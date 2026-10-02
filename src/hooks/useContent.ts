@@ -11,6 +11,7 @@ import {
 
 export const CACHED_CONTENT_STORAGE_KEY = 'zeinity_cached_content_items';
 const AUDIT_STORAGE_PREFIX = 'zeinity_audit_prompt_';
+const CASUAL_AUDIT_STORAGE_PREFIX = 'zeinity_casual_audit_prompt_';
 const TITLES_STORAGE_PREFIX = 'zeinity_generated_titles_';
 const HOOK_TYPE_STORAGE_PREFIX = 'zeinity_hook_type_';
 const HOOK_DRAFT_STORAGE_PREFIX = 'zeinity_hook_draft_';
@@ -76,6 +77,28 @@ function setStoredAuditPrompt(id: string, prompt: string | null | undefined): vo
       localStorage.setItem(AUDIT_STORAGE_PREFIX + id, prompt);
     } else {
       localStorage.removeItem(AUDIT_STORAGE_PREFIX + id);
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function getStoredCasualAuditPrompt(id: string): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem(CASUAL_AUDIT_STORAGE_PREFIX + id);
+  } catch {
+    return null;
+  }
+}
+
+function setStoredCasualAuditPrompt(id: string, prompt: string | null | undefined): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (prompt) {
+      localStorage.setItem(CASUAL_AUDIT_STORAGE_PREFIX + id, prompt);
+    } else {
+      localStorage.removeItem(CASUAL_AUDIT_STORAGE_PREFIX + id);
     }
   } catch {
     // Ignore storage errors
@@ -190,6 +213,10 @@ export function mergeContentItemWithCache(
       remoteItem.audit_spoken_prompt !== undefined && remoteItem.audit_spoken_prompt !== null
         ? remoteItem.audit_spoken_prompt
         : (cachedItem?.audit_spoken_prompt ?? getStoredAuditPrompt(remoteItem.id)),
+    audit_casual_prompt:
+      remoteItem.audit_casual_prompt !== undefined && remoteItem.audit_casual_prompt !== null
+        ? remoteItem.audit_casual_prompt
+        : (cachedItem?.audit_casual_prompt ?? getStoredCasualAuditPrompt(remoteItem.id)),
     generated_titles:
       remoteItem.generated_titles !== undefined && remoteItem.generated_titles !== null
         ? remoteItem.generated_titles
@@ -457,6 +484,7 @@ export function useContent() {
                 ...item,
                 id: `offline-init-${idx + 1}`,
                 audit_spoken_prompt: getStoredAuditPrompt(`offline-init-${idx + 1}`),
+                audit_casual_prompt: getStoredCasualAuditPrompt(`offline-init-${idx + 1}`),
                 generated_titles: getStoredGeneratedTitles(`offline-init-${idx + 1}`),
                 thumbnail_mode: item.thumbnail_mode ?? 'prompt',
               })) as ContentItem[];
@@ -504,6 +532,7 @@ export function useContent() {
             ...item,
             id: `offline-init-${idx + 1}`,
             audit_spoken_prompt: getStoredAuditPrompt(`offline-init-${idx + 1}`),
+            audit_casual_prompt: getStoredCasualAuditPrompt(`offline-init-${idx + 1}`),
             generated_titles: getStoredGeneratedTitles(`offline-init-${idx + 1}`),
             thumbnail_mode: item.thumbnail_mode ?? 'prompt',
           })) as ContentItem[];
@@ -584,6 +613,7 @@ export function useContent() {
           ...item,
           id: `offline-init-${idx + 1}`,
           audit_spoken_prompt: getStoredAuditPrompt(`offline-init-${idx + 1}`),
+          audit_casual_prompt: getStoredCasualAuditPrompt(`offline-init-${idx + 1}`),
           generated_titles: getStoredGeneratedTitles(`offline-init-${idx + 1}`),
           thumbnail_mode: item.thumbnail_mode ?? 'prompt',
         })) as ContentItem[];
@@ -897,6 +927,9 @@ export function useContent() {
     if ('audit_spoken_prompt' in updates) {
       setStoredAuditPrompt(id, updates.audit_spoken_prompt);
     }
+    if ('audit_casual_prompt' in updates) {
+      setStoredCasualAuditPrompt(id, updates.audit_casual_prompt);
+    }
     if ('generated_titles' in updates) {
       setStoredGeneratedTitles(id, updates.generated_titles);
     }
@@ -920,6 +953,9 @@ export function useContent() {
           audit_spoken_prompt: updates.audit_spoken_prompt !== undefined 
             ? updates.audit_spoken_prompt 
             : (targetItem.audit_spoken_prompt ?? getStoredAuditPrompt(id)),
+          audit_casual_prompt: updates.audit_casual_prompt !== undefined 
+            ? updates.audit_casual_prompt 
+            : (targetItem.audit_casual_prompt ?? getStoredCasualAuditPrompt(id)),
           generated_titles: updates.generated_titles !== undefined
             ? updates.generated_titles
             : (targetItem.generated_titles ?? getStoredGeneratedTitles(id)),
@@ -1026,10 +1062,11 @@ export function useContent() {
         .select()
         .single();
 
-      // Jika skema remote Supabase belum memiliki kolom audit_spoken_prompt, generated_titles, atau metadata script baru (PGRST204 atau 42703), retry tanpa kolom tersebut
-      if (res.error && (res.error.code === 'PGRST204' || res.error.code === '42703' || res.error.message?.includes('audit_spoken_prompt') || res.error.message?.includes('generated_titles') || res.error.message?.includes('script_') || res.error.message?.includes('thumbnail_'))) {
+      // Jika skema remote Supabase belum memiliki kolom audit_spoken_prompt, audit_casual_prompt, generated_titles, atau metadata script baru (PGRST204 atau 42703), retry tanpa kolom tersebut
+      if (res.error && (res.error.code === 'PGRST204' || res.error.code === '42703' || res.error.message?.includes('audit_spoken_prompt') || res.error.message?.includes('audit_casual_prompt') || res.error.message?.includes('generated_titles') || res.error.message?.includes('script_') || res.error.message?.includes('thumbnail_'))) {
         const fallbackUpdates = { ...safeUpdates };
         delete fallbackUpdates.audit_spoken_prompt;
+        delete fallbackUpdates.audit_casual_prompt;
         delete fallbackUpdates.generated_titles;
         delete fallbackUpdates.thumbnail_mode;
         delete fallbackUpdates.generated_thumbnail_visual;
@@ -1059,6 +1096,9 @@ export function useContent() {
           audit_spoken_prompt: updates.audit_spoken_prompt !== undefined 
             ? updates.audit_spoken_prompt 
             : (remoteItem.audit_spoken_prompt ?? getStoredAuditPrompt(id)),
+          audit_casual_prompt: updates.audit_casual_prompt !== undefined 
+            ? updates.audit_casual_prompt 
+            : (remoteItem.audit_casual_prompt ?? getStoredCasualAuditPrompt(id)),
           generated_titles: updates.generated_titles !== undefined
             ? updates.generated_titles
             : (targetItem?.generated_titles ?? getStoredGeneratedTitles(id)),

@@ -13,12 +13,12 @@ interface SidebarProps {
 
 const navItems: { key: ViewKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { key: 'trends', label: 'Radar Tren', icon: Flame },
-  { key: 'rss', label: 'RSS Reader', icon: Rss },
   { key: 'ideas', label: 'Content Ideas', icon: Lightbulb },
   { key: 'research', label: 'AI Research', icon: Sparkles },
   { key: 'scripts', label: 'Scripts', icon: FileText },
   { key: 'published', label: 'Published', icon: CheckCircle },
+  { key: 'trends', label: 'Radar Tren', icon: Flame },
+  { key: 'rss', label: 'RSS Reader', icon: Rss },
   { key: 'files', label: 'File Manager', icon: FolderOpen },
   { key: 'analytics', label: 'Analytics', icon: BarChart3 },
   { key: 'settings', label: 'Settings', icon: Settings },

@@ -2668,6 +2668,48 @@ Jika tidak ditemukan kendala berarti, sampaikan persis:
 **Tidak ditemukan kendala spoken/TTS yang berarti.**`.trim();
 }
 
+export function formatExternalCasualAuditPrompt(scriptText: string): string {
+  return `Anda adalah Senior YouTube Script Director & Casual-Friendly Voice Coach untuk Zeinity.
+TUGAS Anda: Lakukan audit sub-sesi untuk mengubah gaya bahasa naskah berikut dari formal/kaku akademis/ensiklopedia menjadi GAYA KASUAL FRIENDLY (santai, akrab, mengalir, dan ramah pendengar seperti teman sebaya yang cerdas).
+Audit spoken dasar (prosodi dan tanda baca TTS) sudah diterapkan, fokus Anda sekarang adalah TONE & DIKSI PERCAKAPAN.
+
+<naskah_untuk_diaudit>
+${scriptText}
+</naskah_untuk_diaudit>
+
+### PRINSIP GAYA KASUAL FRIENDLY ZEINITY:
+1. Transformasi Nada Kaku & Ensiklopedia:
+   - Ubah frasa pasif/artikel formal kaku ("Berdasarkan data yang ada...", "Dapat disimpulkan bahwa...", "Terdapat kecenderungan...") menjadi gaya tutur personal yang hidup ("Kalau kita perhatiin datanya...", "Intinya...", "Kelihatan jelas kalau...").
+   - Ganti kata hubung kaku ("Akan tetapi / Namun demikian" -> "Tapi ya...", "Oleh sebab itu / Dikarenakan" -> "Makanya / Soalnya...", "Sangat / Amat" -> "Banget / Bener-bener", "Mengapa / Bagaimana" -> "Kenapa / Gimana", "Tidak" -> "Nggak").
+2. Suasana Percakapan Akrab (Friendly Peer Conversation):
+   - Ajak penonton berpikir bersama secara egaliter ("Coba bayangin...", "Pernah nggak kamu ngerasa...", "Kita sering nggak sadar kalau...").
+   - Jangan menggurui atau bersikap seperti dosen penceramah.
+3. Selipkan Partikel Tutur Alami:
+   - Gunakan partikel lisan secara wajar ("kan", "sih", "nih", "ya", "loh") untuk mencairkan suasana tanpa berlebihan.
+4. BATASAN KERAS & INTEGRITAS:
+   - DILARANG menggunakan bahasa alay atau slang berlebihan yang norak ("kepo", "gercep", "cmiiw", "baper", "gaje"). Pertahankan wibawa analitis dan kecerdasan persona Zeinity.
+   - JANGAN mengubah fakta, angka data riset, logika argumen, atau alur cerita pokok.
+   - TETAP PATUHI PROSODI TTS: koma (,) untuk jeda napas, titik (.) untuk pemikiran tuntas. 100% DILARANG menggunakan em dash (—) dan titik dua (:).
+
+### FORMAT OUTPUT:
+Cantumkan setiap temuan kalimat yang perlu dipoles kasual dengan format persis:
+
+**BAGIAN ASLI:**
+[Kutipan kalimat formal/kaku asal]
+
+**MASALAH:**
+[Paparkan kenapa kalimat ini terasa kaku, dingin, atau terlalu formal untuk video YouTube]
+
+**REVISI:**
+[Bentuk tuturan kasual friendly yang santai, luwes, dan akrab]
+
+**ALASAN:**
+[Penjelasan singkat kenapa revisi ini lebih friendly dan mengalir]
+
+Jika naskah sudah sangat santai, luwes, dan tidak ditemukan bagian kaku yang berarti, sampaikan persis:
+**Tidak ditemukan kendala formalitas; naskah sudah berkarakter kasual friendly.**`.trim();
+}
+
 export function formatExternalFinalRevisionPrompt(
   originalScript: string,
   auditFindings: string,
@@ -2794,6 +2836,58 @@ Kembalikan HANYA JSON valid (tanpa markdown wrapper):
     findings: formatStructuredPrompt(parsed.findings || ''),
     revisedDraft: (parsed.revisedDraft || scriptText).replace(/—/g, ', '),
     summary: parsed.summary || 'Audit selesai.',
+  };
+}
+
+export async function runCasualAudit(
+  config: ProviderConfig,
+  title: string,
+  scriptText: string
+): Promise<{ findings: string; revisedDraft: string; summary: string }> {
+  const auditContext = extractSmartScriptContext(scriptText, config.provider === 'ollama'
+    ? { maxTotal: 12000, headChars: 6000, tailChars: 6000 }
+    : { maxTotal: 60000, headChars: 30000, tailChars: 30000 }
+  );
+
+  const prompt = `Anda adalah Senior YouTube Script Director & Casual-Friendly Voice Coach untuk channel YouTube Zeinity.
+TUGAS Anda: LAKUKAN AUDIT SUB-SESI KASUAL FRIENDLY pada naskah berikut sekarang juga.
+Tujuan utama: Deteksi kalimat atau paragraf yang masih berbau formal kaku, akademis, ensiklopedia, atau kaku seperti buku teks, lalu poles menjadi bahasa tutur kasual yang akrab, hangat, santai, dan mengalir natural layaknya teman diskusi yang cerdas.
+
+<naskah_untuk_diaudit>
+${auditContext}
+</naskah_untuk_diaudit>
+
+<panduan_kasual_friendly>
+1. Transformasi Diksi & Frasa Formal Kaku:
+   - Deteksi kalimat pasif dan frasa artikel kaku ("Hal tersebut menunjukkan bahwa", "Dapat dipahami bahwa", "Berdasarkan tinjauan di atas", "Oleh karena itu", "Di sisi lain").
+   - Ganti dengan bahasa tutur santai yang hidup ("Kelihatan jelas kalau", "Intinya", "Kalau kita bedah", "Makanya", "Tapi di waktu yang sama").
+   - Ganti kata baku kaku ("tidak" -> "nggak", "mengapa" -> "kenapa", "bagaimana" -> "gimana", "amat/sangat" -> "banget/bener-bener").
+2. Sikap Akrab & Egaliter:
+   - Bangun koneksi dengan audiens ("Bayangin deh", "Pernah nggak kamu mikir", "Kita sering lupa kalau").
+   - Bukan gaya menggurui, bukan membaca koran.
+3. Partikel Tutur Alami:
+   - Manfaatkan partikel penegas lisan ("kan", "sih", "nih", "loh", "ya") secara organik.
+4. BATASAN KERAS:
+   - DILARANG bahasa alay / slang norak ("kepo", "gercep", "cmiiw", "baper"). Karakter Zeinity tetap cerdas, analitis, dan berbobot.
+   - DILARANG mengubah fakta, angka statistik, atau substansi riset.
+   - 100% DILARANG menggunakan em dash (—) dan tanda titik dua (:) dalam narasi VO. Prosodi koma dan titik harus terjaga untuk AI TTS.
+</panduan_kasual_friendly>
+
+<output_format>
+Kembalikan HANYA JSON valid (tanpa markdown wrapper):
+{
+  "findings": "Laporan temuan dengan format persis:\\n\\n**BAGIAN ASLI:**\\n[kutipan kalimat formal/kaku asal]\\n\\n**MASALAH:**\\n[deskripsi kendala formal/kaku]\\n\\n**REVISI:**\\n[bentuk tuturan kasual friendly]\\n\\n**ALASAN:**\\n[alasan revisi]\\n\\n(Ulangi untuk setiap temuan. Jika naskah sudah sangat kasual dan friendly, tulis: 'Tidak ditemukan kendala formalitas; naskah sudah berkarakter kasual friendly.')",
+  "revisedDraft": "Naskah narasi lengkap yang sudah dipoles secara menyeluruh dengan gaya kasual friendly sesuai semua temuan di atas",
+  "summary": "Ringkasan temuan singkat 1 kalimat, contoh: 'Ditemukan 4 bagian kaku: 2 frasa ensiklopedia diubah ke gaya ngobrol santai, 2 kalimat pasif diubah jadi kasual friendly.'"
+}
+</output_format>`.trim();
+
+  const raw = await callAI(prompt, config);
+  const parsed = parseJsonResponse<{ findings: string; revisedDraft: string; summary: string }>(raw);
+  return {
+    findings: formatStructuredPrompt(parsed.findings || ''),
+    revisedDraft: (parsed.revisedDraft || scriptText).replace(/—/g, ', '),
+    summary: parsed.summary || 'Audit kasual selesai.',
   };
 }
 

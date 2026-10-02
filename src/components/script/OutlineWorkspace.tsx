@@ -8,6 +8,8 @@ import {
   Sparkles,
   Loader2,
   Target,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import {
   type ContentItem,
@@ -118,7 +120,14 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
   const formatPromptText = formatStructuredPrompt;
   const [selectedBeatForRevision, setSelectedBeatForRevision] = useState<ScriptBeatNumber | null>(null);
   const [beatRevisionNote, setBeatRevisionNote] = useState<string>('');
+  const [isHookCollapsed, setIsHookCollapsed] = useState<boolean>(() => {
+    // If hook is selected and either draft or outline is already populated, default to collapsed
+    return Boolean(selectedHookType && (hookDraft.trim() || outlineText.trim()));
+  });
+
   const hookDraftWords = hookDraft && hookDraft.trim() ? hookDraft.trim().split(/\s+/).filter(Boolean).length : 0;
+  const activeFormula = getHookFormulaById(selectedHookType);
+  const activeFormulaName = activeFormula ? activeFormula.name : (selectedHookType || 'Belum Dipilih');
 
   const handleTriggerBeatGen = (beatNum: ScriptBeatNumber) => {
     if (onGenerateBeat) {
@@ -133,320 +142,422 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
   return (
     <section className="detail-card glass" style={{ margin: 0, display: 'flex', flexDirection: 'column' }}>
       <div style={{ borderBottom: '1px solid #1a2942', paddingBottom: 10, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-        <h3 style={{ margin: 0, color: 'var(--cyan)', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <FileText size={18} /> PANEL KIRI: PIPELINE KERANGKA (OUTLINE STUDIO)
+        <h3 style={{ margin: 0, color: 'var(--cyan)', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.95rem' }}>
+          <FileText size={17} /> PANEL KIRI: PIPELINE KERANGKA (OUTLINE STUDIO)
         </h3>
         <span className="collapsed-pill" style={{ background: 'rgba(79, 232, 255, 0.12)', color: 'var(--cyan)' }}>
-          Lebar Penuh (Stretch)
+          Fokus Panel
         </span>
       </div>
 
       {productionTrack === 'in_app' ? (
         /* IN-APP TRACK */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Tahap 1: Tentukan & Generate Hook Pembuka (0–30 Detik) */}
-          <div
-            style={{
-              background: '#0a1628',
-              border: '1.2px solid #1e3a63',
-              borderRadius: 8,
-              padding: 14,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-            }}
-          >
-            {/* Header: Title + Rekomendasi Hook Button */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-              <div>
-                <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--cyan)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Sparkles size={16} />
-                  <span>Tahap 1: Tentukan &amp; Generate Hook Pembuka (0–30 Detik)</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* ========================================================================= */}
+          {/* TAHAP 1: HOOK STUDIO (ACCORDION PROGRESSIVE DISCLOSURE)                  */}
+          {/* ========================================================================= */}
+          {isHookCollapsed && selectedHookType ? (
+            /* Collapsed Summary Badge */
+            <div
+              style={{
+                background: '#07101e',
+                border: '1.2px solid rgba(16, 185, 129, 0.35)',
+                borderRadius: 8,
+                padding: '10px 14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 10,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onClick={() => setIsHookCollapsed(false)}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: '50%',
+                    background: 'rgba(16, 185, 129, 0.2)',
+                    border: '1px solid #10b981',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#34d399',
+                    fontSize: '0.75rem',
+                    fontWeight: 900,
+                  }}
+                >
+                  ✓
                 </div>
-                <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: 2 }}>
-                  Pilih formula hook 20–30 detik (~80–180 kata) untuk mengunci retensi penonton sejak awal.
+                <div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f1f5f9' }}>
+                    Tahap 1: Tentukan & Generate Hook Pembuka (0–30 Detik)
+                  </div>
+                  <div style={{ fontSize: '0.73rem', color: '#10b981', fontWeight: 600 }}>
+                    Terpilih: "{activeFormulaName}" {hookDraftWords > 0 ? `• ${hookDraftWords} Kata` : ''}
+                  </div>
                 </div>
               </div>
+
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={onRecommendHook}
-                disabled={recommendingHook}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '6px 12px',
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
-                  color: '#f8fafc',
-                  borderColor: 'rgba(79, 232, 255, 0.4)',
-                  background: 'rgba(79, 232, 255, 0.08)',
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsHookCollapsed(false);
                 }}
-                title="AI menganalisis topik dan riset untuk merekomendasikan varian hook terbaik"
+                style={{ padding: '4px 10px', fontSize: '0.74rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                title="Buka pilihan varian Hook"
               >
-                {recommendingHook ? (
-                  <>
-                    <Loader2 size={13} className="spin" /> Menganalisis...
-                  </>
-                ) : (
-                  <>
-                    <Target size={14} /> 🎯 Rekomendasikan Hook
-                  </>
-                )}
+                <span>Ubah</span>
+                <ChevronDown size={13} />
               </button>
             </div>
-
-            {/* Smart Recommendation Reason Card (if available) */}
-            {hookRecommendation && (
-              <div
-                style={{
-                  background: 'rgba(79, 232, 255, 0.08)',
-                  border: '1px solid rgba(79, 232, 255, 0.3)',
-                  borderRadius: 6,
-                  padding: '8px 12px',
-                  fontSize: '0.76rem',
-                  color: '#e2edff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <span style={{ fontWeight: 700, color: 'var(--cyan)', whiteSpace: 'nowrap' }}>
-                  💡 Rekomendasi AI ({hookRecommendation.hookName}):
-                </span>
-                <span style={{ color: '#cbd5e1' }}>{hookRecommendation.reason}</span>
-              </div>
-            )}
-
-            {/* 6 Formula Varian Hook Interactive Grid */}
+          ) : (
+            /* Expanded Tahap 1 Hook Studio */
             <div
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-                gap: 8,
+                background: '#0a1628',
+                border: '1.2px solid #1e3a63',
+                borderRadius: 8,
+                padding: 14,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
               }}
             >
-              {ZEINITY_HOOK_FORMULAS.map((formula) => {
-                const isSelected =
-                  selectedHookType === formula.id ||
-                  selectedHookType === formula.label ||
-                  selectedHookType === formula.name;
-                return (
-                  <div
-                    key={formula.id}
-                    onClick={() => onSelectHookType && onSelectHookType(formula.id)}
-                    style={{
-                      background: isSelected ? 'rgba(79, 232, 255, 0.12)' : '#07101e',
-                      border: isSelected ? '1.5px solid var(--cyan)' : '1px solid #1a2a44',
-                      borderRadius: 6,
-                      padding: 10,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 6,
-                      transition: 'all 0.15s ease',
-                      boxShadow: isSelected ? '0 0 12px rgba(79, 232, 255, 0.15)' : 'none',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: isSelected ? '#f8fafc' : '#cbd5e1', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span>{formula.name}</span>
-                        {formula.isStarred && <span style={{ color: '#fbbf24' }}>⭐</span>}
-                      </div>
-                      {isSelected ? (
-                        <span style={{ fontSize: '0.68rem', color: 'var(--cyan)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Check size={12} /> Dipilih
-                        </span>
-                      ) : null}
-                    </div>
-                    <div style={{ fontSize: '0.71rem', color: isSelected ? '#93c5fd' : '#7e92ad', lineHeight: 1.35, fontStyle: 'italic' }}>
-                      {formula.pattern}
-                    </div>
+              {/* Header: Title + Rekomendasi Hook Button + Collapse toggle */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--cyan)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Sparkles size={16} />
+                    <span>Tahap 1: Tentukan & Generate Hook Pembuka (0–30 Detik)</span>
                   </div>
-                );
-              })}
-            </div>
-
-            {/* Catatan / Arahan Khusus Hook (Opsional) */}
-            <div>
-              <label
-                htmlFor="hookNotesInput"
-                style={{ fontSize: '0.72rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: 4 }}
-              >
-                Arahan Khusus Hook (Opsional):
-              </label>
-              <input
-                id="hookNotesInput"
-                type="text"
-                value={hookNotes || ''}
-                onChange={(e) => onHookNotesChange && onHookNotesChange(e.target.value)}
-                placeholder='Misal: "Fokuskan kontras pada paradoks waktu vs biaya..."'
-                style={{
-                  width: '100%',
-                  padding: '6px 10px',
-                  background: '#070f1d',
-                  border: '1px solid #1e3352',
-                  borderRadius: 6,
-                  color: '#f1f5f9',
-                  fontSize: '0.78rem',
-                  fontFamily: 'inherit',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-
-            {/* Tombol Generate Hook */}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => onGenerateHook && onGenerateHook(Boolean(hookDraft && hookDraft.trim()))}
-                disabled={generatingHook || !selectedHookType}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '7px 14px',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  opacity: !selectedHookType ? 0.6 : 1,
-                }}
-                title={!selectedHookType ? 'Pilih salah satu varian hook di atas terlebih dahulu' : 'Generate draf naskah pembuka 20-30 detik'}
-              >
-                {generatingHook ? (
-                  <>
-                    <Loader2 size={14} className="spin" /> Menulis Draf Hook...
-                  </>
-                ) : hookDraft && hookDraft.trim() ? (
-                  <>
-                    <RotateCw size={14} /> 🔄 Regenerate Hook
-                  </>
-                ) : (
-                  <>
-                    ⚡ Generate Hook
-                  </>
-                )}
-              </button>
-              {!selectedHookType && (
-                <span style={{ fontSize: '0.72rem', color: '#f59e0b' }}>
-                  * Pilih salah satu formula hook di atas untuk men-generate
-                </span>
-              )}
-            </div>
-
-            {/* Inline Preview Box (ketika draft hook ada atau sedang di-generate) */}
-            {Boolean(hookDraft && hookDraft.trim()) && (
-              <div
-                style={{
-                  background: '#060c18',
-                  border: '1px solid #1d3356',
-                  borderRadius: 6,
-                  padding: 10,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-                  <div style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--cyan)' }}>
-                    Draf Narasi Pembuka (Babak 1):
-                  </div>
-                  <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                    {hookDraftWords} kata • Est. durasi: ~{Math.round(hookDraftWords / 2.5)} detik (Ideal: 20–30s)
+                  <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: 2 }}>
+                    Pilih formula hook 20–30 detik (~80–180 kata) untuk mengunci retensi penonton sejak awal.
                   </div>
                 </div>
 
-                <textarea
-                  value={hookDraft || ''}
-                  onChange={(e) => onHookDraftChange && onHookDraftChange(e.target.value)}
-                  placeholder="Draf teks hook akan muncul di sini..."
-                  rows={4}
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={onRecommendHook}
+                    disabled={recommendingHook}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '5px 11px',
+                      fontSize: '0.76rem',
+                      fontWeight: 600,
+                      color: '#f8fafc',
+                      borderColor: 'rgba(79, 232, 255, 0.4)',
+                      background: 'rgba(79, 232, 255, 0.08)',
+                    }}
+                    title="AI menganalisis topik dan riset untuk merekomendasikan varian hook terbaik"
+                  >
+                    {recommendingHook ? (
+                      <>
+                        <Loader2 size={13} className="spin" /> Menganalisis...
+                      </>
+                    ) : (
+                      <>
+                        <Target size={13} /> 🎯 Rekomendasikan Hook
+                      </>
+                    )}
+                  </button>
+
+                  {Boolean(selectedHookType) && (
+                    <button
+                      type="button"
+                      className="copy-action-btn"
+                      onClick={() => setIsHookCollapsed(true)}
+                      title="Lipat panel Hook"
+                      style={{ fontSize: '0.72rem', padding: '4px 8px' }}
+                    >
+                      <ChevronUp size={13} />
+                      <span>Susut</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Smart Recommendation Reason Card (if available) */}
+              {hookRecommendation && (
+                <div
+                  style={{
+                    background: 'rgba(79, 232, 255, 0.08)',
+                    border: '1px solid rgba(79, 232, 255, 0.3)',
+                    borderRadius: 6,
+                    padding: '8px 12px',
+                    fontSize: '0.76rem',
+                    color: '#e2edff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <span style={{ fontWeight: 700, color: 'var(--cyan)', whiteSpace: 'nowrap' }}>
+                    💡 Rekomendasi AI ({hookRecommendation.hookName}):
+                  </span>
+                  <span style={{ color: '#cbd5e1' }}>{hookRecommendation.reason}</span>
+                </div>
+              )}
+
+              {/* 6 Formula Varian Hook Interactive Grid */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                  gap: 8,
+                }}
+              >
+                {ZEINITY_HOOK_FORMULAS.map((formula) => {
+                  const isSelected =
+                    selectedHookType === formula.id ||
+                    selectedHookType === formula.label ||
+                    selectedHookType === formula.name;
+                  return (
+                    <div
+                      key={formula.id}
+                      onClick={() => onSelectHookType && onSelectHookType(formula.id)}
+                      style={{
+                        background: isSelected ? 'rgba(79, 232, 255, 0.12)' : '#07101e',
+                        border: isSelected ? '1.5px solid var(--cyan)' : '1px solid #1a2a44',
+                        borderRadius: 6,
+                        padding: 10,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 6,
+                        transition: 'all 0.15s ease',
+                        boxShadow: isSelected ? '0 0 12px rgba(79, 232, 255, 0.15)' : 'none',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: isSelected ? '#f8fafc' : '#cbd5e1', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <span>{formula.name}</span>
+                          {formula.isStarred && <span style={{ color: '#fbbf24' }}>⭐</span>}
+                        </div>
+                        {isSelected ? (
+                          <span style={{ fontSize: '0.68rem', color: 'var(--cyan)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Check size={12} /> Dipilih
+                          </span>
+                        ) : null}
+                      </div>
+                      <div style={{ fontSize: '0.71rem', color: isSelected ? '#93c5fd' : '#7e92ad', lineHeight: 1.35, fontStyle: 'italic' }}>
+                        {formula.pattern}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Catatan / Arahan Khusus Hook (Opsional) */}
+              <div>
+                <label
+                  htmlFor="hookNotesInput"
+                  style={{ fontSize: '0.72rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: 4 }}
+                >
+                  Arahan Khusus Hook (Opsional):
+                </label>
+                <input
+                  id="hookNotesInput"
+                  type="text"
+                  value={hookNotes || ''}
+                  onChange={(e) => onHookNotesChange && onHookNotesChange(e.target.value)}
+                  placeholder='Misal: "Fokuskan kontras pada paradoks waktu vs biaya..."'
                   style={{
                     width: '100%',
-                    background: '#091222',
-                    border: '1px solid #203554',
-                    color: '#e2edff',
-                    padding: 8,
+                    padding: '6px 10px',
+                    background: '#070f1d',
+                    border: '1px solid #1e3352',
                     borderRadius: 6,
+                    color: '#f1f5f9',
+                    fontSize: '0.78rem',
                     fontFamily: 'inherit',
-                    fontSize: '0.8rem',
-                    lineHeight: 1.5,
-                    resize: 'vertical',
                     boxSizing: 'border-box',
                   }}
                 />
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => onCopy(hookDraft || '', 'hookDraftCopy')}
-                    style={{ padding: '5px 10px', fontSize: '0.74rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                  >
-                    {copied === 'hookDraftCopy' ? <Check size={12} /> : <Copy size={12} />}
-                    <span>{copied === 'hookDraftCopy' ? 'Tersalin' : '📋 Salin Hook'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => onGenerateHook && onGenerateHook(true)}
-                    disabled={generatingHook || !selectedHookType}
-                    style={{ padding: '5px 10px', fontSize: '0.74rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                  >
-                    <RotateCw size={12} className={generatingHook ? 'spin' : ''} />
-                    <span>🔄 Regenerate Hook</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={onApplyHookToOutline}
-                    style={{
-                      padding: '5px 12px',
-                      fontSize: '0.74rem',
-                      fontWeight: 700,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      background: 'rgba(52, 211, 153, 0.2)',
-                      borderColor: 'var(--green)',
-                      color: 'var(--green)',
-                    }}
-                    title="Perbarui Babak 1 di dalam Textarea Kerangka tanpa merusak Babak 2-5"
-                  >
-                    📥 Terapkan ke Kerangka
-                  </button>
-                </div>
               </div>
-            )}
-          </div>
 
-          {/* Tahap 2: Susun Kerangka Berdasarkan Hook & Riset */}
+              {/* Tombol Generate Hook */}
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => onGenerateHook && onGenerateHook(Boolean(hookDraft && hookDraft.trim()))}
+                  disabled={generatingHook || !selectedHookType}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '7px 14px',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    opacity: !selectedHookType ? 0.6 : 1,
+                  }}
+                  title={!selectedHookType ? 'Pilih salah satu varian hook di atas terlebih dahulu' : 'Generate draf naskah pembuka 20-30 detik'}
+                >
+                  {generatingHook ? (
+                    <>
+                      <Loader2 size={14} className="spin" /> Menulis Draf Hook...
+                    </>
+                  ) : hookDraft && hookDraft.trim() ? (
+                    <>
+                      <RotateCw size={14} /> 🔄 Regenerate Hook
+                    </>
+                  ) : (
+                    <>
+                      ⚡ Generate Hook
+                    </>
+                  )}
+                </button>
+                {!selectedHookType && (
+                  <span style={{ fontSize: '0.72rem', color: '#f59e0b' }}>
+                    * Pilih salah satu formula hook di atas untuk men-generate
+                  </span>
+                )}
+              </div>
+
+              {/* Inline Preview Box */}
+              {Boolean(hookDraft && hookDraft.trim()) && (
+                <div
+                  style={{
+                    background: '#060c18',
+                    border: '1px solid #1d3356',
+                    borderRadius: 6,
+                    padding: 10,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                    <div style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--cyan)' }}>
+                      Draf Narasi Pembuka (Babak 1):
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                      {hookDraftWords} kata • Est. durasi: ~{Math.round(hookDraftWords / 2.5)} detik (Ideal: 20–30s)
+                    </div>
+                  </div>
+
+                  <textarea
+                    value={hookDraft || ''}
+                    onChange={(e) => onHookDraftChange && onHookDraftChange(e.target.value)}
+                    placeholder="Draf teks hook akan muncul di sini..."
+                    rows={4}
+                    style={{
+                      width: '100%',
+                      background: '#091222',
+                      border: '1px solid #203554',
+                      color: '#e2edff',
+                      padding: 8,
+                      borderRadius: 6,
+                      fontFamily: 'inherit',
+                      fontSize: '0.8rem',
+                      lineHeight: 1.5,
+                      resize: 'vertical',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => onCopy(hookDraft || '', 'hookDraftCopy')}
+                      style={{ padding: '5px 10px', fontSize: '0.74rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                    >
+                      {copied === 'hookDraftCopy' ? <Check size={12} /> : <Copy size={12} />}
+                      <span>{copied === 'hookDraftCopy' ? 'Tersalin' : '📋 Salin Hook'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => onGenerateHook && onGenerateHook(true)}
+                      disabled={generatingHook || !selectedHookType}
+                      style={{ padding: '5px 10px', fontSize: '0.74rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                    >
+                      <RotateCw size={12} className={generatingHook ? 'spin' : ''} />
+                      <span>🔄 Regenerate Hook</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => {
+                        if (onApplyHookToOutline) onApplyHookToOutline();
+                        setIsHookCollapsed(true);
+                      }}
+                      style={{
+                        padding: '5px 12px',
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        background: 'rgba(52, 211, 153, 0.2)',
+                        borderColor: 'var(--green)',
+                        color: 'var(--green)',
+                      }}
+                      title="Perbarui Babak 1 di dalam Textarea Kerangka tanpa merusak Babak 2-5"
+                    >
+                      📥 Terapkan ke Kerangka
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAHAP 2: SUSUN KERANGKA BERDASARKAN HOOK & RISET (ACTIVE STAGE FOCUS)     */}
+          {/* ========================================================================= */}
           <div
             style={{
-              background: '#121f36',
-              border: '1px solid #223b63',
-              borderRadius: 8,
+              background: '#0d182b',
+              border: '1.5px solid #0284c7',
+              borderRadius: 10,
               padding: 14,
               display: 'flex',
               flexDirection: 'column',
-              gap: 8,
+              gap: 10,
+              boxShadow: '0 4px 18px rgba(2, 132, 199, 0.12)',
             }}
           >
-            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--cyan)' }}>
-              Tahap 2: Susun Kerangka Berdasarkan Hook &amp; Riset
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#38bdf8' }} />
+                <span>Tahap 2: Susun Kerangka Berdasarkan Hook & Riset</span>
+              </div>
+              <span
+                className="collapsed-pill"
+                style={{
+                  background: outlineText.trim() ? 'rgba(16, 185, 129, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                  color: outlineText.trim() ? '#34d399' : '#38bdf8',
+                  borderColor: outlineText.trim() ? 'rgba(16, 185, 129, 0.4)' : 'rgba(56, 189, 248, 0.4)',
+                }}
+              >
+                {outlineText.trim() ? '● KERANGKA SIAP' : '● MENUNGGU SUSUN'}
+              </span>
             </div>
-            <div style={{ fontSize: '0.78rem', color: '#cbd5e1', lineHeight: 1.4 }}>
-              AI menganalisis data riset aktual &amp; menyusun 5 Babak Zeinity berpusat pada premis Hook{(() => {
-                const activeFormula = getHookFormulaById(selectedHookType);
-                return activeFormula ? ` (${activeFormula.label})` : (selectedHookType ? ` (${selectedHookType})` : '');
+
+            <div style={{ fontSize: '0.78rem', color: '#cbd5e1', lineHeight: 1.45 }}>
+              AI menganalisis data riset aktual & menyusun 5 Babak Zeinity berpusat pada premis Hook{(() => {
+                const activeForm = getHookFormulaById(selectedHookType);
+                return activeForm ? ` (${activeForm.label})` : (selectedHookType ? ` (${selectedHookType})` : '');
               })()}.
             </div>
+
             <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
               Target: ~{computedTargetWords.toLocaleString('id-ID')} Kata • 0 Token halusinasi • Mempertahankan fakta riset.
             </div>
+
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               <button
                 type="button"
@@ -492,12 +603,14 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
             </div>
           </div>
 
-          {/* Tahap 3: Human Approval Gate */}
+          {/* ========================================================================= */}
+          {/* TAHAP 3: HUMAN APPROVAL GATE & ONE PRIMARY HERO CTA                       */}
+          {/* ========================================================================= */}
           <div
             style={{
-              background: '#0a1322',
-              border: '1.2px solid #294572',
-              borderRadius: 8,
+              background: '#091222',
+              border: '1.2px solid #23395b',
+              borderRadius: 10,
               padding: 14,
               display: 'flex',
               flexDirection: 'column',
@@ -505,7 +618,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span>Tahap 3: Human Approval Gate (Kreator Meninjau Kerangka)</span>
               </div>
               <div>
@@ -533,9 +646,9 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
               placeholder="Kerangka 5 Babak Zeinity akan muncul di sini setelah Anda mengklik 'Generate Outline 5 Tahap', atau Anda dapat mengetik/menempel kerangka secara manual..."
               style={{
                 width: '100%',
-                minHeight: 280,
-                background: '#070d18',
-                border: '1px solid #1d3050',
+                minHeight: 260,
+                background: '#050a14',
+                border: '1px solid #1a2c48',
                 color: '#e2edff',
                 padding: 12,
                 borderRadius: 8,
@@ -561,8 +674,8 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                 style={{
                   width: '100%',
                   padding: '7px 10px',
-                  background: '#0e1728',
-                  border: '1px solid #253a5e',
+                  background: '#0b1424',
+                  border: '1px solid #203554',
                   borderRadius: 6,
                   color: '#f1f5f9',
                   fontSize: '0.8rem',
@@ -573,37 +686,57 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
               />
             </div>
 
-            {/* Action Controls */}
+            {/* Action Controls: Secondary Buttons + ONE PRIMARY HERO CTA */}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              {/* Secondary Ghost 1: Regenerate */}
               <button
                 type="button"
                 className="btn btn-secondary"
                 onClick={() => onGenerateOutline(true)}
                 disabled={generatingOutline || !outlineText.trim()}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', padding: '8px 12px' }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: '0.8rem',
+                  padding: '7px 12px',
+                  background: '#0b1424',
+                  border: '1px solid #1e3250',
+                  color: '#94a3b8',
+                }}
                 title="Regenerasi kerangka berdasarkan catatan revisi di atas"
               >
-                <RotateCw size={14} className={generatingOutline ? 'spin' : ''} />
+                <RotateCw size={13} className={generatingOutline ? 'spin' : ''} />
                 <span>{generatingOutline ? 'Memproses...' : '🔄 Regenerate Outline'}</span>
               </button>
 
+              {/* Secondary Ghost 2: Undo */}
               <button
                 type="button"
                 className="btn btn-secondary"
                 onClick={onUndoOutline}
                 disabled={!canUndoOutline}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', padding: '8px 12px', color: canUndoOutline ? '#fcd34d' : undefined }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: '0.8rem',
+                  padding: '7px 12px',
+                  background: '#0b1424',
+                  border: '1px solid #1e3250',
+                  color: canUndoOutline ? '#fcd34d' : '#64748b',
+                }}
                 title="Kembalikan kerangka sebelum regenerasi terakhir"
               >
-                <RotateCcw size={14} />
+                <RotateCcw size={13} />
                 <span>↩️ Undo Terakhir</span>
               </button>
 
-              {/* GATEKEEPER BUTTON: Setujui & Tulis Naskah */}
+              {/* ONE PRIMARY HERO CTA: Setujui & Tulis Naskah Otomatis */}
               {(() => {
                 const isHookSelected = Boolean(selectedHookType && selectedHookType.trim());
                 const isOutlineReady = Boolean(outlineText.trim());
-                const isDisabled = generatingFullScript || !isOutlineReady || !isHookSelected;
+                const isDisabled = loading || generatingFullScript || !isOutlineReady || !isHookSelected;
 
                 const tooltipTitle = !isHookSelected
                   ? 'Pilih salah satu jenis Hook di Tahap 1 terlebih dahulu'
@@ -614,33 +747,21 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                 return (
                   <button
                     type="button"
-                    className="btn btn-primary"
+                    className="hero-cta-btn"
                     onClick={onApproveAndGenerateScript}
                     disabled={isDisabled}
                     style={{
                       marginLeft: 'auto',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      fontSize: '0.86rem',
-                      fontWeight: 700,
-                      padding: '9px 16px',
-                      background: !isHookSelected || !isOutlineReady ? '#1a293f' : 'var(--green)',
-                      borderColor: !isHookSelected || !isOutlineReady ? '#294368' : 'var(--green)',
-                      color: !isHookSelected || !isOutlineReady ? '#7e93af' : '#041a10',
-                      cursor: isDisabled ? 'not-allowed' : 'pointer',
-                      opacity: isDisabled ? 0.65 : 1,
-                      transition: 'all 0.2s ease',
                     }}
                     title={tooltipTitle}
                   >
                     {generatingFullScript ? (
                       <>
-                        <Loader2 size={15} className="spin" /> Menulis Naskah Utuh...
+                        <Loader2 size={16} className="spin" /> Menulis Naskah Utuh...
                       </>
                     ) : (
                       <>
-                        <Check size={16} /> ✅ Setujui &amp; Tulis Naskah
+                        <Check size={16} /> ✨ Setujui & Tulis Naskah Otomatis ➔
                       </>
                     )}
                   </button>
@@ -649,12 +770,14 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
             </div>
           </div>
 
-          {/* NEW: Per-Beat Quick Action Section */}
+          {/* ========================================================================= */}
+          {/* DUKUNGAN PENULISAN MODULAR (PER-BEAT GENERATION CHIPS)                     */}
+          {/* ========================================================================= */}
           {outlineText.trim() && (
             <div
               style={{
-                background: '#091222',
-                border: '1px solid #1a2f4e',
+                background: '#08101d',
+                border: '1px solid #182a44',
                 borderRadius: 8,
                 padding: 12,
                 display: 'flex',
@@ -664,28 +787,29 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                 <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--cyan)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Sparkles size={14} />
-                  <span>Dukungan Penulisan Per-Babak (Per-Beat Generation):</span>
+                  <Sparkles size={13} />
+                  <span>Dukungan Penulisan Modular (Per-Babak):</span>
                 </div>
-                <span className="collapsed-pill" style={{ background: 'rgba(56, 189, 248, 0.1)', color: 'var(--cyan)', fontSize: '0.7rem' }}>
+                <span className="collapsed-pill" style={{ background: 'rgba(56, 189, 248, 0.1)', color: 'var(--cyan)', fontSize: '0.68rem' }}>
                   Cegah Pacing Decay
                 </span>
               </div>
-              <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
                 Kreator dapat men-generate atau merevisi babak tertentu secara mandiri tanpa merombak babak lain.
               </div>
 
-              {/* Beat Buttons Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 6, marginTop: 4 }}>
+              {/* Modular Beat Chips Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: 6, marginTop: 4 }}>
                 {SCRIPT_BEATS.map((beat) => {
                   const isGen = generatingBeatNumber === beat.beatNumber;
+                  const isSelected = selectedBeatForRevision === beat.beatNumber;
                   const targetBeatWords = calculateBeatTargetWords(beat.beatNumber, computedTargetWords);
                   return (
                     <button
                       key={beat.beatNumber}
                       type="button"
                       onClick={() => {
-                        if (selectedBeatForRevision === beat.beatNumber) {
+                        if (isSelected) {
                           handleTriggerBeatGen(beat.beatNumber);
                         } else {
                           setSelectedBeatForRevision(beat.beatNumber);
@@ -694,10 +818,10 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                       disabled={isGen || generatingFullScript}
                       style={{
                         padding: '6px 8px',
-                        background: selectedBeatForRevision === beat.beatNumber ? 'rgba(56, 189, 248, 0.2)' : '#0d182b',
-                        border: `1px solid ${selectedBeatForRevision === beat.beatNumber ? 'var(--cyan)' : '#1e3352'}`,
+                        background: isSelected ? 'rgba(56, 189, 248, 0.2)' : '#0b1626',
+                        border: `1px solid ${isSelected ? 'var(--cyan)' : '#1a2e48'}`,
                         borderRadius: 6,
-                        color: selectedBeatForRevision === beat.beatNumber ? '#f8fafc' : '#cbd5e1',
+                        color: isSelected ? '#f8fafc' : '#cbd5e1',
                         fontSize: '0.72rem',
                         cursor: 'pointer',
                         textAlign: 'left',
@@ -712,7 +836,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                         <span>{beat.shortName}</span>
                         {isGen && <Loader2 size={11} className="spin" />}
                       </div>
-                      <div style={{ fontSize: '0.66rem', color: '#7890af' }}>
+                      <div style={{ fontSize: '0.65rem', color: '#7890af' }}>
                         ~{targetBeatWords} kata
                       </div>
                     </button>

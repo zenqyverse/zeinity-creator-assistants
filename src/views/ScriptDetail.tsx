@@ -38,6 +38,8 @@ import {
   type ScriptBeatNumber,
   calculateTargetWords,
   runSpokenAudit,
+  runCasualAudit,
+  formatExternalCasualAuditPrompt,
   generateThumbnailPrompt,
   generateAlternativeTitles,
   formatStructuredPrompt,
@@ -122,6 +124,10 @@ export default function ScriptDetail({
   const [auditFindings, setAuditFindings] = useState(item.audit_spoken_prompt || '');
   const [auditRevisedDraft, setAuditRevisedDraft] = useState('');
   const [showAuditResults, setShowAuditResults] = useState(Boolean(item.audit_spoken_prompt));
+  const [casualFindings, setCasualFindings] = useState(item.audit_casual_prompt || '');
+  const [casualRevisedDraft, setCasualRevisedDraft] = useState('');
+  const [casualSummary, setCasualSummary] = useState<string | null>(null);
+  const [generatingCasualAudit, setGeneratingCasualAudit] = useState(false);
 
   // AI Summary Card state
   const [auditSummary, setAuditSummary] = useState<string | null>(null);
@@ -195,6 +201,7 @@ export default function ScriptDetail({
   });
   const [isThumbnailModalOpen, setIsThumbnailModalOpen] = useState<boolean>(false);
   const [isTitlesCollapsed, setIsTitlesCollapsed] = useState<boolean>(false);
+  const [activeWorkflowTab, setActiveWorkflowTab] = useState<'writing' | 'finishing'>('writing');
 
   // Pre-Flight & Dual-Track Scriptwriter state
   const [productionTrack, setProductionTrack] = useState<'in_app' | 'external'>(
@@ -312,17 +319,22 @@ export default function ScriptDetail({
       setAuditFindings(item.audit_spoken_prompt || '');
       setAuditRevisedDraft('');
       setShowAuditResults(Boolean(item.audit_spoken_prompt));
+      setCasualFindings(item.audit_casual_prompt || '');
+      setCasualRevisedDraft('');
+      setCasualSummary(null);
 
       setAuditSummary(null);
       setHandoffSummary(null);
       setAppliedKey(null);
       setIsDraftHighlighted(false);
       setIsScriptMaximized(false);
+      setActiveWorkflowTab('writing');
       setUploadedResearchFileName(null);
       setUploadedScriptFileName(null);
       setGeneratingResearch(false);
       setGeneratingHandoff(false);
       setGeneratingAudit(false);
+      setGeneratingCasualAudit(false);
       setGeneratingThumbnail(false);
       setCopied(null);
 
@@ -425,6 +437,9 @@ export default function ScriptDetail({
       setAuditFindings(item.audit_spoken_prompt || '');
       setShowAuditResults(Boolean(item.audit_spoken_prompt));
     }
+    if (item.audit_casual_prompt !== undefined) {
+      setCasualFindings(item.audit_casual_prompt || '');
+    }
     if (item.generated_titles !== undefined && Array.isArray(item.generated_titles)) {
       setTitlesList(item.generated_titles);
     }
@@ -497,6 +512,7 @@ export default function ScriptDetail({
     item.generated_thumbnail_prompt,
     item.thumbnail_mode,
     item.audit_spoken_prompt,
+    item.audit_casual_prompt,
     item.generated_title_a,
     item.generated_title_b,
     item.generated_titles,
@@ -859,7 +875,9 @@ export default function ScriptDetail({
 
     // Save snapshot of current draft before overwriting with AI revision
     if (scriptOutput.trim()) {
-      const label = 'Sebelum Revisi AI Spoken Audit';
+      const label = key.includes('casual')
+        ? 'Sebelum Revisi AI Kasual Friendly'
+        : 'Sebelum Revisi AI Spoken Audit';
       const updatedHistory = saveDraftSnapshot(item.id, scriptOutput, label);
       setDraftHistory(updatedHistory);
     }
@@ -1239,6 +1257,80 @@ export default function ScriptDetail({
       });
     } finally {
       setGeneratingAudit(false);
+    }
+  };
+
+  const handleRunCasualAudit = async () => {
+    if (!isProviderConfigured(providerConfig)) {
+      showError(
+        'Kunci API Belum Dikonfigurasi',
+        `API Key untuk provider ${providerConfig.provider.toUpperCase()} belum diatur di menu Settings.`,
+        {
+          solution: 'Buka menu Settings dan masukkan API Key Anda, lalu klik Simpan.',
+          actionButton: onNavigateSettings
+            ? { label: 'Buka Settings', onClick: onNavigateSettings }
+            : undefined,
+        }
+      );
+      return;
+    }
+    if (!scriptOutput.trim()) {
+      showWarning(
+        'Draf Naskah Masih Kosong',
+        'Silakan masukkan atau unggah draf naskah video sebelum menjalankan audit Kasual Friendly.'
+      );
+      return;
+    }
+
+    const targetConfig = resolveTargetModelForTask('audit', providerConfig);
+    const modelLabel = targetConfig.modelVersion || targetConfig.provider.toUpperCase();
+    setGeneratingCasualAudit(true);
+    startActivity(
+      'Audit Kasual Friendly Log',
+      `Menghubungkan ke ${modelLabel}...`
+    );
+    addLog(`Membaca draf naskah (${scriptOutput.length.toLocaleString('id-ID')} karakter)...`, 25);
+    addLog('Menganalisis gaya bahasa: deteksi diksi formal/kaku, frasa ensiklopedia, struktur pasif...', 60);
+    addLog('Merumuskan perbaikan tutur kasual friendly khas Zeinity...', 85);
+
+    try {
+      await onUpdate(item.id, { external_script_output: scriptOutput });
+
+      const result = await runCasualAudit(targetConfig, item.title, scriptOutput);
+      setCasualFindings(result.findings);
+      setCasualRevisedDraft(result.revisedDraft);
+      setCasualSummary(result.summary);
+
+      await onUpdate(item.id, {
+        audit_casual_prompt: result.findings,
+        ai_output: 'Audit Kasual Friendly selesai.',
+      });
+
+      finishActivity(`Audit Kasual selesai! ${result.summary}`);
+
+      showAlert({
+        type: 'success',
+        title: 'Audit Kasual Selesai — Draft Revisi Tersedia',
+        message: `${result.summary}\n\nApakah Anda ingin menerapkan draft revisi kasual ke draf naskah? Draft asli tetap tersimpan dalam riwayat snapshot.`,
+        confirmText: 'Terapkan ke Draft',
+        cancelText: 'Nanti Saja',
+        onConfirm: () => {
+          handleApplyToDraft(result.revisedDraft, 'casual_audit');
+        },
+      });
+    } catch (err: unknown) {
+      const parsed = parseAIError(err);
+      errorActivity(`Gagal menjalankan Audit Kasual: ${parsed.title}`);
+      showError(parsed.title, parsed.message, {
+        technicalDetails: parsed.technicalDetails,
+        solution: parsed.solution,
+        diagnostics: parsed.diagnostics,
+        actionButton: onNavigateSettings
+          ? { label: 'Buka Settings', onClick: onNavigateSettings }
+          : undefined,
+      });
+    } finally {
+      setGeneratingCasualAudit(false);
     }
   };
 
@@ -2327,204 +2419,341 @@ export default function ScriptDetail({
             loading={loading}
           />
 
-          {/* ==================== 2. WORKSPACE TOP ACTION BAR ==================== */}
+          {/* ==================== 2. WORKFLOW STAGE NAVIGATION TABS ==================== */}
           <div
             style={{
-              background: '#0e1a2f',
-              border: '1px solid #1f3659',
-              borderRadius: 8,
-              padding: '10px 16px',
-              marginBottom: 16,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               flexWrap: 'wrap',
               gap: 10,
+              marginBottom: 16,
+              padding: '6px 12px',
+              background: '#091222',
+              border: '1px solid #162842',
+              borderRadius: 10,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: 4,
-                  background: 'var(--cyan)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#080d18',
-                  fontWeight: 900,
-                  fontSize: '0.8rem',
-                }}
+            <div className="scripting-workflow-tabs-strip">
+              <button
+                type="button"
+                className={`workflow-tab-btn ${activeWorkflowTab === 'writing' ? 'active' : ''}`}
+                onClick={() => setActiveWorkflowTab('writing')}
               >
-                ⚡
-              </div>
-              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#f8fafc', letterSpacing: '0.2px' }}>
-                WORKSPACE SCRIPTING: JALUR {productionTrack === 'in_app' ? 'IN-APP AI SCRIPTWRITER' : 'AI EKSTERNAL'} (AKTIF STRETCHED)
-              </span>
+                ✍️ 1. Studio Naskah
+              </button>
+              <button
+                type="button"
+                className={`workflow-tab-btn ${activeWorkflowTab === 'finishing' ? 'active' : ''}`}
+                onClick={() => setActiveWorkflowTab('finishing')}
+              >
+                📦 2. FINISHING & PACKAGING
+              </button>
             </div>
 
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => handleSelectTrack(productionTrack === 'in_app' ? 'external' : 'in_app')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                fontSize: '0.78rem',
-                padding: '5px 12px',
-                color: '#cbd5e1',
-              }}
-              title="Ganti jalur produksi antara In-App AI Scriptwriter dan AI Eksternal"
-            >
-              <Undo2 size={13} /> Ganti Jalur Produksi
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+                Jalur: <strong style={{ color: productionTrack === 'in_app' ? 'var(--cyan)' : '#818cf8' }}>
+                  {productionTrack === 'in_app' ? 'In-App AI Scriptwriter' : 'AI Eksternal'}
+                </strong>
+              </span>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => handleSelectTrack(productionTrack === 'in_app' ? 'external' : 'in_app')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: '0.74rem',
+                  padding: '4px 10px',
+                  color: '#cbd5e1',
+                }}
+                title="Ganti jalur produksi antara In-App AI Scriptwriter dan AI Eksternal"
+              >
+                <Undo2 size={12} /> Ganti Jalur Produksi
+              </button>
+            </div>
           </div>
 
-          {/* ==================== 3. STRETCHED DUAL-PANE GRID (50% / 50%) ==================== */}
-          <div className="scripting-dual-pane-grid">
-            {/* PANEL KIRI: PIPELINE KERANGKA (OUTLINE STUDIO) */}
-            {/* Tahap 2: Human Approval Gate | Setujui & Tulis Naskah | Undo Terakhir | Regenerate Outline | Catatan Revisi Regenerasi */}
-            {/* Mode 1-Pintu (One-Shot Handoff) | Mode 2-Langkah (Alur Bertahap) */}
-            {/* Tahap 1: Salin Prompt Outline | Tahap 2: Tempel & Tinjau Kerangka | Tahap 3: Prompt Naskah Instan Siap Salin */}
-            <OutlineWorkspace
-              productionTrack={productionTrack}
-              externalSubMode={externalSubMode}
-              onExternalSubModeChange={setExternalSubMode}
-              computedTargetWords={computedTargetWords}
-              outlineText={outlineText}
-              onOutlineChange={setOutlineText}
-              onOutlineBlur={() => {
-                if (outlineText !== lastSavedOutlineRef.current) {
-                  const textToSave = outlineText;
-                  onUpdate(item.id, { script_outline: textToSave })
-                    .then(() => {
-                      lastSavedOutlineRef.current = textToSave;
-                    })
-                    .catch(() => {});
-                }
-              }}
-              isOutlineApproved={isOutlineApproved}
-              generatingOutline={generatingOutline}
-              generatingFullScript={generatingFullScript}
-              revisionNoteInput={revisionNoteInput}
-              onRevisionNoteChange={setRevisionNoteInput}
-              onGenerateOutline={handleGenerateOutline}
-              onUndoOutline={handleUndoOutline}
-              canUndoOutline={previousOutlineRef.current !== null}
-              onApproveAndGenerateScript={handleApproveAndGenerateScript}
-              onApproveExternalOutline={handleApproveExternalOutline}
-              copied={copied}
-              onCopy={copyText}
-              item={item}
-              researchOutput={researchOutput}
-              identityText={identityText}
-              angleNotes={angleNotes}
-              targetDuration={targetDuration}
-              handoffPrompt={item.scriptwriter_brief_prompt || handoffPrompt}
-              generatingHandoff={generatingHandoff}
-              onGenerateHandoff={() => handleGenerateHandoff(false)}
-              loading={loading}
-              onGenerateBeat={handleGenerateBeat}
-              generatingBeatNumber={generatingBeatNumber}
-              selectedHookType={selectedHookType}
-              onSelectHookType={handleSelectHookType}
-              hookDraft={hookDraft}
-              onHookDraftChange={handleHookDraftChange}
-              hookNotes={hookNotes}
-              onHookNotesChange={handleHookNotesChange}
-              hookRecommendation={hookRecommendation}
-              recommendingHook={recommendingHook}
-              onRecommendHook={handleRecommendHook}
-              generatingHook={generatingHook}
-              onGenerateHook={handleGenerateHook}
-              onApplyHookToOutline={handleApplyHookToOutline}
-            />
+          {/* ==================== 3. WORKSPACE VIEWS (WRITING VS FINISHING) ==================== */}
+          {activeWorkflowTab === 'writing' ? (
+            /* TAB 1: STUDIO NASKAH (DUAL-PANE STRETCHED: OUTLINE + ZEN WRITING CANVAS) */
+            <div className="scripting-dual-pane-grid">
+              {/* PANEL KIRI: PIPELINE KERANGKA (OUTLINE STUDIO) */}
+              {/* Tahap 2: Human Approval Gate | Setujui & Tulis Naskah | Undo Terakhir | Regenerate Outline | Catatan Revisi Regenerasi */}
+              {/* Mode 1-Pintu (One-Shot Handoff) | Mode 2-Langkah (Alur Bertahap) */}
+              {/* Tahap 1: Salin Prompt Outline | Tahap 2: Tempel & Tinjau Kerangka | Tahap 3: Prompt Naskah Instan Siap Salin */}
+              <OutlineWorkspace
+                productionTrack={productionTrack}
+                externalSubMode={externalSubMode}
+                onExternalSubModeChange={setExternalSubMode}
+                computedTargetWords={computedTargetWords}
+                outlineText={outlineText}
+                onOutlineChange={setOutlineText}
+                onOutlineBlur={() => {
+                  if (outlineText !== lastSavedOutlineRef.current) {
+                    const textToSave = outlineText;
+                    onUpdate(item.id, { script_outline: textToSave })
+                      .then(() => {
+                        lastSavedOutlineRef.current = textToSave;
+                      })
+                      .catch(() => {});
+                  }
+                }}
+                isOutlineApproved={isOutlineApproved}
+                generatingOutline={generatingOutline}
+                generatingFullScript={generatingFullScript}
+                revisionNoteInput={revisionNoteInput}
+                onRevisionNoteChange={setRevisionNoteInput}
+                onGenerateOutline={handleGenerateOutline}
+                onUndoOutline={handleUndoOutline}
+                canUndoOutline={previousOutlineRef.current !== null}
+                onApproveAndGenerateScript={handleApproveAndGenerateScript}
+                onApproveExternalOutline={handleApproveExternalOutline}
+                copied={copied}
+                onCopy={copyText}
+                item={item}
+                researchOutput={researchOutput}
+                identityText={identityText}
+                angleNotes={angleNotes}
+                targetDuration={targetDuration}
+                handoffPrompt={item.scriptwriter_brief_prompt || handoffPrompt}
+                generatingHandoff={generatingHandoff}
+                onGenerateHandoff={() => handleGenerateHandoff(false)}
+                loading={loading}
+                onGenerateBeat={handleGenerateBeat}
+                generatingBeatNumber={generatingBeatNumber}
+                selectedHookType={selectedHookType}
+                onSelectHookType={handleSelectHookType}
+                hookDraft={hookDraft}
+                onHookDraftChange={handleHookDraftChange}
+                hookNotes={hookNotes}
+                onHookNotesChange={handleHookNotesChange}
+                hookRecommendation={hookRecommendation}
+                recommendingHook={recommendingHook}
+                onRecommendHook={handleRecommendHook}
+                generatingHook={generatingHook}
+                onGenerateHook={handleGenerateHook}
+                onApplyHookToOutline={handleApplyHookToOutline}
+              />
 
-            {/* PANEL KANAN: DRAFT STUDIO (RUANG KERJA PRODUKSI) */}
-            {/* Card 1: Spoken Audit */}
-            {/* Card 2: Generate Rekomendasi Judul */}
-            {/* Card 3: Generate Thumbnail */}
-            {/* title-recommendations-grid | Aman Mobile (5–8 kata) | handleApplyTitleAsMain | Gunakan sbg Judul */}
-            {/* SMART CHECKLIST PEMOLESAN NASKAH | Pengingat Cerdas Workflow: */}
-            {/* title="Buka Studio Generate Thumbnail (Dual-Mode)" | aria-label="Buka Studio Generate Thumbnail (Dual-Mode)" | setIsThumbnailModalOpen(true) */}
-            {/* Salin Prompt Audit | formatExternalAuditPrompt | formatExternalFinalRevisionPrompt */}
-            {/* Salin Prompt 5 Formula Judul | formatExternalTitlePrompt */}
-            {/* onDoubleClick={() => setIsScriptInputCollapsed(false)} | Draf Naskah Video | setIsScriptInputCollapsed(true) */}
-            {/* onDoubleClick={() => setIsAuditResultsCollapsed | isAuditResultsCollapsed ? 'Buka' : 'Susut' */}
-            {/* onDoubleClick={() => setIsTitlesCollapsed | isTitlesCollapsed ? 'Buka' : 'Susut' */}
-            {/* {hasGeneratedThumbnail && ( <button>Generate Ulang Thumbnail</button> )} */}
-            {/* Audit Spoken & TTS ✨ | Sudah Diterapkan | btn-applied */}
-            <ScriptDraftStudio
-              item={item}
-              scriptOutput={scriptOutput}
-              onScriptChange={setScriptOutput}
-              onScriptBlur={() => {
-                if (scriptOutput !== lastSavedScriptRef.current) {
-                  const textToSave = scriptOutput;
-                  setScriptSaveStatus('saving');
-                  onUpdate(item.id, { external_script_output: textToSave })
-                    .then(() => {
-                      lastSavedScriptRef.current = textToSave;
-                      if (scriptOutputRef.current === textToSave) {
-                        setScriptSaveStatus('saved');
-                        setTimeout(() => {
-                          setScriptSaveStatus((curr) => (curr === 'saved' ? 'idle' : curr));
-                        }, 2500);
-                      } else {
+              {/* PANEL KANAN: DRAFT STUDIO (RUANG KERJA PRODUKSI) */}
+              {/* Card 1: Spoken Audit */}
+              {/* Card 2: Generate Rekomendasi Judul */}
+              {/* Card 3: Generate Thumbnail */}
+              {/* title-recommendations-grid | Aman Mobile (5–8 kata) | handleApplyTitleAsMain | Gunakan sbg Judul */}
+              {/* SMART CHECKLIST PEMOLESAN NASKAH | Pengingat Cerdas Workflow: */}
+              {/* title="Buka Studio Generate Thumbnail (Dual-Mode)" | aria-label="Buka Studio Generate Thumbnail (Dual-Mode)" | setIsThumbnailModalOpen(true) */}
+              {/* Salin Prompt Audit | formatExternalAuditPrompt | formatExternalFinalRevisionPrompt */}
+              {/* Salin Prompt 5 Formula Judul | formatExternalTitlePrompt */}
+              {/* onDoubleClick={() => setIsScriptInputCollapsed(false)} | Draf Naskah Video | setIsScriptInputCollapsed(true) */}
+              {/* onDoubleClick={() => setIsAuditResultsCollapsed | isAuditResultsCollapsed ? 'Buka' : 'Susut' */}
+              {/* onDoubleClick={() => setIsTitlesCollapsed | isTitlesCollapsed ? 'Buka' : 'Susut' */}
+              {/* {hasGeneratedThumbnail && ( <button>Generate Ulang Thumbnail</button> )} */}
+              {/* Audit Spoken & TTS ✨ | Sudah Diterapkan | btn-applied */}
+              <ScriptDraftStudio
+                activeWorkflowTab="writing"
+                onSwitchToFinishing={() => setActiveWorkflowTab('finishing')}
+                item={item}
+                scriptOutput={scriptOutput}
+                onScriptChange={setScriptOutput}
+                onScriptBlur={() => {
+                  if (scriptOutput !== lastSavedScriptRef.current) {
+                    const textToSave = scriptOutput;
+                    setScriptSaveStatus('saving');
+                    onUpdate(item.id, { external_script_output: textToSave })
+                      .then(() => {
+                        lastSavedScriptRef.current = textToSave;
+                        if (scriptOutputRef.current === textToSave) {
+                          setScriptSaveStatus('saved');
+                          setTimeout(() => {
+                            setScriptSaveStatus((curr) => (curr === 'saved' ? 'idle' : curr));
+                          }, 2500);
+                        } else {
+                          setScriptSaveStatus('unsaved');
+                        }
+                      })
+                      .catch(() => {
                         setScriptSaveStatus('unsaved');
-                      }
-                    })
-                    .catch(() => {
-                      setScriptSaveStatus('unsaved');
-                    });
-                }
-              }}
-              scriptSaveStatus={scriptSaveStatus}
-              renderSaveIndicator={renderSaveIndicator}
-              onFileUpload={(f) => handleMdFileUpload(f, false)}
-              uploadedFileName={uploadedScriptFileName}
-              isDragging={isDraggingScript}
-              onDragStateChange={setIsDraggingScript}
-              onOpenDraftHistory={() => setShowDraftHistoryModal(true)}
-              draftHistoryCount={draftHistory.length}
-              onUndoLatestRevision={handleUndoLatestAiRevision}
-              hasSnapshots={draftHistory.length > 0}
-              onMaximizeEditor={() => setIsScriptMaximized(true)}
-              scriptTextareaRef={scriptTextareaRef}
-              isDraftHighlighted={isDraftHighlighted}
-              /* draft-highlight-pulse */
-              isScriptInputCollapsed={isScriptInputCollapsed}
-              onToggleScriptInputCollapse={() => setIsScriptInputCollapsed((prev) => !prev)}
-              onGenerateBeat={handleGenerateBeat}
-              generatingBeatNumber={generatingBeatNumber}
-              totalTargetWords={computedTargetWords}
-              showAuditResults={showAuditResults || Boolean(auditFindings)}
-              auditFindings={auditFindings}
-              auditRevisedDraft={auditRevisedDraft}
-              isAuditResultsCollapsed={isAuditResultsCollapsed}
-              onToggleAuditCollapse={() => setIsAuditResultsCollapsed((prev) => !prev)}
-              auditSummary={auditSummary}
-              appliedKey={appliedKey}
-              onApplyToDraft={handleApplyToDraft}
-              onRunAudit={handleRunAudit}
-              generatingAudit={generatingAudit}
-              showTitleCard={showTitleCard}
-              titlesList={titlesList}
-              titleA={titleA}
-              titleB={titleB}
-              isTitlesCollapsed={isTitlesCollapsed}
-              onToggleTitlesCollapse={() => setIsTitlesCollapsed((prev) => !prev)}
-              generatingTitles={generatingTitles}
-              onGenerateTitles={handleGenerateTitles}
-              onApplyTitleAsMain={handleApplyTitleAsMain}
-              onOpenThumbnailModal={() => setIsThumbnailModalOpen(true)}
-              copied={copied}
-              onCopy={copyText}
-              loading={loading}
-            />
-          </div>
+                      });
+                  }
+                }}
+                scriptSaveStatus={scriptSaveStatus}
+                renderSaveIndicator={renderSaveIndicator}
+                onFileUpload={(f) => handleMdFileUpload(f, false)}
+                uploadedFileName={uploadedScriptFileName}
+                isDragging={isDraggingScript}
+                onDragStateChange={setIsDraggingScript}
+                onOpenDraftHistory={() => setShowDraftHistoryModal(true)}
+                draftHistoryCount={draftHistory.length}
+                onUndoLatestRevision={handleUndoLatestAiRevision}
+                hasSnapshots={draftHistory.length > 0}
+                onMaximizeEditor={() => setIsScriptMaximized(true)}
+                scriptTextareaRef={scriptTextareaRef}
+                isDraftHighlighted={isDraftHighlighted}
+                /* draft-highlight-pulse */
+                isScriptInputCollapsed={isScriptInputCollapsed}
+                onToggleScriptInputCollapse={() => setIsScriptInputCollapsed((prev) => !prev)}
+                onGenerateBeat={handleGenerateBeat}
+                generatingBeatNumber={generatingBeatNumber}
+                totalTargetWords={computedTargetWords}
+                showAuditResults={showAuditResults || Boolean(auditFindings)}
+                auditFindings={auditFindings}
+                auditRevisedDraft={auditRevisedDraft}
+                isAuditResultsCollapsed={isAuditResultsCollapsed}
+                onToggleAuditCollapse={() => setIsAuditResultsCollapsed((prev) => !prev)}
+                auditSummary={auditSummary}
+                appliedKey={appliedKey}
+                onApplyToDraft={handleApplyToDraft}
+                onRunAudit={handleRunAudit}
+                generatingAudit={generatingAudit}
+                casualFindings={casualFindings}
+                casualRevisedDraft={casualRevisedDraft}
+                casualSummary={casualSummary}
+                generatingCasualAudit={generatingCasualAudit}
+                onRunCasualAudit={handleRunCasualAudit}
+                showTitleCard={showTitleCard}
+                titlesList={titlesList}
+                titleA={titleA}
+                titleB={titleB}
+                isTitlesCollapsed={isTitlesCollapsed}
+                onToggleTitlesCollapse={() => setIsTitlesCollapsed((prev) => !prev)}
+                generatingTitles={generatingTitles}
+                onGenerateTitles={handleGenerateTitles}
+                onApplyTitleAsMain={handleApplyTitleAsMain}
+                onOpenThumbnailModal={() => setIsThumbnailModalOpen(true)}
+                copied={copied}
+                onCopy={copyText}
+                loading={loading}
+                thumbnailMode={thumbnailMode}
+                onSelectThumbnailMode={handleSelectThumbnailMode}
+                thumbnailPrompt={thumbnailPrompt}
+                generatedThumbnailPrompt={item.generated_thumbnail_prompt}
+                thumbnailAspectRatio={thumbnailAspectRatio}
+                onAspectRatioChange={setThumbnailAspectRatio}
+                thumbnailProvider={thumbnailProvider}
+                onProviderChange={setThumbnailProvider}
+                thumbnailHookText={thumbnailHookText}
+                onHookTextChange={setThumbnailHookText}
+                onExportMockupSvg={handleExportMockupSvg}
+                onGenerateThumbnail={handleGenerateThumbnail}
+                generatingThumbnail={generatingThumbnail}
+                hasGeneratedThumbnail={hasGeneratedThumbnail}
+                onPublish={handlePublish}
+                onProceedToThumbnailing={handleProceedToThumbnailing}
+              />
+            </div>
+          ) : (
+            /* TAB 2: FINISHING STUDIO (PACKAGING, SPOKEN AUDIT, 5 FORMULA JUDUL & CHECKLIST) */
+            <div style={{ width: '100%' }}>
+              {/* PANEL KANAN: DRAFT STUDIO (RUANG KERJA PRODUKSI) */}
+              {/* Card 1: Spoken Audit */}
+              {/* Card 2: Generate Rekomendasi Judul */}
+              {/* Card 3: Generate Thumbnail */}
+              {/* title-recommendations-grid | Aman Mobile (5–8 kata) | handleApplyTitleAsMain | Gunakan sbg Judul */}
+              {/* SMART CHECKLIST PEMOLESAN NASKAH | Pengingat Cerdas Workflow: */}
+              {/* title="Buka Studio Generate Thumbnail (Dual-Mode)" | aria-label="Buka Studio Generate Thumbnail (Dual-Mode)" | setIsThumbnailModalOpen(true) */}
+              {/* Salin Prompt Audit | formatExternalAuditPrompt | formatExternalFinalRevisionPrompt */}
+              {/* Salin Prompt 5 Formula Judul | formatExternalTitlePrompt */}
+              {/* onDoubleClick={() => setIsScriptInputCollapsed(false)} | Draf Naskah Video | setIsScriptInputCollapsed(true) */}
+              {/* onDoubleClick={() => setIsAuditResultsCollapsed | isAuditResultsCollapsed ? 'Buka' : 'Susut' */}
+              {/* onDoubleClick={() => setIsTitlesCollapsed | isTitlesCollapsed ? 'Buka' : 'Susut' */}
+              {/* {hasGeneratedThumbnail && ( <button>Generate Ulang Thumbnail</button> )} */}
+              {/* Audit Spoken & TTS ✨ | Sudah Diterapkan | btn-applied */}
+              <ScriptDraftStudio
+                activeWorkflowTab="finishing"
+                onSwitchToWriting={() => setActiveWorkflowTab('writing')}
+                item={item}
+                scriptOutput={scriptOutput}
+                onScriptChange={setScriptOutput}
+                onScriptBlur={() => {
+                  if (scriptOutput !== lastSavedScriptRef.current) {
+                    const textToSave = scriptOutput;
+                    setScriptSaveStatus('saving');
+                    onUpdate(item.id, { external_script_output: textToSave })
+                      .then(() => {
+                        lastSavedScriptRef.current = textToSave;
+                        if (scriptOutputRef.current === textToSave) {
+                          setScriptSaveStatus('saved');
+                          setTimeout(() => {
+                            setScriptSaveStatus((curr) => (curr === 'saved' ? 'idle' : curr));
+                          }, 2500);
+                        } else {
+                          setScriptSaveStatus('unsaved');
+                        }
+                      })
+                      .catch(() => {
+                        setScriptSaveStatus('unsaved');
+                      });
+                  }
+                }}
+                scriptSaveStatus={scriptSaveStatus}
+                renderSaveIndicator={renderSaveIndicator}
+                onFileUpload={(f) => handleMdFileUpload(f, false)}
+                uploadedFileName={uploadedScriptFileName}
+                isDragging={isDraggingScript}
+                onDragStateChange={setIsDraggingScript}
+                onOpenDraftHistory={() => setShowDraftHistoryModal(true)}
+                draftHistoryCount={draftHistory.length}
+                onUndoLatestRevision={handleUndoLatestAiRevision}
+                hasSnapshots={draftHistory.length > 0}
+                onMaximizeEditor={() => setIsScriptMaximized(true)}
+                scriptTextareaRef={scriptTextareaRef}
+                isDraftHighlighted={isDraftHighlighted}
+                /* draft-highlight-pulse */
+                isScriptInputCollapsed={isScriptInputCollapsed}
+                onToggleScriptInputCollapse={() => setIsScriptInputCollapsed((prev) => !prev)}
+                onGenerateBeat={handleGenerateBeat}
+                generatingBeatNumber={generatingBeatNumber}
+                totalTargetWords={computedTargetWords}
+                showAuditResults={showAuditResults || Boolean(auditFindings)}
+                auditFindings={auditFindings}
+                auditRevisedDraft={auditRevisedDraft}
+                isAuditResultsCollapsed={isAuditResultsCollapsed}
+                onToggleAuditCollapse={() => setIsAuditResultsCollapsed((prev) => !prev)}
+                auditSummary={auditSummary}
+                appliedKey={appliedKey}
+                onApplyToDraft={handleApplyToDraft}
+                onRunAudit={handleRunAudit}
+                generatingAudit={generatingAudit}
+                casualFindings={casualFindings}
+                casualRevisedDraft={casualRevisedDraft}
+                casualSummary={casualSummary}
+                generatingCasualAudit={generatingCasualAudit}
+                onRunCasualAudit={handleRunCasualAudit}
+                showTitleCard={showTitleCard}
+                titlesList={titlesList}
+                titleA={titleA}
+                titleB={titleB}
+                isTitlesCollapsed={isTitlesCollapsed}
+                onToggleTitlesCollapse={() => setIsTitlesCollapsed((prev) => !prev)}
+                generatingTitles={generatingTitles}
+                onGenerateTitles={handleGenerateTitles}
+                onApplyTitleAsMain={handleApplyTitleAsMain}
+                onOpenThumbnailModal={() => setIsThumbnailModalOpen(true)}
+                copied={copied}
+                onCopy={copyText}
+                loading={loading}
+                thumbnailMode={thumbnailMode}
+                onSelectThumbnailMode={handleSelectThumbnailMode}
+                thumbnailPrompt={thumbnailPrompt}
+                generatedThumbnailPrompt={item.generated_thumbnail_prompt}
+                thumbnailAspectRatio={thumbnailAspectRatio}
+                onAspectRatioChange={setThumbnailAspectRatio}
+                thumbnailProvider={thumbnailProvider}
+                onProviderChange={setThumbnailProvider}
+                thumbnailHookText={thumbnailHookText}
+                onHookTextChange={setThumbnailHookText}
+                onExportMockupSvg={handleExportMockupSvg}
+                onGenerateThumbnail={handleGenerateThumbnail}
+                generatingThumbnail={generatingThumbnail}
+                hasGeneratedThumbnail={hasGeneratedThumbnail}
+                onPublish={handlePublish}
+                onProceedToThumbnailing={handleProceedToThumbnailing}
+              />
+            </div>
+          )}
         </div>
       ) : (
         <div className="workspace-grid">
