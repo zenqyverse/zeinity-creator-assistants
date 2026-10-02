@@ -27,6 +27,8 @@
   /* Standardized Z-Index Scale (Fase 3 System Architecture) */
   --z-header: 30;
   --z-sidebar: 30;
+  --z-sidebar-backdrop: 90;
+  --z-sidebar-drawer: 95;
   --z-dropdown: 70;
   --z-terminal: 80;
   --z-modal: 1000;
@@ -91,7 +93,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .app-shell {
   width: 100%;
   min-height: 100vh;
-  padding: 18px clamp(14px, 2vw, 34px) 34px;
+  padding: 18px clamp(14px, 2vw, 34px) calc(34px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Topbar */
@@ -913,7 +915,7 @@ tbody tr:hover {
 .sidebar-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 29;
+  z-index: 90;
   background: rgba(2, 7, 22, .5);
   opacity: 0;
   pointer-events: none;
@@ -923,10 +925,15 @@ tbody tr:hover {
 .sidebar {
   position: fixed;
   z-index: 30;
+  z-index: 95;
   left: 14px;
   top: 14px;
   bottom: 14px;
   width: min(330px, calc(100% - 28px));
+  max-height: calc(100vh - 28px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   border-radius: var(--radius-xl);
   padding: 17px;
   transform: translateX(calc(-100% - 30px));
@@ -937,6 +944,7 @@ tbody tr:hover {
 
 .sidebar-open .sidebar {
   transform: translateX(0);
+  z-index: 95;
 }
 
 .sidebar-open .sidebar-backdrop {
@@ -1320,7 +1328,9 @@ tbody tr:hover {
   position: fixed;
   z-index: 2500;
   left: 50%;
-  bottom: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  max-width: calc(100vw - 32px);
+  word-break: break-word;
   transform: translate(-50%, 120px);
   opacity: 0;
   transition: .3s ease;
@@ -1723,6 +1733,20 @@ tbody tr:hover {
   .finishing-stepper-panel {
     width: 100%;
   }
+  .finishing-stepper-cards,
+  .finishing-stepper-panel .finishing-stepper-cards {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+  }
+  .finishing-stepper-card {
+    padding: 10px !important;
+    gap: 4px !important;
+  }
+  .finishing-stepper-card .stepper-desc,
+  .finishing-stepper-card .stepper-meta {
+    display: none !important;
+  }
 }
 
 /* Responsive */
@@ -1733,8 +1757,139 @@ tbody tr:hover {
   .title-comparison { grid-template-columns: 1fr; }
 }
 
+/* Breakpoint Topbar Tablet (621px–1023px) */
+@media (min-width: 621px) and (max-width: 1023px) {
+  .topbar {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 14px;
+  }
+  .product-label,
+  .brand-divider {
+    display: none !important;
+  }
+  .quick-provider-pill .quick-pill-badge,
+  .quick-provider-pill .quick-pill-status {
+    display: none !important;
+  }
+  .search-box {
+    order: 3;
+    flex-basis: 100%;
+    max-width: none;
+    margin-left: 0;
+  }
+}
+
+/* iOS Safari Auto-Zoom Prevention & Mobile Touch Targets */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea,
+  .field input,
+  .field select,
+  .field textarea,
+  .status-badge select,
+  select.status-badge,
+  .zen-editor-textarea {
+    font-size: 16px !important;
+  }
+
+  .row-action,
+  .row-action.edit-btn,
+  .row-action.danger,
+  .close-btn {
+    min-height: 40px;
+    min-width: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .status-badge select,
+  select.status-badge {
+    min-height: 40px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+}
+
+/* Mobile Layout & Interaction Refinements (<= 640px) */
+@media (max-width: 640px) {
+  .topbar {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(10, 20, 48, 0.96) !important;
+  }
+
+  .topbar.quick-provider-open,
+  .topbar:has(.quick-provider-dropdown) {
+    z-index: 92 !important;
+  }
+
+  .terminal {
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    border-radius: 16px 16px 0 0 !important;
+    max-height: 40vh !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .quick-provider-dropdown {
+    position: fixed !important;
+    top: auto !important;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: min(480px, calc(100vw - 24px)) !important;
+    margin: 0 auto !important;
+    z-index: 100 !important;
+    max-height: 80vh !important;
+    overflow-y: auto !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75) !important;
+  }
+
+  .draft-studio-col textarea,
+  .script-draft-textarea,
+  .audit-section textarea,
+  .zen-editor-textarea {
+    min-height: 220px !important;
+    height: 45dvh !important;
+    scroll-margin-bottom: 280px;
+  }
+
+  .modal-actions,
+  .alert-modal-actions {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+
+  .modal-actions .btn,
+  .modal-actions button,
+  .alert-modal-actions .btn,
+  .alert-modal-actions button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .tabs {
+    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  }
+
+  .settings-card .field button,
+  .settings-card button.btn,
+  .settings-grid .btn,
+  .settings-actions .btn {
+    width: 100% !important;
+  }
+}
+
 @media (max-width: 620px) {
-  .app-shell { padding: 10px; }
+  .app-shell { padding: 10px 10px calc(16px + env(safe-area-inset-bottom, 0px)); }
   .topbar { top: 6px; border-radius: 14px; padding: 10px; gap: 8px; flex-wrap: wrap; }
   .product-label, .brand-divider { display: none; }
   .search-box { order: 3; flex-basis: 100%; max-width: none; margin-left: 0; }
@@ -1756,7 +1911,34 @@ tbody tr:hover {
   .filter-controls select { flex: 1; min-width: 0; }
   .hero-actions { width: 100%; }
   .hero-actions .btn { flex: 1; }
-  .terminal { right: 16px; bottom: 16px; }
+}
+
+@media (max-width: 480px) {
+  .topbar {
+    max-height: 105px;
+    gap: 6px;
+    padding: 8px 10px;
+  }
+  .topbar .brand-name {
+    display: none !important;
+  }
+  .topbar .bot-status-dot {
+    min-width: 36px;
+    padding: 6px 8px !important;
+  }
+  .topbar .bot-status-dot .bot-label {
+    display: none !important;
+  }
+
+  .donut-chart {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .donut-legend {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
 }
 
 /* Scrollbar */

@@ -402,7 +402,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                     style={{
                       background: 'var(--cyan)',
                       color: '#080e1a',
-                      fontSize: '0.62rem',
+                      fontSize: '0.75rem',
                       fontWeight: 800,
                       borderRadius: 10,
                       padding: '1px 5px',
@@ -543,7 +543,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
             }}
           >
             {uploadedFileName && (
-              <div style={{ fontSize: '0.74rem', color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span>📄 Berkas naskah aktif: <strong>{uploadedFileName}</strong></span>
               </div>
             )}
@@ -561,11 +561,11 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--cyan)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--cyan)', display: 'flex', alignItems: 'center', gap: 5 }}>
                   <Sparkles size={12} />
                   <span>Timeline Babak (Beat Navigator):</span>
                 </span>
-                <span style={{ fontSize: '0.68rem', color: '#7890af' }}>
+                <span style={{ fontSize: '0.75rem', color: '#7890af' }}>
                   Klik tab babak untuk inspeksi atau regenerasi terisolasi
                 </span>
               </div>
@@ -584,7 +584,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                       style={{
                         padding: '4px 8px',
                         borderRadius: 4,
-                        fontSize: '0.7rem',
+                        fontSize: '0.75rem',
                         fontWeight: isSelected ? 700 : 500,
                         background: isSelected ? 'rgba(56, 189, 248, 0.2)' : '#0e1828',
                         border: `1px solid ${isSelected ? 'var(--cyan)' : '#1b2d47'}`,
@@ -597,10 +597,10 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                       title={`${beat.name}: ${beat.description}`}
                     >
                       <span>{beat.shortName}</span>
-                      <span style={{ fontSize: '0.62rem', color: isSelected ? 'var(--cyan)' : '#7890af' }}>
+                      <span style={{ fontSize: '0.75rem', color: isSelected ? 'var(--cyan)' : '#7890af' }}>
                         ({targetBeatW} kata)
                       </span>
-                      {hasExtracted && <span style={{ color: 'var(--green)', fontSize: '0.65rem' }}>✓</span>}
+                      {hasExtracted && <span style={{ color: 'var(--green)', fontSize: '0.75rem' }}>✓</span>}
                       {isGenerating && <Loader2 size={10} className="spin" />}
                     </button>
                   );
@@ -609,7 +609,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
 
               {/* Active Beat Actions Bar */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0a101d', padding: '4px 8px', borderRadius: 4, border: '1px solid #142236', flexWrap: 'wrap', gap: 6 }}>
-                <div style={{ fontSize: '0.7rem', color: '#cbd5e1' }}>
+                <div style={{ fontSize: '0.75rem', color: '#cbd5e1' }}>
                   <strong style={{ color: 'var(--cyan)' }}>Babak {activeBeatTab}:</strong> {SCRIPT_BEATS.find(b => b.beatNumber === activeBeatTab)?.stageName}
                   {currentBeatText ? (
                     <span style={{ color: 'var(--green)', marginLeft: 6 }}>
@@ -627,7 +627,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                     type="button"
                     className="copy-action-btn"
                     onClick={() => setShowBeatRevisionBox((prev) => !prev)}
-                    style={{ fontSize: '0.68rem', padding: '2px 8px' }}
+                    style={{ fontSize: '0.75rem', padding: '2px 8px' }}
                   >
                     {showBeatRevisionBox ? 'Tutup Catatan' : 'Beri Catatan'}
                   </button>
@@ -642,7 +642,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                         setBeatRevisionInput('');
                       }}
                       disabled={generatingBeatNumber !== null || loading}
-                      style={{ fontSize: '0.68rem', padding: '3px 8px', display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--cyan)' }}
+                      style={{ fontSize: '0.75rem', padding: '3px 8px', display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--cyan)' }}
                       title={`Generate ulang atau tulis Babak ${activeBeatTab} secara terisolasi`}
                     >
                       <RotateCw size={11} className={generatingBeatNumber === activeBeatTab ? 'spin' : ''} />
@@ -666,7 +666,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                       border: '1px solid #203554',
                       borderRadius: 4,
                       color: '#f8fafc',
-                      fontSize: '0.74rem',
+                      fontSize: '0.75rem',
                     }}
                   />
                 </div>
@@ -680,7 +680,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
               onChange={(e) => onScriptChange(e.target.value)}
               onBlur={onScriptBlur}
               placeholder="Editor Naskah Video Zeinity... Tempel atau ketik naskah di sini, atau hasilkan otomatis lewat AI Scriptwriter."
-              className={isDraftHighlighted ? 'draft-highlight-pulse' : ''}
+              className={`script-draft-textarea ${isDraftHighlighted ? 'draft-highlight-pulse' : ''}`.trim()}
               style={{
                 width: '100%',
                 minHeight: 460,
@@ -714,7 +714,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                 gap: 10,
               }}
             >
-              <div style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span>💡</span>
                 <span>
                   <strong>Fokus Menulis:</strong> Setelah draf selesai, buka tab <strong style={{ color: 'var(--cyan)' }}>"2. Finishing &amp; Packaging"</strong> untuk menjalankan Spoken Audit, 5 Formula Judul, dan Studio Thumbnail.
@@ -948,17 +948,17 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
               <Sparkles size={16} />
               <span>Finishing &amp; Packaging</span>
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 4, lineHeight: 1.4 }}>
+            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 4, lineHeight: 1.4 }}>
               Tahap pemolesan naskah, formula judul YouTube, dan desain visual thumbnail.
             </div>
 
             {/* Packaging Progress Bar */}
             <div style={{ marginTop: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <span style={{ fontSize: '0.74rem', color: '#cbd5e1', fontWeight: 600 }}>
+                <span style={{ fontSize: '0.75rem', color: '#cbd5e1', fontWeight: 600 }}>
                   Progres Packaging:
                 </span>
-                <span style={{ fontSize: '0.74rem', color: 'var(--cyan)', fontWeight: 700 }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--cyan)', fontWeight: 700 }}>
                   {completedStepsCount} dari 3 Selesai ({progressPercentFinishing}%)
                 </span>
               </div>
@@ -977,7 +977,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
           </div>
 
           {/* 3 LARGE VERTICAL STEPPER CARDS */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="finishing-stepper-cards" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {/* CARD 1: Audit Spoken & TTS */}
             <div
               className={`finishing-stepper-card ${activeFinishingStep === 1 ? 'active' : ''}`}
@@ -1006,7 +1006,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '0.74rem',
+                      fontSize: '0.75rem',
                       fontWeight: 800,
                     }}
                   >
@@ -1018,21 +1018,21 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                 </div>
 
                 {isStep1Done ? (
-                  <span className="collapsed-pill" style={{ background: 'rgba(52, 211, 153, 0.15)', color: 'var(--green)', fontSize: '0.68rem', fontWeight: 700, borderColor: 'rgba(52, 211, 153, 0.4)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <span className="collapsed-pill" style={{ background: 'rgba(52, 211, 153, 0.15)', color: 'var(--green)', fontSize: '0.75rem', fontWeight: 700, borderColor: 'rgba(52, 211, 153, 0.4)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                     <Check size={11} /> SELESAI
                   </span>
                 ) : (
-                  <span className="collapsed-pill" style={{ background: 'rgba(249, 199, 79, 0.15)', color: 'var(--amber)', fontSize: '0.68rem', fontWeight: 700 }}>
+                  <span className="collapsed-pill" style={{ background: 'rgba(249, 199, 79, 0.15)', color: 'var(--amber)', fontSize: '0.75rem', fontWeight: 700 }}>
                     ● PERLU AUDIT
                   </span>
                 )}
               </div>
 
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8', lineHeight: 1.35 }}>
+              <div className="stepper-desc" style={{ fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.35 }}>
                 Evaluasi 4 dimensi kelayakan tutur lisan &amp; prosodi TTS AI.
               </div>
 
-              <div style={{ fontSize: '0.70rem', color: isStep1Done ? 'var(--green)' : '#7890af', display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+              <div className="stepper-meta" style={{ fontSize: '0.75rem', color: isStep1Done ? 'var(--green)' : '#7890af', display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
                 {isStep1Done ? (
                   <>
                     <CheckCircle2 size={12} />
@@ -1081,7 +1081,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '0.74rem',
+                      fontSize: '0.75rem',
                       fontWeight: 800,
                     }}
                   >
@@ -1093,21 +1093,21 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                 </div>
 
                 {hasSelectedTitle ? (
-                  <span className="collapsed-pill" style={{ background: 'rgba(52, 211, 153, 0.15)', color: 'var(--green)', fontSize: '0.68rem', fontWeight: 700, borderColor: 'rgba(52, 211, 153, 0.4)' }}>
+                  <span className="collapsed-pill" style={{ background: 'rgba(52, 211, 153, 0.15)', color: 'var(--green)', fontSize: '0.75rem', fontWeight: 700, borderColor: 'rgba(52, 211, 153, 0.4)' }}>
                     ● JUDUL TERPILIH
                   </span>
                 ) : hasTitlesGenerated ? (
-                  <span className="collapsed-pill" style={{ background: 'rgba(56, 189, 248, 0.15)', color: 'var(--cyan)', fontSize: '0.68rem', fontWeight: 700, borderColor: 'rgba(56, 189, 248, 0.4)' }}>
+                  <span className="collapsed-pill" style={{ background: 'rgba(56, 189, 248, 0.15)', color: 'var(--cyan)', fontSize: '0.75rem', fontWeight: 700, borderColor: 'rgba(56, 189, 248, 0.4)' }}>
                     ● 5 VARIAN SIAP
                   </span>
                 ) : (
-                  <span className="collapsed-pill" style={{ background: 'rgba(249, 199, 79, 0.15)', color: 'var(--amber)', fontSize: '0.68rem', fontWeight: 700 }}>
+                  <span className="collapsed-pill" style={{ background: 'rgba(249, 199, 79, 0.15)', color: 'var(--amber)', fontSize: '0.75rem', fontWeight: 700 }}>
                     ● BELUM DIBUAT
                   </span>
                 )}
               </div>
 
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8', lineHeight: 1.35 }}>
+              <div className="stepper-desc" style={{ fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.35 }}>
                 {hasSelectedTitle && item.title ? (
                   <span style={{ color: '#cbd5e1' }}>
                     Aktif: <strong>"{item.title.length > 28 ? item.title.slice(0, 26) + '...' : item.title}"</strong>
@@ -1121,7 +1121,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                 )}
               </div>
 
-              <div style={{ fontSize: '0.70rem', color: '#7890af', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <div className="stepper-meta" style={{ fontSize: '0.75rem', color: '#7890af', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <span>{selectedRec ? selectedRec.formulaName : 'Formula Judul & Hook'}</span>
                 <span>•</span>
                 <span style={{ color: selectedRec?.isMobileSafe ? 'var(--green)' : undefined }}>
@@ -1158,7 +1158,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '0.74rem',
+                      fontSize: '0.75rem',
                       fontWeight: 800,
                     }}
                   >
@@ -1170,25 +1170,25 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                 </div>
 
                 {activeFinishingStep === 3 ? (
-                  <span className="collapsed-pill" style={{ background: 'rgba(56, 189, 248, 0.15)', color: 'var(--cyan)', fontSize: '0.68rem', fontWeight: 700 }}>
+                  <span className="collapsed-pill" style={{ background: 'rgba(56, 189, 248, 0.15)', color: 'var(--cyan)', fontSize: '0.75rem', fontWeight: 700 }}>
                     ● SEDANG AKTIF
                   </span>
                 ) : isStep3Done ? (
-                  <span className="collapsed-pill" style={{ background: 'rgba(52, 211, 153, 0.15)', color: 'var(--green)', fontSize: '0.68rem', fontWeight: 700 }}>
+                  <span className="collapsed-pill" style={{ background: 'rgba(52, 211, 153, 0.15)', color: 'var(--green)', fontSize: '0.75rem', fontWeight: 700 }}>
                     ● SIAP
                   </span>
                 ) : (
-                  <span className="collapsed-pill" style={{ background: 'rgba(148, 163, 184, 0.12)', color: '#94a3b8', fontSize: '0.68rem', fontWeight: 700 }}>
+                  <span className="collapsed-pill" style={{ background: 'rgba(148, 163, 184, 0.12)', color: '#94a3b8', fontSize: '0.75rem', fontWeight: 700 }}>
                     ● PERLU DESAIN
                   </span>
                 )}
               </div>
 
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8', lineHeight: 1.35 }}>
+              <div className="stepper-desc" style={{ fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.35 }}>
                 Rasio: {thumbnailAspectRatio} • Hook: <strong>"{(thumbnailHookText.trim() || 'ILUSI DIBONGKAR').toUpperCase()}"</strong>
               </div>
 
-              <div style={{ fontSize: '0.70rem', color: '#7890af' }}>
+              <div className="stepper-meta" style={{ fontSize: '0.75rem', color: '#7890af' }}>
                 Safe Zone 80% • Client-side HD SVG
               </div>
             </div>
@@ -1260,7 +1260,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                   <CheckCircle2 size={14} />
                   <span>Evaluasi Spoken &amp; TTS (Wajib)</span>
                   {isStep1Done && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: '0.68rem', background: 'rgba(52, 211, 153, 0.2)', color: 'var(--green)', padding: '1px 6px', borderRadius: 4 }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: '0.75rem', background: 'rgba(52, 211, 153, 0.2)', color: 'var(--green)', padding: '1px 6px', borderRadius: 4 }}>
                       <Check size={10} /> Selesai
                     </span>
                   )}
@@ -1289,11 +1289,11 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                   <Smile size={14} />
                   <span>Poles Kasual Friendly (Opsional)</span>
                   {casualFindings ? (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: '0.68rem', background: 'rgba(56, 189, 248, 0.2)', color: 'var(--cyan)', padding: '1px 6px', borderRadius: 4 }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: '0.75rem', background: 'rgba(56, 189, 248, 0.2)', color: 'var(--cyan)', padding: '1px 6px', borderRadius: 4 }}>
                       <Check size={10} /> {parsedCasualDiffs.length} Temuan
                     </span>
                   ) : (
-                    <span style={{ fontSize: '0.68rem', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--cyan)', padding: '1px 6px', borderRadius: 4 }}>
+                    <span style={{ fontSize: '0.75rem', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--cyan)', padding: '1px 6px', borderRadius: 4 }}>
                       Poles Santai ✨
                     </span>
                   )}
@@ -1321,7 +1321,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                     <CheckCircle2 size={17} /> Hasil Audit Spoken &amp; TTS
                   </h4>
                   {auditSummary && (
-                    <span className="ai-summary-badge" style={{ margin: 0, padding: '2px 10px', fontSize: '0.74rem' }}>
+                    <span className="ai-summary-badge" style={{ margin: 0, padding: '2px 10px', fontSize: '0.75rem' }}>
                       <CheckCircle2 size={13} />
                       <span>{auditSummary}</span>
                     </span>
@@ -1335,7 +1335,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                       className={`copy-action-btn ${copied === 'findings' ? 'copied' : ''}`}
                       onClick={() => onCopy(auditFindings, 'findings')}
                       title="Salin Seluruh Laporan Temuan"
-                      style={{ fontSize: '0.74rem', padding: '5px 10px' }}
+                      style={{ fontSize: '0.75rem', padding: '5px 10px' }}
                     >
                       {copied === 'findings' ? <Check size={13} /> : <Copy size={13} />}
                       <span>{copied === 'findings' ? 'Tersalin' : 'Salin Temuan'}</span>
@@ -1347,7 +1347,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                     className="btn btn-secondary"
                     onClick={onRunAudit}
                     disabled={generatingAudit || loading || !scriptOutput.trim()}
-                    style={{ fontSize: '0.74rem', padding: '5px 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    style={{ fontSize: '0.75rem', padding: '5px 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     title="Jalankan audit tutur lisan & TTS"
                   >
                     {generatingAudit ? <Loader2 size={13} className="spin" /> : <Sparkles size={13} />}
@@ -1364,7 +1364,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                   onClick={() => onCopy(formatExternalAuditPrompt(scriptOutput), 'audit_prompt_hdr')}
                   disabled={!scriptOutput.trim()}
                   title="Salin Prompt Audit Spoken & TTS untuk ChatGPT / Claude"
-                  style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+                  style={{ fontSize: '0.75rem', padding: '4px 10px' }}
                 >
                   {copied === 'audit_prompt_hdr' ? <Check size={13} /> : <Copy size={13} />}
                   <span>{copied === 'audit_prompt_hdr' ? 'Audit Tersalin' : 'Salin Prompt Audit Spoken'}</span>
@@ -1375,7 +1375,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                   onClick={() => onCopy(formatExternalFinalRevisionPrompt(scriptOutput, auditFindings), 'audit_rev_prompt_hdr')}
                   disabled={!scriptOutput.trim()}
                   title="Salin Prompt Revisi Naskah untuk ChatGPT / Claude"
-                  style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+                  style={{ fontSize: '0.75rem', padding: '4px 10px' }}
                 >
                   {copied === 'audit_rev_prompt_hdr' ? <Check size={13} /> : <Copy size={13} />}
                   <span>{copied === 'audit_rev_prompt_hdr' ? 'Prompt Tersalin' : 'Salin Prompt Revisi Naskah'}</span>
@@ -1404,7 +1404,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                         <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--green)' }}>
                           Draf Narasi Bersih Tersedia (Semua Perbaikan Digabung)
                         </div>
-                        <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                           Terapkan seluruh perbaikan lisan dan hilangkan tanda baca terlarang ke draf editor.
                         </div>
                       </div>
@@ -1444,7 +1444,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                                   background: 'rgba(239, 68, 68, 0.15)',
                                   color: '#f87171',
                                   border: '1px solid rgba(239, 68, 68, 0.3)',
-                                  fontSize: '0.72rem',
+                                  fontSize: '0.75rem',
                                   fontWeight: 700,
                                   borderRadius: 4,
                                   padding: '2px 8px',
@@ -1465,7 +1465,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                                 className="btn btn-secondary"
                                 onClick={() => handleApplySingleDiff(diff.original, diff.revision, diff.id)}
                                 style={{
-                                  fontSize: '0.72rem',
+                                  fontSize: '0.75rem',
                                   padding: '3px 10px',
                                   display: 'inline-flex',
                                   alignItems: 'center',
@@ -1483,7 +1483,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
 
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10 }}>
                             <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 6, padding: '8px 12px' }}>
-                              <div style={{ fontSize: '0.68rem', color: '#f87171', fontWeight: 700, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                              <div style={{ fontSize: '0.75rem', color: '#f87171', fontWeight: 700, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                 ✖ BAGIAN ASLI
                               </div>
                               <div style={{ fontSize: '0.82rem', color: '#e2e8f0', lineHeight: 1.5, textDecoration: 'line-through', opacity: 0.85 }}>
@@ -1492,7 +1492,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                             </div>
 
                             <div style={{ background: 'rgba(52, 211, 153, 0.06)', border: '1px solid rgba(52, 211, 153, 0.25)', borderRadius: 6, padding: '8px 12px' }}>
-                              <div style={{ fontSize: '0.68rem', color: 'var(--green)', fontWeight: 700, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--green)', fontWeight: 700, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                 ✓ REVISI SPOKEN / TTS
                               </div>
                               <div style={{ fontSize: '0.82rem', color: '#f8fafc', lineHeight: 1.5, fontWeight: 500 }}>
@@ -1502,7 +1502,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                           </div>
 
                           {diff.reason && (
-                            <div style={{ fontSize: '0.74rem', color: '#94a3b8', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: 6 }}>
                               <span>💡</span>
                               <span>{diff.reason}</span>
                             </div>
@@ -1539,7 +1539,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                         <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#f8fafc' }}>
                           Audit Spoken Selesai — Lanjutkan ke Sub-Sesi Kasual Friendly?
                         </div>
-                        <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                           Ubah gaya naskah formal/kaku menjadi gaya tutur santai, akrab, dan ramah pendengar ala teman diskusi cerdas Zeinity.
                         </div>
                       </div>
@@ -1622,7 +1622,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                     <Smile size={17} /> Sub-Sesi: Transformasi Kasual Friendly
                   </h4>
                   {casualSummary && (
-                    <span className="ai-summary-badge" style={{ margin: 0, padding: '2px 10px', fontSize: '0.74rem', background: 'rgba(56, 189, 248, 0.15)', color: 'var(--cyan)', borderColor: 'rgba(56, 189, 248, 0.3)' }}>
+                    <span className="ai-summary-badge" style={{ margin: 0, padding: '2px 10px', fontSize: '0.75rem', background: 'rgba(56, 189, 248, 0.15)', color: 'var(--cyan)', borderColor: 'rgba(56, 189, 248, 0.3)' }}>
                       <CheckCircle2 size={13} />
                       <span>{casualSummary}</span>
                     </span>
@@ -1636,7 +1636,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                       className={`copy-action-btn ${copied === 'casual_findings' ? 'copied' : ''}`}
                       onClick={() => onCopy(casualFindings, 'casual_findings')}
                       title="Salin Seluruh Temuan Kasual Friendly"
-                      style={{ fontSize: '0.74rem', padding: '5px 10px' }}
+                      style={{ fontSize: '0.75rem', padding: '5px 10px' }}
                     >
                       {copied === 'casual_findings' ? <Check size={13} /> : <Copy size={13} />}
                       <span>{copied === 'casual_findings' ? 'Tersalin' : 'Salin Temuan Kasual'}</span>
@@ -1648,7 +1648,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                     className="btn btn-secondary"
                     onClick={onRunCasualAudit}
                     disabled={generatingCasualAudit || loading || !scriptOutput.trim()}
-                    style={{ fontSize: '0.74rem', padding: '5px 12px', display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--cyan)', borderColor: 'rgba(56, 189, 248, 0.4)' }}
+                    style={{ fontSize: '0.75rem', padding: '5px 12px', display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--cyan)', borderColor: 'rgba(56, 189, 248, 0.4)' }}
                     title="Jalankan transformasi formal ke kasual friendly"
                   >
                     {generatingCasualAudit ? <Loader2 size={13} className="spin" /> : <Sparkles size={13} />}
@@ -1665,7 +1665,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                   onClick={() => onCopy(formatExternalCasualAuditPrompt(scriptOutput), 'casual_prompt_hdr')}
                   disabled={!scriptOutput.trim()}
                   title="Salin Prompt Kasual Friendly untuk ChatGPT / Claude"
-                  style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+                  style={{ fontSize: '0.75rem', padding: '4px 10px' }}
                 >
                   {copied === 'casual_prompt_hdr' ? <Check size={13} /> : <Copy size={13} />}
                   <span>{copied === 'casual_prompt_hdr' ? 'Prompt Kasual Tersalin' : 'Salin Prompt Kasual Friendly'}</span>
@@ -1673,7 +1673,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
               </div>
 
               {/* Principles banner */}
-              <div style={{ background: '#091322', border: '1px solid #1a2f4c', borderRadius: 8, padding: '10px 14px', fontSize: '0.74rem', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ background: '#091322', border: '1px solid #1a2f4c', borderRadius: 8, padding: '10px 14px', fontSize: '0.75rem', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <div style={{ color: '#cbd5e1', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span>💬</span>
                   <span>Filosofi Kasual Friendly Zeinity:</span>
@@ -1705,7 +1705,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                         <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--cyan)' }}>
                           Draf Narasi Kasual Friendly Tersedia (Semua Perbaikan Digabung)
                         </div>
-                        <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                           Terapkan seluruh polesan gaya santai dan ramah pendengar ke draf editor.
                         </div>
                       </div>
@@ -1745,7 +1745,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                                   background: 'rgba(239, 68, 68, 0.15)',
                                   color: '#f87171',
                                   border: '1px solid rgba(239, 68, 68, 0.3)',
-                                  fontSize: '0.72rem',
+                                  fontSize: '0.75rem',
                                   fontWeight: 700,
                                   borderRadius: 4,
                                   padding: '2px 8px',
@@ -1766,7 +1766,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                                 className="btn btn-secondary"
                                 onClick={() => handleApplySingleCasualDiff(diff.original, diff.revision, diff.id)}
                                 style={{
-                                  fontSize: '0.72rem',
+                                  fontSize: '0.75rem',
                                   padding: '3px 10px',
                                   display: 'inline-flex',
                                   alignItems: 'center',
@@ -1784,7 +1784,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
 
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10 }}>
                             <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 6, padding: '8px 12px' }}>
-                              <div style={{ fontSize: '0.68rem', color: '#f87171', fontWeight: 700, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                              <div style={{ fontSize: '0.75rem', color: '#f87171', fontWeight: 700, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                 ✖ GAYA FORMAL / KAKU
                               </div>
                               <div style={{ fontSize: '0.82rem', color: '#e2e8f0', lineHeight: 1.5, textDecoration: 'line-through', opacity: 0.85 }}>
@@ -1793,7 +1793,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                             </div>
 
                             <div style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: 6, padding: '8px 12px' }}>
-                              <div style={{ fontSize: '0.68rem', color: 'var(--cyan)', fontWeight: 700, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--cyan)', fontWeight: 700, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                 ✓ REVISI KASUAL FRIENDLY
                               </div>
                               <div style={{ fontSize: '0.82rem', color: '#f8fafc', lineHeight: 1.5, fontWeight: 500 }}>
@@ -1803,7 +1803,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                           </div>
 
                           {diff.reason && (
-                            <div style={{ fontSize: '0.74rem', color: '#94a3b8', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: 6 }}>
                               <span>💡</span>
                               <span>{diff.reason}</span>
                             </div>
@@ -1900,7 +1900,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                     className="btn btn-secondary"
                     onClick={onGenerateTitles}
                     disabled={generatingTitles || loading}
-                    style={{ padding: '5px 12px', fontSize: '0.74rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    style={{ padding: '5px 12px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     title="Generate ulang 5 varian judul hook Zeinity"
                   >
                     <RotateCw size={13} className={generatingTitles ? 'spin' : ''} />
@@ -1912,7 +1912,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                     className={`copy-action-btn ${copied === 'title_prompt_hdr' ? 'copied' : ''}`}
                     onClick={() => onCopy(formatExternalTitlePrompt(item.title, item.category || 'Umum', scriptOutput || item.external_research_output || ''), 'title_prompt_hdr')}
                     title="Salin Prompt 5 Formula Judul untuk ChatGPT / Claude"
-                    style={{ fontSize: '0.74rem', padding: '5px 10px' }}
+                    style={{ fontSize: '0.75rem', padding: '5px 10px' }}
                   >
                     {copied === 'title_prompt_hdr' ? <Check size={13} /> : <Copy size={13} />}
                     <span>{copied === 'title_prompt_hdr' ? 'Tersalin' : 'Salin Prompt Judul'}</span>
@@ -1946,12 +1946,12 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                       >
                         <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 4 }}>
-                            <span className="mode-label formula-badge" style={{ fontSize: '0.72rem' }}>
+                            <span className="mode-label formula-badge" style={{ fontSize: '0.75rem' }}>
                               {rec.formulaName || `Formula ${idx + 1}`}
                             </span>
                             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                               {isSelected && (
-                                <span className="collapsed-pill" style={{ background: 'rgba(52, 211, 153, 0.2)', color: 'var(--green)', fontSize: '0.68rem', fontWeight: 700, borderColor: 'var(--green)' }}>
+                                <span className="collapsed-pill" style={{ background: 'rgba(52, 211, 153, 0.2)', color: 'var(--green)', fontSize: '0.75rem', fontWeight: 700, borderColor: 'var(--green)' }}>
                                   Judul Utama Aktif ✓
                                 </span>
                               )}
@@ -1961,7 +1961,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                                   background: isSafe ? 'rgba(52, 211, 153, 0.15)' : 'rgba(249, 199, 79, 0.15)',
                                   color: isSafe ? 'var(--green)' : 'var(--amber)',
                                   borderColor: isSafe ? 'rgba(52, 211, 153, 0.3)' : 'rgba(249, 199, 79, 0.3)',
-                                  fontSize: '0.68rem',
+                                  fontSize: '0.75rem',
                                 }}
                               >
                                 {wordCount} kata • {isSafe ? 'Aman Mobile (5–8 kata)' : 'Periksa Panjang'}
@@ -1974,7 +1974,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                           </div>
 
                           {rec.explanation && (
-                            <p style={{ fontSize: '0.73rem', color: '#94a3b8', margin: '0 0 10px 0', lineHeight: 1.4 }}>
+                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '0 0 10px 0', lineHeight: 1.4 }}>
                               {rec.explanation}
                             </p>
                           )}
@@ -1986,7 +1986,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                             className={`copy-action-btn ${copied === copyKey ? 'copied' : ''}`}
                             onClick={() => onCopy(rec.title, copyKey)}
                             title="Salin judul ini"
-                            style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+                            style={{ fontSize: '0.75rem', padding: '4px 10px' }}
                           >
                             {copied === copyKey ? <Check size={12} /> : <Copy size={12} />}
                             <span>{copied === copyKey ? 'Tersalin!' : 'Salin'}</span>
@@ -1997,13 +1997,13 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                               type="button"
                               className="btn btn-secondary"
                               onClick={() => onApplyTitleAsMain(rec.title)}
-                              style={{ padding: '4px 10px', fontSize: '0.72rem', fontWeight: 600 }}
+                              style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600 }}
                               title="Gunakan sebagai judul utama konten ini"
                             >
                               Gunakan sbg Judul
                             </button>
                           ) : (
-                            <span style={{ fontSize: '0.72rem', color: 'var(--green)', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 8px' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--green)', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 8px' }}>
                               <Check size={13} /> Aktif Terpilih
                             </span>
                           )}
@@ -2072,7 +2072,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                   <h4 style={{ margin: 0, padding: 0, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--cyan)', fontSize: '0.92rem', fontWeight: 700 }}>
                     <ImageIcon size={17} /> Studio Thumbnail (Copywriting &amp; Mockup Visual)
                   </h4>
-                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 2 }}>
+                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 2 }}>
                     Standar Packaging Bab 13: Hook Teks 2–4 Kata Kapital Kontras Tinggi &amp; Safe Zone 80%.
                   </div>
                 </div>
@@ -2082,7 +2082,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                     type="button"
                     className="btn btn-secondary"
                     onClick={handleInternalExportMockupSvg}
-                    style={{ fontSize: '0.74rem', padding: '5px 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    style={{ fontSize: '0.75rem', padding: '5px 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     title="Unduh mockup thumbnail format vektor SVG resolusi tinggi"
                   >
                     <Download size={13} />
@@ -2114,7 +2114,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                           background: isHookOptimal ? 'rgba(52, 211, 153, 0.15)' : 'rgba(249, 199, 79, 0.15)',
                           color: isHookOptimal ? 'var(--green)' : 'var(--amber)',
                           borderColor: isHookOptimal ? 'rgba(52, 211, 153, 0.3)' : 'rgba(249, 199, 79, 0.3)',
-                          fontSize: '0.70rem',
+                          fontSize: '0.75rem',
                           padding: '2px 8px',
                         }}
                       >
@@ -2147,14 +2147,14 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
 
                     {/* Quick Preset Chips */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.70rem', color: '#94a3b8' }}>Preset Cepat:</span>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Preset Cepat:</span>
                       {['ILUSI DIBONGKAR', 'FAKTA TERSEMBUNYI', 'JEBAKAN SISTEM', 'AKHIRNYA TERUNGKAP'].map((preset) => (
                         <button
                           key={preset}
                           type="button"
                           onClick={() => onHookTextChange(preset)}
                           style={{
-                            fontSize: '0.70rem',
+                            fontSize: '0.75rem',
                             fontWeight: 600,
                             padding: '2px 8px',
                             borderRadius: 4,
@@ -2181,7 +2181,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                           onClick={() => onAspectRatioChange(ratio)}
                           style={{
                             padding: '4px 10px',
-                            fontSize: '0.74rem',
+                            fontSize: '0.75rem',
                             borderRadius: 6,
                             border: `1px solid ${thumbnailAspectRatio === ratio ? 'var(--cyan)' : '#334155'}`,
                             background: thumbnailAspectRatio === ratio ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
@@ -2206,7 +2206,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                           border: '1px solid #334155',
                           borderRadius: 6,
                           padding: '4px 8px',
-                          fontSize: '0.74rem',
+                          fontSize: '0.75rem',
                         }}
                       >
                         <option value="imagen3">Google Imagen 3 (0 Token)</option>
@@ -2224,7 +2224,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                       </span>
                     </div>
 
-                    <div style={{ background: 'rgba(56, 189, 248, 0.06)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: 6, padding: '8px 10px', marginBottom: 10, fontSize: '0.74rem', color: '#94a3b8' }}>
+                    <div style={{ background: 'rgba(56, 189, 248, 0.06)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: 6, padding: '8px 10px', marginBottom: 10, fontSize: '0.75rem', color: '#94a3b8' }}>
                       <strong style={{ color: 'var(--cyan)' }}>Aturan Thumbnail Zeinity (Bab 13):</strong> Teks 2–4 kata UPPERCASE • Stakes emosional visual • Dilarang mengulang kata judul.
                     </div>
 
@@ -2284,7 +2284,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                       <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 6 }}>
                         <ImageIcon size={14} style={{ color: 'var(--cyan)' }} /> Live Mockup Canvas Preview:
                       </span>
-                      <span style={{ fontSize: '0.68rem', color: 'var(--cyan)', background: 'rgba(56, 189, 248, 0.12)', padding: '2px 8px', borderRadius: 4 }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--cyan)', background: 'rgba(56, 189, 248, 0.12)', padding: '2px 8px', borderRadius: 4 }}>
                         100% Client-Side Vector
                       </span>
                     </div>
@@ -2321,17 +2321,17 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                             padding: 6,
                           }}
                         >
-                          <span style={{ fontSize: '0.60rem', color: 'rgba(56, 189, 248, 0.6)', letterSpacing: '0.5px', fontWeight: 600 }}>
+                          <span style={{ fontSize: '0.75rem', color: 'rgba(56, 189, 248, 0.6)', letterSpacing: '0.5px', fontWeight: 600 }}>
                             SAFE ZONE 80%
                           </span>
                         </div>
 
                         {/* Canvas Header */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1 }}>
-                          <span style={{ fontSize: '0.65rem', fontWeight: 800, background: 'rgba(0,0,0,0.6)', padding: '2px 8px', borderRadius: 4, color: 'var(--cyan)', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 800, background: 'rgba(0,0,0,0.6)', padding: '2px 8px', borderRadius: 4, color: 'var(--cyan)', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
                             {thumbnailAspectRatio} • {thumbnailProvider.toUpperCase()} PREVIEW
                           </span>
-                          <span style={{ fontSize: '0.62rem', background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(239, 68, 68, 0.4)' }}>
+                          <span style={{ fontSize: '0.75rem', background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(239, 68, 68, 0.4)' }}>
                             HIGH TENSION
                           </span>
                         </div>
@@ -2357,17 +2357,17 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                           >
                             {(thumbnailHookText.trim() || 'ILUSI DIBONGKAR').toUpperCase()}
                           </div>
-                          <span style={{ fontSize: '0.64rem', color: '#94a3b8', marginTop: 4, display: 'inline-block' }}>
+                          <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 4, display: 'inline-block' }}>
                             (Maksimal 2–4 Kata Kapital Kontras Tinggi)
                           </span>
                         </div>
 
                         {/* Canvas Footer */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1 }}>
-                          <span style={{ fontSize: '0.62rem', color: '#94a3b8', background: 'rgba(0,0,0,0.5)', padding: '2px 6px', borderRadius: 4 }}>
+                          <span style={{ fontSize: '0.75rem', color: '#94a3b8', background: 'rgba(0,0,0,0.5)', padding: '2px 6px', borderRadius: 4 }}>
                             Subjek Utama + Objek Kontras
                           </span>
-                          <span style={{ fontSize: '0.62rem', color: 'var(--amber)', background: 'rgba(0,0,0,0.5)', padding: '2px 6px', borderRadius: 4 }}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--amber)', background: 'rgba(0,0,0,0.5)', padding: '2px 6px', borderRadius: 4 }}>
                             Zero Clutter
                           </span>
                         </div>
@@ -2390,19 +2390,19 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                     <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--cyan)', marginBottom: 2 }}>
                       Standar Mutu Thumbnail Zeinity (Bab 13):
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: isHookOptimal ? 'var(--green)' : 'var(--amber)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ fontSize: '0.75rem', color: isHookOptimal ? 'var(--green)' : 'var(--amber)', display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span>{isHookOptimal ? '✓' : '⚠️'}</span>
                       <span>Teks 2–4 kata UPPERCASE kontras tinggi ({hookWords.length} kata: {isHookOptimal ? 'Terpenuhi' : 'Periksa'})</span>
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span>✓</span>
                       <span>Menghadirkan stakes emosional visual (dilarang mengulang kata judul)</span>
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span>✓</span>
                       <span>Subjek utama terfokus + objek kontras (Zero clutter)</span>
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span>✓</span>
                       <span>Safe Zone 80% menjamin keterbacaan di layar perangkat mobile</span>
                     </div>
@@ -2457,7 +2457,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                     <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#f8fafc' }}>
                       Seluruh Tahapan Finishing &amp; Packaging Siap
                     </div>
-                    <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                       Naskah terverifikasi lisan, judul hook terpilih, dan kemasan visual siap dipublikasikan.
                     </div>
                   </div>

@@ -195,7 +195,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                   <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f1f5f9' }}>
                     Tahap 1: Tentukan & Generate Hook Pembuka (0–30 Detik)
                   </div>
-                  <div style={{ fontSize: '0.73rem', color: '#10b981', fontWeight: 600 }}>
+                  <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600 }}>
                     Terpilih: "{activeFormulaName}" {hookDraftWords > 0 ? `• ${hookDraftWords} Kata` : ''}
                   </div>
                 </div>
@@ -208,7 +208,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                   e.stopPropagation();
                   setIsHookCollapsed(false);
                 }}
-                style={{ padding: '4px 10px', fontSize: '0.74rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                 title="Buka pilihan varian Hook"
               >
                 <span>Ubah</span>
@@ -235,7 +235,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                     <Sparkles size={16} />
                     <span>Tahap 1: Tentukan & Generate Hook Pembuka (0–30 Detik)</span>
                   </div>
-                  <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: 2 }}>
+                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 2 }}>
                     Pilih formula hook 20–30 detik (~80–180 kata) untuk mengunci retensi penonton sejak awal.
                   </div>
                 </div>
@@ -276,7 +276,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                       className="copy-action-btn"
                       onClick={() => setIsHookCollapsed(true)}
                       title="Lipat panel Hook"
-                      style={{ fontSize: '0.72rem', padding: '4px 8px' }}
+                      style={{ fontSize: '0.75rem', padding: '4px 8px' }}
                     >
                       <ChevronUp size={13} />
                       <span>Susut</span>
@@ -343,12 +343,12 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                           {formula.isStarred && <span style={{ color: '#fbbf24' }}>⭐</span>}
                         </div>
                         {isSelected ? (
-                          <span style={{ fontSize: '0.68rem', color: 'var(--cyan)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--cyan)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 2 }}>
                             <Check size={12} /> Dipilih
                           </span>
                         ) : null}
                       </div>
-                      <div style={{ fontSize: '0.71rem', color: isSelected ? '#93c5fd' : '#7e92ad', lineHeight: 1.35, fontStyle: 'italic' }}>
+                      <div style={{ fontSize: '0.75rem', color: isSelected ? '#93c5fd' : '#7e92ad', lineHeight: 1.35, fontStyle: 'italic' }}>
                         {formula.pattern}
                       </div>
                     </div>
@@ -360,7 +360,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
               <div>
                 <label
                   htmlFor="hookNotesInput"
-                  style={{ fontSize: '0.72rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: 4 }}
+                  style={{ fontSize: '0.75rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: 4 }}
                 >
                   Arahan Khusus Hook (Opsional):
                 </label>
@@ -417,7 +417,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                   )}
                 </button>
                 {!selectedHookType && (
-                  <span style={{ fontSize: '0.72rem', color: '#f59e0b' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#f59e0b' }}>
                     * Pilih salah satu formula hook di atas untuk men-generate
                   </span>
                 )}
@@ -437,10 +437,10 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-                    <div style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--cyan)' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--cyan)' }}>
                       Draf Narasi Pembuka (Babak 1):
                     </div>
-                    <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                       {hookDraftWords} kata • Est. durasi: ~{Math.round(hookDraftWords / 2.5)} detik (Ideal: 20–30s)
                     </div>
                   </div>
@@ -470,7 +470,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                       type="button"
                       className="btn btn-secondary"
                       onClick={() => onCopy(hookDraft || '', 'hookDraftCopy')}
-                      style={{ padding: '5px 10px', fontSize: '0.74rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                      style={{ padding: '5px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                     >
                       {copied === 'hookDraftCopy' ? <Check size={12} /> : <Copy size={12} />}
                       <span>{copied === 'hookDraftCopy' ? 'Tersalin' : '📋 Salin Hook'}</span>
@@ -481,7 +481,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                       className="btn btn-secondary"
                       onClick={() => onGenerateHook && onGenerateHook(true)}
                       disabled={generatingHook || !selectedHookType}
-                      style={{ padding: '5px 10px', fontSize: '0.74rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                      style={{ padding: '5px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                     >
                       <RotateCw size={12} className={generatingHook ? 'spin' : ''} />
                       <span>🔄 Regenerate Hook</span>
@@ -496,7 +496,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                       }}
                       style={{
                         padding: '5px 12px',
-                        fontSize: '0.74rem',
+                        fontSize: '0.75rem',
                         fontWeight: 700,
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -554,7 +554,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
               })()}.
             </div>
 
-            <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
               Target: ~{computedTargetWords.toLocaleString('id-ID')} Kata • 0 Token halusinasi • Mempertahankan fakta riset.
             </div>
 
@@ -596,7 +596,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
               </button>
 
               {!selectedHookType && (
-                <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontStyle: 'italic', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontStyle: 'italic', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   * Pilih salah satu formula hook di Tahap 1 terlebih dahulu
                 </span>
               )}
@@ -662,7 +662,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
 
             {/* Catatan Revisi bar */}
             <div>
-              <label htmlFor="revisionNoteInput" style={{ fontSize: '0.74rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: 4 }}>
+              <label htmlFor="revisionNoteInput" style={{ fontSize: '0.75rem', fontWeight: 600, color: '#cbd5e1', display: 'block', marginBottom: 4 }}>
                 Catatan Revisi Regenerasi (Jika belum sesuai):
               </label>
               <input
@@ -790,11 +790,11 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                   <Sparkles size={13} />
                   <span>Dukungan Penulisan Modular (Per-Babak):</span>
                 </div>
-                <span className="collapsed-pill" style={{ background: 'rgba(56, 189, 248, 0.1)', color: 'var(--cyan)', fontSize: '0.68rem' }}>
+                <span className="collapsed-pill" style={{ background: 'rgba(56, 189, 248, 0.1)', color: 'var(--cyan)', fontSize: '0.75rem' }}>
                   Cegah Pacing Decay
                 </span>
               </div>
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                 Kreator dapat men-generate atau merevisi babak tertentu secara mandiri tanpa merombak babak lain.
               </div>
 
@@ -822,7 +822,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                         border: `1px solid ${isSelected ? 'var(--cyan)' : '#1a2e48'}`,
                         borderRadius: 6,
                         color: isSelected ? '#f8fafc' : '#cbd5e1',
-                        fontSize: '0.72rem',
+                        fontSize: '0.75rem',
                         cursor: 'pointer',
                         textAlign: 'left',
                         display: 'flex',
@@ -836,7 +836,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                         <span>{beat.shortName}</span>
                         {isGen && <Loader2 size={11} className="spin" />}
                       </div>
-                      <div style={{ fontSize: '0.65rem', color: '#7890af' }}>
+                      <div style={{ fontSize: '0.75rem', color: '#7890af' }}>
                         ~{targetBeatWords} kata
                       </div>
                     </button>
@@ -847,13 +847,13 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
               {selectedBeatForRevision && (
                 <div style={{ marginTop: 6, background: '#0e1a2f', padding: 8, borderRadius: 6, border: '1px solid #203554', display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--cyan)' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--cyan)' }}>
                       Revisi/Generate Khusus: {SCRIPT_BEATS.find(b => b.beatNumber === selectedBeatForRevision)?.name}
                     </span>
                     <button
                       type="button"
                       onClick={() => setSelectedBeatForRevision(null)}
-                      style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.72rem', cursor: 'pointer' }}
+                      style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.75rem', cursor: 'pointer' }}
                     >
                       Batal
                     </button>
@@ -968,7 +968,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                   <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--cyan)' }}>
                     Scriptwriter Handoff Utuh (Siap Pakai untuk Claude / ChatGPT)
                   </div>
-                  <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: 2 }}>
+                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 2 }}>
                     Satu prompt terpadu berisi kerangka riset spesifik dan seluruh panduan Spoken-First + TTS.
                   </div>
                 </div>

@@ -2482,7 +2482,7 @@ export default function ScriptDetail({
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                 Jalur: <strong style={{ color: productionTrack === 'in_app' ? 'var(--cyan)' : '#818cf8' }}>
                   {productionTrack === 'in_app' ? 'In-App AI Scriptwriter' : 'AI Eksternal'}
                 </strong>
@@ -2495,7 +2495,7 @@ export default function ScriptDetail({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 5,
-                  fontSize: '0.74rem',
+                  fontSize: '0.75rem',
                   padding: '4px 10px',
                   color: '#cbd5e1',
                 }}
@@ -2887,10 +2887,10 @@ export default function ScriptDetail({
                 <div>
                   <h4 style={{ margin: 0, color: '#c8d6ea', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     <FileText size={16} style={{ color: 'var(--cyan)' }} /> Scriptwriter Handoff
-                    <span style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: 4, background: 'rgba(79, 232, 255, 0.12)', color: 'var(--cyan)', border: '1px solid rgba(79, 232, 255, 0.3)' }}>
+                    <span style={{ fontSize: '0.75rem', padding: '1px 6px', borderRadius: 4, background: 'rgba(79, 232, 255, 0.12)', color: 'var(--cyan)', border: '1px solid rgba(79, 232, 255, 0.3)' }}>
                       Outline Dinamis
                     </span>
-                    <span style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: 4, background: 'rgba(83, 242, 173, 0.12)', color: 'var(--green)', border: '1px solid rgba(83, 242, 173, 0.3)' }}>
+                    <span style={{ fontSize: '0.75rem', padding: '1px 6px', borderRadius: 4, background: 'rgba(83, 242, 173, 0.12)', color: 'var(--green)', border: '1px solid rgba(83, 242, 173, 0.3)' }}>
                       Spoken-First
                     </span>
                     {isHandoffCollapsed && (
@@ -2900,7 +2900,7 @@ export default function ScriptDetail({
                     )}
                   </h4>
                   {!isHandoffCollapsed && (
-                    <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: 2 }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 2 }}>
                       Kerangka Spesifik dari Riset + Panduan Scriptwriter Zeinity
                     </div>
                   )}
@@ -3236,7 +3236,7 @@ export default function ScriptDetail({
                                   type="button"
                                   className="btn btn-secondary"
                                   onClick={() => handleApplyTitleAsMain(rec.title)}
-                                  style={{ padding: '3px 8px', fontSize: '0.74rem' }}
+                                  style={{ padding: '3px 8px', fontSize: '0.75rem' }}
                                   title="Gunakan sebagai judul utama konten ini"
                                 >
                                   Gunakan sbg Judul
@@ -3271,7 +3271,7 @@ export default function ScriptDetail({
                                   type="button"
                                   className="btn btn-secondary"
                                   onClick={() => handleApplyTitleAsMain(titleA)}
-                                  style={{ padding: '3px 8px', fontSize: '0.74rem' }}
+                                  style={{ padding: '3px 8px', fontSize: '0.75rem' }}
                                 >
                                   Gunakan sbg Judul
                                 </button>
@@ -3302,7 +3302,7 @@ export default function ScriptDetail({
                                   type="button"
                                   className="btn btn-secondary"
                                   onClick={() => handleApplyTitleAsMain(titleB)}
-                                  style={{ padding: '3px 8px', fontSize: '0.74rem' }}
+                                  style={{ padding: '3px 8px', fontSize: '0.75rem' }}
                                 >
                                   Gunakan sbg Judul
                                 </button>
@@ -3394,6 +3394,7 @@ export default function ScriptDetail({
                 {!isThumbnailScriptCollapsed && (
                   <div className="audit-section" style={{ padding: 12 }}>
                     <textarea
+                      className="script-draft-textarea"
                       value={scriptOutput}
                       onChange={(e) => setScriptOutput(e.target.value)}
                       onBlur={() => {

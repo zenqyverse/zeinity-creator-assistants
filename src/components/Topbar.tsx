@@ -49,18 +49,20 @@ export default function Topbar({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click or touch
   useEffect(() => {
-    const handleOutsideClick = (e: MouseEvent) => {
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
       }
     };
     if (dropdownOpen) {
       document.addEventListener('mousedown', handleOutsideClick);
+      document.addEventListener('touchstart', handleOutsideClick);
     }
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
     };
   }, [dropdownOpen]);
 
@@ -198,12 +200,12 @@ export default function Topbar({
   }, [cachedCatalog, defaultDirects, isComboMode, activeModelName]);
 
   return (
-    <header className="topbar glass">
+    <header className={`topbar glass ${dropdownOpen ? 'quick-provider-open' : ''}`}>
       <button className="icon-btn mobile-menu-btn" type="button" aria-label="Buka navigasi" onClick={onMenuClick}>
         <Menu size={19} />
       </button>
 
-      <div className="brand">
+      <div className="brand" aria-label="Zeinity Creator Assistant">
         <img src={zeinityLogo} alt="Zeinity Logo" className="brand-mark" />
         <strong className="brand-name">ZEINITY</strong>
         <span className="brand-divider" />
@@ -306,7 +308,7 @@ export default function Topbar({
 
         {dropdownOpen && (
           <div
-            className="glass"
+            className="glass quick-provider-dropdown"
             style={{
               position: 'absolute',
               top: 'calc(100% + 8px)',

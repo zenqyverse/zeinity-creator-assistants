@@ -858,7 +858,7 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
                   gap: 16,
                 }}
               >
@@ -1011,7 +1011,8 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        fontSize: '0.72rem',
+                        flexWrap: 'wrap',
+                        fontSize: '0.75rem',
                         color: 'var(--muted)',
                         paddingTop: 10,
                         borderTop: '1px solid rgba(255, 255, 255, 0.05)',
