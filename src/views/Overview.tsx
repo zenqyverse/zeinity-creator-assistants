@@ -13,6 +13,7 @@ import {
   TrendingUp,
   Rss,
   Check,
+  ExternalLink,
 } from 'lucide-react';
 import type { ContentItem, ContentSource, GoogleTrendItem, ViewKey } from '@/types';
 import { formatDate } from '@/lib/date';
@@ -66,6 +67,31 @@ export default function Overview({
       isMounted = false;
     };
   }, []);
+
+  const getTitleDestinationIcon = (status: string) => {
+    switch (status) {
+      case 'Published':
+        return <ExternalLink size={13} className="title-nav-icon" aria-hidden="true" />;
+      case 'Scripting':
+      case 'Thumbnailing':
+      case 'Researching':
+        return <FileText size={13} className="title-nav-icon" aria-hidden="true" />;
+      case 'Idea':
+      case 'Validating':
+      default:
+        return <Lightbulb size={13} className="title-nav-icon" aria-hidden="true" />;
+    }
+  };
+
+  const getTitleTooltip = (item: ContentItem) => {
+    if (item.status === 'Published') {
+      return `Buka detail publikasi: ${item.title}`;
+    }
+    if (item.status === 'Researching' || item.status === 'Scripting' || item.status === 'Thumbnailing') {
+      return `Buka workspace & studio naskah: ${item.title}`;
+    }
+    return `Buka dan tinjau ide: ${item.title}`;
+  };
 
   const handleTitleClick = (item: ContentItem) => {
     if (item.status === 'Published') {
@@ -482,10 +508,13 @@ function detectPillarFromKeywords(text: string, fallbackPillar = 'Internet & Soc
                         type="button"
                         className="cell-title cell-title-btn"
                         onClick={() => handleTitleClick(item)}
-                        title={`Buka detail / workspace: ${item.title}`}
-                        aria-label={`Buka detail ${item.title}`}
+                        title={getTitleTooltip(item)}
+                        aria-label={getTitleTooltip(item)}
                       >
-                        {item.title}
+                        <span className="cell-title-inner">
+                          {getTitleDestinationIcon(item.status)}
+                          <span className="cell-title-text">{item.title}</span>
+                        </span>
                       </button>
                     </td>
                     <td>

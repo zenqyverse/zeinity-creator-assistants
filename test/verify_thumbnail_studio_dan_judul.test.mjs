@@ -154,10 +154,11 @@ describe('Verification Suite: Reorganisasi Fitur, Penghapusan Visual Cue, 5 Reko
 
     // Dual-Mode Tabs
     assert.ok(
-      scriptDetailContent.includes('Opsi 1: Copywriting Prompt (Text AI)'),
+      scriptDetailContent.includes('Copywriting Prompt (Text AI)'),
       'Must offer Tab 1 Copywriting Prompt'
     );
     assert.ok(
+      scriptDetailContent.includes('Visual Image AI (Placeholder)') ||
       scriptDetailContent.includes('Opsi 2: Visual Image AI (Placeholder)'),
       'Must offer Tab 2 Visual Image AI Placeholder'
     );
@@ -223,10 +224,12 @@ describe('Verification Suite: Reorganisasi Fitur, Penghapusan Visual Cue, 5 Reko
 
     // Card 3 has clean tooltip without old pipeline advance text
     assert.ok(
+      scriptDetailContent.includes('title="Buka Studio Pembuatan Thumbnail"') ||
       scriptDetailContent.includes('title="Buka Studio Generate Thumbnail (Dual-Mode)"'),
       'Card 3 must have clean title tooltip'
     );
     assert.ok(
+      scriptDetailContent.includes('aria-label="Buka Studio Pembuatan Thumbnail"') ||
       scriptDetailContent.includes('aria-label="Buka Studio Generate Thumbnail (Dual-Mode)"'),
       'Card 3 must have clean aria-label'
     );
@@ -265,6 +268,7 @@ describe('Verification Suite: Reorganisasi Fitur, Penghapusan Visual Cue, 5 Reko
 
     // Modal Header: title and close button (no in-modal collapse toggle)
     assert.ok(
+      scriptDetailContent.includes('Studio Pembuatan Thumbnail') ||
       scriptDetailContent.includes('Studio Generate Thumbnail (Dual-Mode)'),
       'Modal header must display title'
     );

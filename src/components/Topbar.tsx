@@ -199,7 +199,7 @@ export default function Topbar({
 
   return (
     <header className="topbar glass">
-      <button className="icon-btn" type="button" aria-label="Buka navigasi" onClick={onMenuClick}>
+      <button className="icon-btn mobile-menu-btn" type="button" aria-label="Buka navigasi" onClick={onMenuClick}>
         <Menu size={19} />
       </button>
 
@@ -266,12 +266,13 @@ export default function Topbar({
               display: 'inline-block',
             }}
           />
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+          <span className="quick-pill-content" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
             <Zap size={14} style={{ color: 'var(--cyan)' }} />
-            <strong>{activeModelName}</strong>
+            <strong className="quick-pill-name">{activeModelName}</strong>
             <span
+              className="quick-pill-badge"
               style={{
-                fontSize: '0.62rem',
+                fontSize: '0.75rem',
                 padding: '1px 5px',
                 borderRadius: 4,
                 background: isComboMode ? 'rgba(79, 232, 255, 0.2)' : 'rgba(168, 85, 247, 0.2)',
@@ -282,8 +283,9 @@ export default function Topbar({
               {isComboMode ? 'ROUTER' : 'DIRECT'}
             </span>
             <span
+              className="quick-pill-status"
               style={{
-                fontSize: '0.66rem',
+                fontSize: '0.75rem',
                 color: isGatewayOnline ? 'var(--green)' : 'var(--red, #ef4444)',
                 fontWeight: 700,
                 marginLeft: 2,
@@ -322,7 +324,7 @@ export default function Topbar({
             <div
               style={{
                 padding: '4px 8px 8px',
-                fontSize: '0.7rem',
+                fontSize: '0.75rem',
                 fontWeight: 700,
                 color: 'var(--muted)',
                 letterSpacing: '0.5px',
@@ -355,7 +357,7 @@ export default function Topbar({
                 >
                   <RefreshCw size={12} className={isRefreshingCatalog ? 'spin' : ''} />
                 </button>
-                <span style={{ color: isGatewayOnline ? 'var(--green)' : 'var(--red, #ef4444)', fontSize: '0.68rem', fontWeight: 700 }}>
+                <span style={{ color: isGatewayOnline ? 'var(--green)' : 'var(--red, #ef4444)', fontSize: '0.75rem', fontWeight: 700 }}>
                   {isGatewayOnline
                     ? (settings.custom_gateway_endpoint && !settings.custom_gateway_endpoint.includes('localhost')
                       ? 'TUNNEL ONLINE 🟢'
@@ -380,7 +382,7 @@ export default function Topbar({
                   border: isComboMode ? '1px solid var(--cyan)' : '1px solid rgba(255, 255, 255, 0.1)',
                   background: isComboMode ? 'rgba(79, 232, 255, 0.15)' : 'transparent',
                   color: isComboMode ? 'var(--cyan)' : 'var(--muted)',
-                  fontSize: '0.72rem',
+                  fontSize: '0.75rem',
                   fontWeight: 600,
                   cursor: 'pointer',
                   textAlign: 'center',
@@ -401,7 +403,7 @@ export default function Topbar({
                   border: !isComboMode ? '1px solid var(--purple, #a855f7)' : '1px solid rgba(255, 255, 255, 0.1)',
                   background: !isComboMode ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
                   color: !isComboMode ? 'var(--purple, #a855f7)' : 'var(--muted)',
-                  fontSize: '0.72rem',
+                  fontSize: '0.75rem',
                   fontWeight: 600,
                   cursor: 'pointer',
                   textAlign: 'center',
@@ -469,7 +471,7 @@ export default function Topbar({
                         </div>
                         <div
                           style={{
-                            fontSize: '0.66rem',
+                            fontSize: '0.75rem',
                             color: 'var(--muted)',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
@@ -486,7 +488,7 @@ export default function Topbar({
                       ) : (
                         <span
                           style={{
-                            fontSize: '0.64rem',
+                            fontSize: '0.75rem',
                             padding: '1px 5px',
                             borderRadius: 4,
                             background: 'rgba(255, 255, 255, 0.06)',
@@ -515,7 +517,7 @@ export default function Topbar({
                 paddingRight: 6,
               }}
             >
-              <span style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
                 100% 9Router Gateway
               </span>
               <button
@@ -528,7 +530,7 @@ export default function Topbar({
                   background: 'none',
                   border: 'none',
                   color: 'var(--cyan)',
-                  fontSize: '0.72rem',
+                  fontSize: '0.75rem',
                   fontWeight: 600,
                   cursor: 'pointer',
                   display: 'flex',
@@ -559,8 +561,8 @@ export default function Topbar({
         }
       >
         <span className="dot" />
-        <Bot size={11} />
-        {isBotConfigured ? 'Bot' : 'Bot —'}
+        <Bot size={13} />
+        <span className="bot-label">{isBotConfigured ? 'Bot' : 'Bot —'}</span>
       </div>
 
       <button
@@ -571,8 +573,8 @@ export default function Topbar({
         title={isOpen ? 'Tutup Log Aktivitas' : 'Buka Log Aktivitas'}
         style={{
           position: 'relative',
-          width: 34,
-          height: 34,
+          width: 44,
+          height: 44,
           color: isOpen ? 'var(--cyan)' : 'inherit',
           borderColor: isOpen ? 'rgba(79, 232, 255, 0.4)' : undefined,
           background: isOpen ? 'rgba(79, 232, 255, 0.1)' : undefined,
@@ -598,7 +600,6 @@ export default function Topbar({
       <div
         className="avatar user-avatar"
         role="img"
-        tabIndex={0}
         title="Akun: Zeinity Admin (Sesi Lokal)"
         aria-label="Profil Pengguna: Zeinity Admin"
       >

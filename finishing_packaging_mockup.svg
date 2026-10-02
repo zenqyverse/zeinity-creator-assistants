@@ -88,7 +88,7 @@
 
     <!-- Tab 2: FINISHING & PACKAGING (ACTIVE GLOWING) -->
     <rect x="180" y="4" width="254" height="28" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="1.2" filter="url(#glowCyan2)" />
-    <text x="196" y="22" fill="#f8fafc" font-size="12" font-weight="800">📦 2. FINISHING &amp; PACKAGING</text>
+    <text x="196" y="22" fill="#f8fafc" font-size="12" font-weight="800">📦 2. Finishing &amp; Packaging</text>
     <circle cx="414" cy="18" r="4" fill="#38bdf8" />
   </g>
 
@@ -117,7 +117,7 @@
       <circle cx="28" cy="28" r="14" fill="#065f46" />
       <text x="23" y="33" fill="#34d399" font-size="14" font-weight="900">✓</text>
       
-      <text x="50" y="24" fill="#f8fafc" font-size="13" font-weight="700">1. Audit Spoken &amp; TTS</text>
+      <text x="50" y="24" fill="#f8fafc" font-size="13" font-weight="700">Audit Spoken &amp; TTS</text>
       <rect x="50" y="32" width="70" height="18" rx="4" fill="#064e3b" />
       <text x="56" y="44" fill="#34d399" font-size="9" font-weight="700">● SELESAI</text>
 
@@ -142,7 +142,7 @@
       <circle cx="28" cy="28" r="14" fill="#065f46" />
       <text x="23" y="33" fill="#34d399" font-size="14" font-weight="900">✓</text>
 
-      <text x="50" y="24" fill="#f8fafc" font-size="13" font-weight="700">2. 5 Formula Judul</text>
+      <text x="50" y="24" fill="#f8fafc" font-size="13" font-weight="700">5 Formula Judul</text>
       <rect x="50" y="32" width="94" height="18" rx="4" fill="#064e3b" />
       <text x="56" y="44" fill="#34d399" font-size="9" font-weight="700">● JUDUL TERPILIH</text>
 
@@ -170,7 +170,7 @@
       <circle cx="28" cy="28" r="14" fill="#0284c7" />
       <text x="24" y="34" fill="#ffffff" font-size="14" font-weight="900">3</text>
 
-      <text x="50" y="24" fill="#38bdf8" font-size="13" font-weight="800">3. Studio Thumbnail</text>
+      <text x="50" y="24" fill="#38bdf8" font-size="13" font-weight="800">Studio Thumbnail</text>
       <rect x="50" y="32" width="102" height="18" rx="4" fill="#0369a1" fill-opacity="0.5" stroke="#38bdf8" stroke-width="0.8" />
       <text x="56" y="44" fill="#e0f2fe" font-size="9" font-weight="800">● SEDANG AKTIF</text>
 

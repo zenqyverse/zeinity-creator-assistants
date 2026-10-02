@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   FileText,
   Copy,
@@ -11,6 +11,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { formatStructuredPrompt } from '@/lib/gemini';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 export interface ThumbnailTitleStudioProps {
   isOpen: boolean;
@@ -59,13 +60,33 @@ export const ThumbnailTitleStudio: React.FC<ThumbnailTitleStudioProps> = ({
   onPublish,
   onProceedToThumbnailing,
 }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>(isOpen);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (document.querySelector('.alert-modal-layer')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const formatPromptText = formatStructuredPrompt;
 
   return (
     <div
+      ref={modalRef}
       className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Studio Pembuatan Thumbnail"
       onClick={onClose}
     >
       <div
@@ -86,11 +107,11 @@ export const ThumbnailTitleStudio: React.FC<ThumbnailTitleStudioProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <ImageIcon size={18} style={{ color: 'var(--cyan)' }} />
               <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.05rem', fontWeight: 700 }}>
-                Studio Generate Thumbnail (Dual-Mode)
+                Studio Pembuatan Thumbnail
               </h3>
             </div>
             <span className="collapsed-pill" style={{ background: 'rgba(79, 232, 255, 0.12)', color: 'var(--cyan)', borderColor: 'rgba(79, 232, 255, 0.3)' }}>
-              {thumbnailMode === 'prompt' ? 'Mode 1: Copywriting Prompt' : 'Mode 2: Visual Image AI'}
+              {thumbnailMode === 'prompt' ? 'Copywriting Prompt (Text AI)' : 'Visual Image AI'}
             </span>
           </div>
           <button
@@ -129,7 +150,7 @@ export const ThumbnailTitleStudio: React.FC<ThumbnailTitleStudioProps> = ({
               }}
             >
               <FileText size={16} style={{ color: 'var(--cyan)' }} />
-              <span>Opsi 1: Copywriting Prompt (Text AI)</span>
+              <span>Copywriting Prompt (Text AI)</span>
             </button>
             <button
               type="button"
@@ -152,7 +173,7 @@ export const ThumbnailTitleStudio: React.FC<ThumbnailTitleStudioProps> = ({
               }}
             >
               <ImageIcon size={16} style={{ color: 'var(--cyan)' }} />
-              <span>Opsi 2: Visual Image AI (Placeholder)</span>
+              <span>Visual Image AI (Placeholder)</span>
             </button>
           </div>
 
@@ -437,7 +458,7 @@ export const ThumbnailTitleStudio: React.FC<ThumbnailTitleStudioProps> = ({
 
               {/* Integration notice */}
               <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: 'rgba(15, 23, 42, 0.6)', border: '1px solid #1e293b', fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5 }}>
-                <span style={{ color: 'var(--cyan)', fontWeight: 700 }}>ℹ️ Placeholder Generasi Gambar Aktif:</span> Studio ini dirancang siap dihubungkan langsung ke API provider image generation ({thumbnailProvider === 'imagen3' ? 'Google Imagen 3' : thumbnailProvider === 'dalle3' ? 'OpenAI DALL-E 3' : 'Flux 1.1 Pro'}) pada pembaruan mendatang. Untuk saat ini, Anda dapat mengunduh berkas mockup SVG atau menyalin copywriting prompt di Opsi 1 untuk digunakan di Midjourney, Flux, atau image generator web lainnya.
+                <span style={{ color: 'var(--cyan)', fontWeight: 700 }}>ℹ️ Placeholder Generasi Gambar Aktif:</span> Studio ini dirancang siap dihubungkan langsung ke API provider image generation ({thumbnailProvider === 'imagen3' ? 'Google Imagen 3' : thumbnailProvider === 'dalle3' ? 'OpenAI DALL-E 3' : 'Flux 1.1 Pro'}) pada pembaruan mendatang. Untuk saat ini, Anda dapat mengunduh berkas mockup SVG atau menyalin copywriting prompt untuk digunakan di Midjourney, Flux, atau image generator web lainnya.
               </div>
             </div>
           )}

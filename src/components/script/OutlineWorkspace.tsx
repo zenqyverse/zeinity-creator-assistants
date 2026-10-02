@@ -143,7 +143,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
     <section className="detail-card glass" style={{ margin: 0, display: 'flex', flexDirection: 'column' }}>
       <div style={{ borderBottom: '1px solid #1a2942', paddingBottom: 10, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
         <h3 style={{ margin: 0, color: 'var(--cyan)', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.95rem' }}>
-          <FileText size={17} /> PANEL KIRI: PIPELINE KERANGKA (OUTLINE STUDIO)
+          <FileText size={17} /> Pipeline Kerangka (Outline Studio)
         </h3>
         <span className="collapsed-pill" style={{ background: 'rgba(79, 232, 255, 0.12)', color: 'var(--cyan)' }}>
           Fokus Panel

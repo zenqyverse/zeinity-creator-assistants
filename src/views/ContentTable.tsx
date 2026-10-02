@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Upload, Filter, Pencil, Trash2, Zap, FileText, Image, ExternalLink, Loader2, Bot, Flame, TrendingUp, Rss } from 'lucide-react';
+import { Plus, Upload, Filter, Pencil, Trash2, Zap, FileText, Image, ExternalLink, Loader2, Bot, Flame, TrendingUp, Rss, Lightbulb, Sparkles } from 'lucide-react';
 import {
   CONTENT_PILLARS,
   CONTENT_STATUSES,
@@ -30,7 +30,10 @@ interface ContentTableProps {
   eyebrow: string;
   subtitle: string;
   defaultTab?: string;
+  viewType?: ContentTableViewType;
 }
+
+export type ContentTableViewType = 'ideas' | 'research' | 'scripts' | 'published';
 
 // 5 Pilar Konten Resmi Zeinity (tersinkronisasi dari types.ts)
 // 1. Internet & Social Media Culture
@@ -62,12 +65,13 @@ export default function ContentTable({
   eyebrow,
   subtitle,
   defaultTab = 'all',
+  viewType = 'ideas',
 }: ContentTableProps) {
   const { showAlert } = useAlert();
 
-  const isScriptsView = title.toLowerCase().includes('script');
-  const isPublishedView = title.toLowerCase().includes('publish');
-  const isResearchView = title.toLowerCase().includes('research');
+  const isScriptsView = viewType === 'scripts';
+  const isPublishedView = viewType === 'published';
+  const isResearchView = viewType === 'research';
 
   const tabs = useMemo<{ key: string; label: string }[]>(() => {
     if (isPublishedView) {
@@ -82,9 +86,7 @@ export default function ContentTable({
     }
     if (isScriptsView) {
       return [
-        { key: 'production', label: 'All Scripts' },
-        { key: 'Scripting', label: 'Scripting' },
-        { key: 'Thumbnailing', label: 'Thumbnailing' },
+        { key: 'all', label: 'All Scripts' },
         { key: 'Telegram', label: 'Telegram' },
         { key: 'Web', label: 'Web' },
         { key: 'YouTube Trends', label: 'YouTube' },
@@ -94,8 +96,6 @@ export default function ContentTable({
     }
     if (isResearchView) {
       return [
-        { key: 'validation', label: 'Needs Validation' },
-        { key: 'Researching', label: 'In Research' },
         { key: 'all', label: 'All Items' },
         { key: 'Telegram', label: 'Telegram' },
         { key: 'Web', label: 'Web' },
@@ -105,14 +105,12 @@ export default function ContentTable({
       ];
     }
     return [
-      { key: 'all', label: 'All Ideas' },
+      { key: 'all', label: 'Semua' },
       { key: 'Telegram', label: 'Telegram' },
       { key: 'Web', label: 'Web' },
       { key: 'YouTube Trends', label: 'YouTube' },
       { key: 'Google Trends', label: 'Google' },
       { key: 'RSS', label: 'RSS' },
-      { key: 'validation', label: 'Needs Validation' },
-      { key: 'production', label: 'In Production' },
     ];
   }, [isPublishedView, isScriptsView, isResearchView]);
 
@@ -127,12 +125,12 @@ export default function ContentTable({
     return statuses;
   }, [isPublishedView, isScriptsView, isResearchView]);
 
-  // Sync activeTab and reset filters when defaultTab or title changes (e.g. view switching)
+  // Sync activeTab and reset filters when defaultTab, viewType, or title changes (e.g. view switching)
   useEffect(() => {
     setActiveTab(defaultTab);
     setStatusFilter('');
     setCategoryFilter('');
-  }, [defaultTab, title]);
+  }, [defaultTab, viewType, title]);
 
   // Ensure activeTab is valid in the current tab list; fallback to first tab if not
   useEffect(() => {
@@ -152,14 +150,8 @@ export default function ContentTable({
     const query = searchQuery.trim().toLowerCase();
     return items.filter((item) => {
       let tabMatch = false;
-      if (activeTab === 'all') {
+      if (activeTab === 'all' || activeTab === 'production' || activeTab === 'validation') {
         tabMatch = true;
-      } else if (activeTab === 'validation') {
-        tabMatch = item.status === 'Idea' || item.status === 'Validating' || item.status === 'Researching';
-      } else if (activeTab === 'production') {
-        tabMatch = (['Researching', 'Scripting', 'Thumbnailing'] as ContentStatus[]).includes(item.status);
-      } else if (activeTab === 'Scripting' || activeTab === 'Thumbnailing' || activeTab === 'Researching' || activeTab === 'Idea' || activeTab === 'Published') {
-        tabMatch = item.status === activeTab;
       } else {
         tabMatch = item.source === activeTab;
       }
@@ -186,6 +178,15 @@ export default function ContentTable({
     if (isResearchView) return 'item riset';
     return 'ide aktif';
   }, [isPublishedView, isScriptsView, isResearchView]);
+
+  const isAnyFilterActive = useMemo(() => {
+    return Boolean(
+      categoryFilter ||
+      statusFilter ||
+      searchQuery.trim() ||
+      (activeTab !== (tabs[0]?.key || 'all') && activeTab !== 'all')
+    );
+  }, [categoryFilter, statusFilter, searchQuery, activeTab, tabs]);
 
   const emptyMessage = useMemo(() => {
     if (isPublishedView) return 'Tidak ada konten live yang cocok dengan filter saat ini.';
@@ -302,6 +303,31 @@ export default function ContentTable({
     }
   };
 
+  const getTitleDestinationIcon = (status: ContentStatus) => {
+    switch (status) {
+      case 'Published':
+        return <ExternalLink size={13} className="title-nav-icon" aria-hidden="true" />;
+      case 'Scripting':
+      case 'Thumbnailing':
+      case 'Researching':
+        return <FileText size={13} className="title-nav-icon" aria-hidden="true" />;
+      case 'Idea':
+      case 'Validating':
+      default:
+        return <Lightbulb size={13} className="title-nav-icon" aria-hidden="true" />;
+    }
+  };
+
+  const getTitleTooltip = (item: ContentItem) => {
+    if (item.status === 'Published') {
+      return `Buka detail publikasi: ${item.title}`;
+    }
+    if (item.status === 'Researching' || item.status === 'Scripting' || item.status === 'Thumbnailing') {
+      return `Buka workspace & studio naskah: ${item.title}`;
+    }
+    return `Buka dan tinjau ide: ${item.title}`;
+  };
+
   const handleTitleClick = (item: ContentItem) => {
     if (item.status === 'Published') {
       onViewPublished(item);
@@ -334,7 +360,7 @@ export default function ContentTable({
 
       <section className="pipeline-panel glass">
         <div className="filters">
-          <div className="tabs" role="tablist" aria-label="Filter ide">
+          <div className="tabs" role="tablist" aria-label="Filter sumber konten">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
@@ -372,14 +398,14 @@ export default function ContentTable({
               type="button"
               onClick={handleResetFilters}
               style={{
-                cursor: (categoryFilter || statusFilter || searchQuery.trim()) ? 'pointer' : 'default',
-                color: (categoryFilter || statusFilter || searchQuery.trim()) ? 'var(--cyan)' : undefined,
-                borderColor: (categoryFilter || statusFilter || searchQuery.trim()) ? 'var(--cyan)' : undefined,
+                cursor: isAnyFilterActive ? 'pointer' : 'default',
+                color: isAnyFilterActive ? 'var(--cyan)' : undefined,
+                borderColor: isAnyFilterActive ? 'var(--cyan)' : undefined,
               }}
-              title={(categoryFilter || statusFilter || searchQuery.trim()) ? 'Klik untuk mereset filter' : 'Filter aktif'}
+              title={isAnyFilterActive ? 'Klik untuk mereset filter' : 'Filter aktif'}
             >
               <Filter size={13} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />
-              {(categoryFilter || statusFilter || searchQuery.trim()) ? 'Reset Filter' : 'Filter'}
+              {isAnyFilterActive ? 'Reset Filter' : 'Filter'}
             </button>
           </div>
         </div>
@@ -409,17 +435,85 @@ export default function ContentTable({
                 {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="empty-row">
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '24px 0' }}>
-                        <span>{emptyMessage}</span>
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          onClick={handleResetFilters}
-                          style={{ fontSize: '0.82rem', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      {items.length === 0 ? (
+                        <div
+                          className="zero-state-onboarding"
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 14,
+                            padding: '40px 16px',
+                            textAlign: 'center',
+                          }}
                         >
-                          <Filter size={13} /> Reset Filter
-                        </button>
-                      </div>
+                          <div
+                            style={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: '50%',
+                              background: 'rgba(79, 232, 255, 0.12)',
+                              border: '1px solid rgba(79, 232, 255, 0.28)',
+                              display: 'grid',
+                              placeItems: 'center',
+                              color: 'var(--cyan)',
+                            }}
+                          >
+                            <Sparkles size={24} />
+                          </div>
+                          <div>
+                            <h4 style={{ margin: '0 0 6px 0', fontSize: '1.05rem', color: '#edf6ff', fontWeight: 700 }}>
+                              Selamat Datang di Zeinity Creator Assistant
+                            </h4>
+                            <p style={{ margin: 0, maxWidth: 480, color: 'var(--muted)', fontSize: '0.88rem', lineHeight: 1.55 }}>
+                              Belum ada ide konten yang terdaftar di workspace Anda. Mulai pipeline riset dan penulisan naskah dengan menambahkan ide pertama Anda.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={onAddIdea}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              padding: '10px 20px',
+                              fontWeight: 700,
+                              marginTop: 4,
+                            }}
+                          >
+                            <Plus size={16} /> + Tambah Ide Pertama
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 12,
+                            padding: '24px 0',
+                          }}
+                        >
+                          <span style={{ color: 'var(--muted)', fontSize: '0.88rem' }}>{emptyMessage}</span>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={handleResetFilters}
+                            style={{
+                              fontSize: '0.82rem',
+                              padding: '6px 14px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                            }}
+                          >
+                            <Filter size={13} /> Reset Filter
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ) : (
@@ -430,10 +524,13 @@ export default function ContentTable({
                           type="button"
                           className="cell-title cell-title-btn"
                           onClick={() => handleTitleClick(item)}
-                          title={`Buka detail / workspace: ${item.title}`}
-                          aria-label={`Buka detail ${item.title}`}
+                          title={getTitleTooltip(item)}
+                          aria-label={getTitleTooltip(item)}
                         >
-                          {item.title}
+                          <span className="cell-title-inner">
+                            {getTitleDestinationIcon(item.status)}
+                            <span className="cell-title-text">{item.title}</span>
+                          </span>
                         </button>
                       </td>
                       <td>
@@ -550,10 +647,10 @@ export default function ContentTable({
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                           {renderAction(item)}
                           <button
-                            className="row-action default"
+                            className="row-action edit-btn default"
                             type="button"
                             onClick={() => onEdit(item)}
-                            title="Edit Ide"
+                            title={`Edit metadata ide: ${item.title}`}
                             aria-label={`Edit ide: ${item.title}`}
                             style={{ padding: '6px' }}
                           >

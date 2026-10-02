@@ -87,8 +87,12 @@ describe('6 Prompt Features Alignment with implementation_plan_Gambaran_Output_P
   });
 
   it('UI & Data Integration: ScriptDetail.tsx and useContent.ts handle Thumbnail Studio and 5 Titles', () => {
-    // ScriptDetail.tsx imports & handlers
-    assert.ok(scriptDetailContent.includes('Studio Generate Thumbnail'), 'ScriptDetail must render Studio Generate Thumbnail');
+    assert.ok(
+      scriptDetailContent.includes('Studio Pembuatan Thumbnail') ||
+      scriptDetailContent.includes('Studio Thumbnail') ||
+      scriptDetailContent.includes('Studio Generate Thumbnail'),
+      'ScriptDetail must render Studio Thumbnail / Studio Pembuatan Thumbnail'
+    );
     assert.ok(scriptDetailContent.includes('Generate Rekomendasi Judul ✨'), 'ScriptDetail must render Generate Rekomendasi Judul ✨');
     assert.ok(scriptDetailContent.includes('handleGenerateTitles'), 'ScriptDetail must define handleGenerateTitles');
 

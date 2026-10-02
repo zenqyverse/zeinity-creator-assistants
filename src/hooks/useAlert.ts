@@ -17,6 +17,7 @@ export interface AlertOptions {
   actionButton?: {
     label: string;
     onClick: () => void;
+    icon?: 'external' | 'reset' | 'none';
   };
   onConfirm?: () => void;
   onCancel?: () => void;

@@ -7,7 +7,7 @@
 **Studio Produksi Konten & Naskah Spoken-First Berbasis AI untuk Kreator YouTube**
 
 [![Status: Dalam Pengembangan Aktif](https://img.shields.io/badge/Status-Dalam%20Pengembangan%20Aktif-amber?style=for-the-badge&logo=git)](https://github.com/zenqyverse/zeinity-creator-assistants)
-[![Pengujian Lulus](https://img.shields.io/badge/Pengujian-238%20Lulus%20%7C%2036%20Suites-brightgreen?style=for-the-badge&logo=node.js)](test/)
+[![Pengujian Lulus](https://img.shields.io/badge/Pengujian-277%20Lulus%20%7C%2047%20Suites-brightgreen?style=for-the-badge&logo=node.js)](test/)
 [![React](https://img.shields.io/badge/React-18.3.1-61dafb?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-3178c6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.4.8-646cff?style=for-the-badge&logo=vite)](https://vitejs.dev/)
@@ -47,7 +47,7 @@ Alur tersebut membebani kreator dengan kerja manual bolak-balik yang melelahkan.
 | **Beban Pengguna** | Kerja keras salin-tempel manual | Aksi AI langsung 1-klik, pengguna fokus kurasi, gerbang persetujuan & arahan kreatif |
 | **Bentuk Output** | String teks prompt mentah | Draf naskah hidup, diff audit terstruktur, mockup vektor interaktif, revisi instan |
 | **Penulisan Naskah** | Di notepad atau Google Docs luar | Dual-Track Studio dengan alur Hook-First, penghitung kata & *auto-save* |
-| **Alur Finishing** | Pop-up terfragmentasi & checklist terpisah | Studio FINISHING & PACKAGING 2-Panel Master-Detail terpadu |
+| **Alur Finishing** | Pop-up terfragmentasi & checklist terpisah | Studio Finishing & Packaging 2-Panel Master-Detail terpadu |
 | **Kualitas Audio** | Bahasa tulisan kaku penuh klise AI | Penegakan ketat 14 aturan *spoken-first* + sub-sesi poles *Kasual Friendly* |
 | **Integritas Draf** | Menimpa teks berisiko hilangnya draf | Riwayat snapshot draf dengan *Undo Revisi AI* 1-klik & *caching offline* |
 | **Istilah Antarmuka** | "Prompts", "Generator", "Output" | **"Pipeline Naskah"** & **"Draft Studio"** |
@@ -98,17 +98,17 @@ Alur tersebut membebani kreator dengan kerja manual bolak-balik yang melelahkan.
 - **Ruang Kerja Hook Collapsible**: Akordion lipat di `OutlineWorkspace.tsx` memungkinkan kreator melipat kartu hook setelah selesai agar dapat fokus 100% pada penulisan outline.
 - **Pre-Flight Bar Ringkas (+200px Ruang Kerja Bebas)**: Menyederhanakan bilah konfigurasi pre-flight yang sebelumnya memakan ruang vertikal 200px+ menjadi baris pill status kompak dengan modal interaktif `⚙ Setelan`.
 
-### Fase 6: Konsolidasi Studio FINISHING & PACKAGING & Poles Kasual Narasi
+### Fase 6: Konsolidasi Studio Finishing & Packaging & Poles Kasual Narasi
 - **Penyederhanaan Tab Kerja Menjadi 2 Workspace Utama**:
   1. `✍️ 1. Studio Naskah` (Fokus penuh pada alur Hook-First, penyusunan kerangka, dan penulisan naskah utuh).
-  2. `📦 2. FINISHING & PACKAGING` (Penyatuan terpadu Spoken Audit, 5 Formula Judul, dan Studio Thumbnail).
+  2. `📦 2. Finishing & Packaging` (Penyatuan terpadu Spoken Audit, 5 Formula Judul, dan Studio Thumbnail).
 - **Tata Letak Master-Detail 2-Panel**:
   - **Panel Kiri (Stepper & Progres Packaging)**:
     - Indikator progres visual: *"Progres Packaging: X dari 3 Selesai (Y%)"*.
     - 3 Kartu Stepper Vertikal menggantikan checklist statis lama di bawah halaman:
-      - *Kartu 1: 1. Audit Spoken & TTS* (Status SELESAI / PERLU AUDIT, counter temuan).
-      - *Kartu 2: 2. 5 Formula Judul* (Status JUDUL TERPILIH / 5 VARIAN SIAP, preview judul aktif, status ramah layar HP).
-      - *Kartu 3: 3. Studio Thumbnail* (Status SEDANG AKTIF / SIAP, rasio 16:9, preview hook teks kapital).
+      - *Kartu 1: Audit Spoken & TTS* (Status SELESAI / PERLU AUDIT, counter temuan).
+      - *Kartu 2: 5 Formula Judul* (Status JUDUL TERPILIH / 5 VARIAN SIAP, preview judul aktif, status ramah layar HP).
+      - *Kartu 3: Studio Thumbnail* (Status SEDANG AKTIF / SIAP, rasio 16:9, preview hook teks kapital).
     - Tombol cepat: *"Kembali ke Studio Naskah"*.
   - **Panel Kanan (Kanvas Sub-Studio Aktif)**:
     - **Sub-Studio 1 (Audit Spoken & TTS)**:
@@ -150,6 +150,13 @@ Alur tersebut membebani kreator dengan kerja manual bolak-balik yang melelahkan.
 - **Rantai Auto-Fallback Multi-Provider (4 Lapis)**: Mekanisme failover dinamis (`9Router Gateway` ➔ `Google Gemini` ➔ `OpenRouter` ➔ `Ollama Lokal`). Bila suatu provider terkena limit kuota atau gagal terhubung, studio otomatis mengalihkan tugas ke provider berikutnya dengan log transparan di laci Terminal.
 - **Topbar 1-Click AI Switcher**: Widget interaktif pada bilah atas untuk mengganti model instan, memantau latensi koneksi, dan membuka jalan pintas ke Settings tanpa mengganggu alur kerja.
 
+### Fase 8: Audit UI/UX Menyeluruh & Remediasi Desain Sistem
+- **Integritas Data & Pencegah Kehilangan Draf (P0)**: Penjaga perubahan belum tersimpan (*dirty-state guard*) pada klik backdrop modal dan tombol Escape (`AddIdeaModal`, `BulkImportModal`), mencegah hilangnya ide secara tak sengaja. Persistensi dinamis `active_provider` pada Settings.
+- **Aksesibilitas & Manajemen Fokus Keyboard (P1)**: Hook universal `useFocusTrap` pada seluruh modal, rasio kontras warna WCAG AA (`--muted: #9eb3cf`, 6.84:1), penskalaan tipografi mikro ke `>= 12px` (`0.75rem`), tautan pintas aksesibilitas `Lewati ke Konten Utama` (*Skip link*), dan pembersihan tombol semu.
+- **Ergonomi Navigasi Desktop (P1)**: Tata letak sidebar persisten pada layar desktop (`>= 1024px`) dengan semantik `aria-current="page"`. Sub-tab toggle responsif studio naskah pada tablet (`<= 960px`) dan target sentuh mobile minimal 44px.
+- **Standardisasi Skala Z-Index & Arsitektur Modal (P1/P2)**: Skala tokenized (`--z-header: 30`, `--z-sidebar: 30`, `--z-dropdown: 70`, `--z-terminal: 80`, `--z-modal: 1000`, `--z-zen: 1050`, `--z-alert: 2000`).
+- **Pembersihan Pipeline & Polishing Studio**: Pemisahan bersih tab Sumber Konten dan filter Status Pipeline, eliminasi sniffing string URL, perampingan panel AI Gateway di Sidebar khusus untuk 9Router, dan eliminasi kebocoran label wireframe teknis.
+
 ---
 
 ## ⚡ Fitur Utama
@@ -159,7 +166,7 @@ Alur tersebut membebani kreator dengan kerja manual bolak-balik yang melelahkan.
   - *Track B (External Handoff)*: Generator prompt instan 0-token yang siap disalin ke model eksternal unggulan (Claude 3.5 Sonnet, ChatGPT, DeepSeek).
 - **🎯 Mesin Narasi Hook-First**:
   - 6 Formula Hook Zeinity dengan rekomendasi AI otomatis, skor keyakinan, dan perlindungan *Human Gatekeeper*.
-- **📦 Studio FINISHING & PACKAGING Terpadu**:
+- **📦 Studio Finishing & Packaging Terpadu**:
   - Ruang kerja 2-Panel Master-Detail yang menggabungkan Audit Spoken & Kasual, 5 Formula Judul, dan Studio Pembuatan Thumbnail inline.
 - **🎙️ Poles Audio & Voiceover Dua Tahap**:
   - Tahap 1: Penegakan 14 aturan *Spoken-First* & audit prosodi TTS dengan kartu *diff* interaktif.
@@ -224,8 +231,8 @@ flowchart LR
    - **In-App Studio**: Tulis babak demi babak (*per-beat*) dengan penghitung kata langsung dan penyimpanan otomatis.
    - **External Handoff**: Salin prompt 0-token terstruktur untuk digunakan di Claude 3.5 Sonnet atau ChatGPT.
 
-### Tahap 6: Studio FINISHING & PACKAGING (Tab 2)
-1. Buka tab **FINISHING & PACKAGING**:
+### Tahap 6: Studio Finishing & Packaging (Tab 2)
+1. Buka tab **Finishing & Packaging**:
 2. **Sub-Studio 1 (Audit Spoken & TTS)**:
    - Jalankan audit untuk meninjau kartu perbandingan interaktif (`BAGIAN ASLI` vs `REVISI SPOKEN / TTS`).
    - Lanjutkan ke **Sub-Sesi Poles Kasual Friendly** untuk mencairkan bahasa kaku menjadi percakapan hangat.
@@ -386,7 +393,7 @@ zeinity-creator-assistants/
 - [x] Studio Naskah AI In-App Dual-Track & Serah Terima Prompt Eksternal
 - [x] Penegakan 14 Aturan *Spoken-First Voiceover* & Prosodi TTS
 - [x] Sub-Sesi Poles Suara Kasual Friendly (`runCasualAudit`)
-- [x] Konsolidasi Studio FINISHING & PACKAGING 2-Panel Master-Detail
+- [x] Konsolidasi Studio Finishing & Packaging 2-Panel Master-Detail
 - [x] Kanvas Pratinjau Mockup Thumbnail Vektor SVG Inline & Panduan *Safe Zone 80%*
 - [x] Radar Tren (YouTube Data API v3 & Google Search Trends RSS XML)
 - [x] RSS Reader Studio dengan CRUD Sumber Feed, Fallback OpenGraph & Toggle Dibaca/Belum

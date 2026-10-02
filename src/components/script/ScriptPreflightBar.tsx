@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Undo2, Settings, X, Check, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { Undo2, Settings, X, Check, SlidersHorizontal } from 'lucide-react';
 import { calculateTargetWords } from '@/lib/gemini';
 
 export interface ScriptPreflightBarProps {
@@ -231,7 +231,7 @@ export const ScriptPreflightBar: React.FC<ScriptPreflightBarProps> = ({
                       letterSpacing: '0.2px',
                     }}
                   >
-                    1. PRE-FLIGHT CONFIGURATION: PILIH JALUR, TARGET DURASI/KATA, & SINKRONISASI KONTEKS IDE
+                    Konfigurasi Parameter Naskah (Pre-Flight Settings)
                   </h3>
                   <div style={{ fontSize: '0.72rem', color: '#7890af', marginTop: 2 }}>
                     Konfigurasi parameter awal penulisan naskah video sebelum generasi AI

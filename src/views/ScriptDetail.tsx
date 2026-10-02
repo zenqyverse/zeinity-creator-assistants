@@ -18,7 +18,6 @@ import {
   Clock,
   Bot,
   FileDown,
-  AlertTriangle,
   Flame,
   TrendingUp,
   Rss,
@@ -39,7 +38,6 @@ import {
   calculateTargetWords,
   runSpokenAudit,
   runCasualAudit,
-  formatExternalCasualAuditPrompt,
   generateThumbnailPrompt,
   generateAlternativeTitles,
   formatStructuredPrompt,
@@ -57,8 +55,9 @@ import {
   ScriptDraftStudio,
   ThumbnailTitleStudio,
 } from '@/components/script';
-import { useAlert, parseAIError } from '@/components/AlertModal';
+import { AlertModal, useAlert, parseAIError } from '@/components/AlertModal';
 import { useTerminal } from '@/components/Terminal';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 import {
   type DraftSnapshot,
@@ -88,6 +87,7 @@ interface ScriptDetailProps {
   providerConfig: ProviderConfig;
   identityText: string;
   onNavigateSettings?: () => void;
+  onViewPublished?: (item: ContentItem) => void;
 }
 
 const formatPromptText = formatStructuredPrompt;
@@ -99,6 +99,7 @@ export default function ScriptDetail({
   providerConfig,
   identityText,
   onNavigateSettings,
+  onViewPublished,
 }: ScriptDetailProps) {
   const { showAlert, showError, showWarning } = useAlert();
   const { startActivity, addLog, finishActivity, errorActivity } = useTerminal();
@@ -146,6 +147,7 @@ export default function ScriptDetail({
   // Draft Versioning & 5 Title Recommendations states
   const [draftHistory, setDraftHistory] = useState<DraftSnapshot[]>(() => getDraftSnapshots(item.id));
   const [showDraftHistoryModal, setShowDraftHistoryModal] = useState(false);
+  const draftHistoryModalRef = useFocusTrap<HTMLDivElement>(showDraftHistoryModal);
   const [titleA, setTitleA] = useState(item.generated_title_a || '');
   const [titleB, setTitleB] = useState(item.generated_title_b || '');
   const [generatingTitles, setGeneratingTitles] = useState(false);
@@ -243,6 +245,16 @@ export default function ScriptDetail({
   const [showSwitchTrackModal, setShowSwitchTrackModal] = useState<boolean>(false);
   const [pendingTrack, setPendingTrack] = useState<'in_app' | 'external' | null>(null);
   const [showOverwriteDraftModal, setShowOverwriteDraftModal] = useState<boolean>(false);
+
+  // Tablet Studio Ergonomic Sub-Tab State (<= 960px) - F-14
+  const [tabletStudioTab, setTabletStudioTab] = useState<'outline' | 'draft'>('outline');
+
+  // Auto-transition langsung ke PublishedDetail jika status Published (F-16)
+  useEffect(() => {
+    if (item.status === 'Published' && onViewPublished) {
+      onViewPublished(item);
+    }
+  }, [item, onViewPublished]);
 
   const lastSavedResearchRef = useRef<string>(item.external_research_output || '');
   const lastSavedScriptRef = useRef<string>(item.external_script_output || '');
@@ -763,23 +775,35 @@ export default function ScriptDetail({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        // Guard: If an AlertModal is currently open in foreground, let it close first
+        if (document.querySelector('.alert-modal-layer')) {
+          return;
+        }
         if (isThumbnailModalOpen) {
           setIsThumbnailModalOpen(false);
           return;
         }
         if (showOverwriteDraftModal) {
+          e.preventDefault();
+          e.stopPropagation();
           setShowOverwriteDraftModal(false);
           return;
         }
         if (showSwitchTrackModal) {
+          e.preventDefault();
+          e.stopPropagation();
           setShowSwitchTrackModal(false);
           return;
         }
         if (showDraftHistoryModal) {
+          e.preventDefault();
+          e.stopPropagation();
           setShowDraftHistoryModal(false);
           return;
         }
         if (isScriptMaximized) {
+          e.preventDefault();
+          e.stopPropagation();
           setIsScriptMaximized(false);
           return;
         }
@@ -2161,7 +2185,7 @@ export default function ScriptDetail({
     addLog('Menyimpan status publikasi dan menginisialisasi metrik video...', 60);
 
     try {
-      await onUpdate(item.id, {
+      const updated = await onUpdate(item.id, {
         status: 'Published',
         published_at: new Date().toISOString(),
         views: item.views ?? 0,
@@ -2187,8 +2211,14 @@ export default function ScriptDetail({
       showAlert({
         type: 'success',
         title: 'Publikasi Berhasil',
-        message: 'Konten berhasil dipublikasikan! Cek di tab Published.',
-        onConfirm: () => onBack(),
+        message: 'Konten berhasil dipublikasikan! Mengalihkan ke workspace publikasi...',
+        onConfirm: () => {
+          if (onViewPublished) {
+            onViewPublished(updated || { ...item, status: 'Published' });
+          } else {
+            onBack();
+          }
+        },
       });
     } catch (err: unknown) {
       const raw = err instanceof Error ? err.message : 'Gagal mempublikasikan konten.';
@@ -2370,8 +2400,8 @@ export default function ScriptDetail({
 
       {item.status === 'Scripting' ? (
         <div className="scripting-workspace-stretched" style={{ width: '100%', maxWidth: '100%' }}>
-          {/* ==================== 1. PRE-FLIGHT CONFIGURATION (FULL WIDTH) ==================== */}
-          {/* PRE-FLIGHT CONFIGURATION: PILIH JALUR, TARGET DURASI/KATA, & SINKRONISASI KONTEKS IDE */}
+          {/* ==================== KONFIGURASI PARAMETER NASKAH (PRE-FLIGHT SETTINGS) ==================== */}
+          {/* Konfigurasi Parameter Naskah (Pre-Flight Settings) */}
           {/* handleSelectTrack | In-App AI Scriptwriter | AI Eksternal (ChatGPT / Claude) */}
           {/* Target Kata (Disarankan) | Ketik Durasi Menit | Angle Tambahan / Fokus Khusus */}
           {/* revert-stage-btn | Revert ke Researching */}
@@ -2447,7 +2477,7 @@ export default function ScriptDetail({
                 className={`workflow-tab-btn ${activeWorkflowTab === 'finishing' ? 'active' : ''}`}
                 onClick={() => setActiveWorkflowTab('finishing')}
               >
-                📦 2. FINISHING & PACKAGING
+                📦 2. Finishing & Packaging
               </button>
             </div>
 
@@ -2479,12 +2509,35 @@ export default function ScriptDetail({
           {/* ==================== 3. WORKSPACE VIEWS (WRITING VS FINISHING) ==================== */}
           {activeWorkflowTab === 'writing' ? (
             /* TAB 1: STUDIO NASKAH (DUAL-PANE STRETCHED: OUTLINE + ZEN WRITING CANVAS) */
-            <div className="scripting-dual-pane-grid">
-              {/* PANEL KIRI: PIPELINE KERANGKA (OUTLINE STUDIO) */}
+            <div className={`scripting-dual-pane-grid tablet-view-${tabletStudioTab}`}>
+              {/* Tablet sub-tab toggle ergonomis (<= 960px) - F-14 */}
+              <div className="tablet-studio-toggle" role="tablist" aria-label="Navigasi Tablet Studio Naskah">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tabletStudioTab === 'outline'}
+                  className={`tablet-tab-btn ${tabletStudioTab === 'outline' ? 'active' : ''}`}
+                  onClick={() => setTabletStudioTab('outline')}
+                >
+                  Outline Studio
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tabletStudioTab === 'draft'}
+                  className={`tablet-tab-btn ${tabletStudioTab === 'draft' ? 'active' : ''}`}
+                  onClick={() => setTabletStudioTab('draft')}
+                >
+                  Draft Studio
+                </button>
+              </div>
+
+              {/* Pipeline Kerangka (Outline Studio) */}
               {/* Tahap 2: Human Approval Gate | Setujui & Tulis Naskah | Undo Terakhir | Regenerate Outline | Catatan Revisi Regenerasi */}
               {/* Mode 1-Pintu (One-Shot Handoff) | Mode 2-Langkah (Alur Bertahap) */}
               {/* Tahap 1: Salin Prompt Outline | Tahap 2: Tempel & Tinjau Kerangka | Tahap 3: Prompt Naskah Instan Siap Salin */}
-              <OutlineWorkspace
+              <div className="scripting-pane-col outline-studio-col">
+                <OutlineWorkspace
                 productionTrack={productionTrack}
                 externalSubMode={externalSubMode}
                 onExternalSubModeChange={setExternalSubMode}
@@ -2537,14 +2590,15 @@ export default function ScriptDetail({
                 onGenerateHook={handleGenerateHook}
                 onApplyHookToOutline={handleApplyHookToOutline}
               />
+              </div>
 
-              {/* PANEL KANAN: DRAFT STUDIO (RUANG KERJA PRODUKSI) */}
+              {/* Draft Studio (Ruang Kerja Produksi) */}
               {/* Card 1: Spoken Audit */}
               {/* Card 2: Generate Rekomendasi Judul */}
               {/* Card 3: Generate Thumbnail */}
               {/* title-recommendations-grid | Aman Mobile (5–8 kata) | handleApplyTitleAsMain | Gunakan sbg Judul */}
               {/* SMART CHECKLIST PEMOLESAN NASKAH | Pengingat Cerdas Workflow: */}
-              {/* title="Buka Studio Generate Thumbnail (Dual-Mode)" | aria-label="Buka Studio Generate Thumbnail (Dual-Mode)" | setIsThumbnailModalOpen(true) */}
+              {/* title="Buka Studio Pembuatan Thumbnail" | aria-label="Buka Studio Pembuatan Thumbnail" | setIsThumbnailModalOpen(true) */}
               {/* Salin Prompt Audit | formatExternalAuditPrompt | formatExternalFinalRevisionPrompt */}
               {/* Salin Prompt 5 Formula Judul | formatExternalTitlePrompt */}
               {/* onDoubleClick={() => setIsScriptInputCollapsed(false)} | Draf Naskah Video | setIsScriptInputCollapsed(true) */}
@@ -2552,12 +2606,13 @@ export default function ScriptDetail({
               {/* onDoubleClick={() => setIsTitlesCollapsed | isTitlesCollapsed ? 'Buka' : 'Susut' */}
               {/* {hasGeneratedThumbnail && ( <button>Generate Ulang Thumbnail</button> )} */}
               {/* Audit Spoken & TTS ✨ | Sudah Diterapkan | btn-applied */}
-              <ScriptDraftStudio
-                activeWorkflowTab="writing"
-                onSwitchToFinishing={() => setActiveWorkflowTab('finishing')}
-                item={item}
-                scriptOutput={scriptOutput}
-                onScriptChange={setScriptOutput}
+              <div className="scripting-pane-col draft-studio-col">
+                <ScriptDraftStudio
+                  activeWorkflowTab="writing"
+                  onSwitchToFinishing={() => setActiveWorkflowTab('finishing')}
+                  item={item}
+                  scriptOutput={scriptOutput}
+                  onScriptChange={setScriptOutput}
                 onScriptBlur={() => {
                   if (scriptOutput !== lastSavedScriptRef.current) {
                     const textToSave = scriptOutput;
@@ -2643,17 +2698,18 @@ export default function ScriptDetail({
                 onPublish={handlePublish}
                 onProceedToThumbnailing={handleProceedToThumbnailing}
               />
+              </div>
             </div>
           ) : (
             /* TAB 2: FINISHING STUDIO (PACKAGING, SPOKEN AUDIT, 5 FORMULA JUDUL & CHECKLIST) */
             <div style={{ width: '100%' }}>
-              {/* PANEL KANAN: DRAFT STUDIO (RUANG KERJA PRODUKSI) */}
+              {/* Draft Studio (Ruang Kerja Produksi) */}
               {/* Card 1: Spoken Audit */}
               {/* Card 2: Generate Rekomendasi Judul */}
               {/* Card 3: Generate Thumbnail */}
               {/* title-recommendations-grid | Aman Mobile (5–8 kata) | handleApplyTitleAsMain | Gunakan sbg Judul */}
               {/* SMART CHECKLIST PEMOLESAN NASKAH | Pengingat Cerdas Workflow: */}
-              {/* title="Buka Studio Generate Thumbnail (Dual-Mode)" | aria-label="Buka Studio Generate Thumbnail (Dual-Mode)" | setIsThumbnailModalOpen(true) */}
+              {/* title="Buka Studio Pembuatan Thumbnail" | aria-label="Buka Studio Pembuatan Thumbnail" | setIsThumbnailModalOpen(true) */}
               {/* Salin Prompt Audit | formatExternalAuditPrompt | formatExternalFinalRevisionPrompt */}
               {/* Salin Prompt 5 Formula Judul | formatExternalTitlePrompt */}
               {/* onDoubleClick={() => setIsScriptInputCollapsed(false)} | Draf Naskah Video | setIsScriptInputCollapsed(true) */}
@@ -3430,19 +3486,26 @@ export default function ScriptDetail({
           )}
 
           {item.status === 'Published' && (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minHeight: 200, color: 'var(--green)' }}>
-              <Check size={48} style={{ marginBottom: 16 }} />
-              <h3>Konten Selesai!</h3>
-              <p style={{ color: '#7890af', marginBottom: 16 }}>Konten ini telah selesai melalui seluruh pipeline AI.</p>
+            <div style={{ padding: '24px 16px', textAlign: 'center' }}>
               <button
-                className="btn btn-secondary revert-stage-btn"
+                className="btn btn-primary"
                 type="button"
-                onClick={() => handleStatusChange('Thumbnailing')}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fcd34d' }}
-                title="Kembalikan status ke tahap Thumbnailing jika perlu perbaikan"
+                onClick={() => (onViewPublished ? onViewPublished(item) : onBack())}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                <Undo2 size={16} /> Revert ke Thumbnailing
+                Buka Detail Publikasi ➔
               </button>
+              <div style={{ marginTop: 12 }}>
+                <button
+                  className="btn btn-secondary revert-stage-btn"
+                  type="button"
+                  onClick={() => handleStatusChange('Thumbnailing')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fcd34d', fontSize: '0.8rem' }}
+                  title="Kembalikan status ke tahap Thumbnailing jika perlu perbaikan"
+                >
+                  <Undo2 size={14} /> Revert ke Thumbnailing
+                </button>
+              </div>
             </div>
           )}
 
@@ -3508,7 +3571,13 @@ export default function ScriptDetail({
 
       {/* Draft Snapshot History Modal */}
       {showDraftHistoryModal && (
-        <div className="zen-editor-overlay" onClick={() => setShowDraftHistoryModal(false)}>
+        <div className="modal-overlay"
+          ref={draftHistoryModalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Riwayat Snapshot Draf Naskah"
+          onClick={() => setShowDraftHistoryModal(false)}
+        >
           <div
             className="zen-editor-container"
             onClick={(e) => e.stopPropagation()}
@@ -3615,112 +3684,55 @@ export default function ScriptDetail({
 
       {/* Switch Track Confirmation Modal */}
       {showSwitchTrackModal && (
-        <div className="zen-editor-overlay" onClick={() => { setShowSwitchTrackModal(false); setPendingTrack(null); }}>
-          <div
-            className="zen-editor-container"
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: 540, height: 'auto', display: 'flex', flexDirection: 'column' }}
-          >
-            <div className="zen-editor-header">
-              <div className="zen-editor-title">
-                <Undo2 size={18} style={{ color: 'var(--cyan)' }} />
-                <span>Ganti Jalur Produksi</span>
-              </div>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => { setShowSwitchTrackModal(false); setPendingTrack(null); }}
-                style={{ padding: '4px 10px', fontSize: '0.82rem' }}
-              >
-                Batal
-              </button>
-            </div>
-            <div style={{ padding: 20 }}>
-              <p style={{ fontSize: '0.9rem', color: '#c8d6ea', marginTop: 0, marginBottom: 16, lineHeight: 1.5 }}>
-                Anda saat ini memiliki kerangka naskah di Outline Studio. Apakah Anda ingin membawa kerangka yang sudah ada ke jalur baru, atau mereset dari awal?
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => handleConfirmSwitchTrack(true)}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 16px', fontSize: '0.88rem' }}
-                >
-                  <Check size={16} /> Bawa Kerangka ke Jalur Baru
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => handleConfirmSwitchTrack(false)}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 16px', fontSize: '0.88rem', color: '#f87171' }}
-                >
-                  <RotateCcw size={16} /> Reset Kerangka dari Awal
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <AlertModal
+          isOpen={showSwitchTrackModal}
+          onClose={() => {
+            setShowSwitchTrackModal(false);
+            setPendingTrack(null);
+          }}
+          options={{
+            title: 'Ganti Jalur Produksi',
+            type: 'info',
+            message: 'Anda saat ini memiliki kerangka naskah di Outline Studio. Apakah Anda ingin membawa kerangka yang sudah ada ke jalur baru, atau mereset dari awal?',
+            confirmText: 'Bawa Kerangka ke Jalur Baru',
+            cancelText: 'Batal',
+            onConfirm: () => handleConfirmSwitchTrack(true),
+            onCancel: () => {
+              setShowSwitchTrackModal(false);
+              setPendingTrack(null);
+            },
+            actionButton: {
+              label: 'Reset Kerangka dari Awal',
+              onClick: () => handleConfirmSwitchTrack(false),
+              icon: 'reset',
+            },
+          }}
+        />
       )}
 
       {/* Overwrite Draft Studio Warning Modal */}
       {showOverwriteDraftModal && (
-        <div className="zen-editor-overlay" onClick={() => setShowOverwriteDraftModal(false)}>
-          <div
-            className="zen-editor-container"
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: 540, height: 'auto', display: 'flex', flexDirection: 'column' }}
-          >
-            <div className="zen-editor-header">
-              <div className="zen-editor-title">
-                <AlertTriangle size={18} style={{ color: 'var(--amber)' }} />
-                <span>Peringatan: Draf Naskah Sudah Ada</span>
-              </div>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setShowOverwriteDraftModal(false)}
-                style={{ padding: '4px 10px', fontSize: '0.82rem' }}
-              >
-                Batal
-              </button>
-            </div>
-            <div style={{ padding: 20 }}>
-              <p style={{ fontSize: '0.9rem', color: '#c8d6ea', marginTop: 0, marginBottom: 12, lineHeight: 1.5 }}>
-                Di Draft Studio sudah ada naskah sebanyak <strong>{scriptOutput.trim().split(/\s+/).filter(Boolean).length.toLocaleString('id-ID')} kata</strong>.
-              </p>
-              <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: 0, marginBottom: 20, lineHeight: 1.5 }}>
-                Apakah Anda yakin ingin menimpa dengan naskah baru dari AI Scriptwriter? Draf saat ini akan dicadangkan secara otomatis ke <strong>Riwayat Snapshot</strong> sehingga Anda tetap dapat memulihkannya kapan saja.
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowOverwriteDraftModal(false)}
-                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => {
-                    setShowOverwriteDraftModal(false);
-                    executeGenerateFullScript();
-                  }}
-                  style={{ padding: '8px 16px', fontSize: '0.85rem', background: 'var(--green)', borderColor: 'var(--green)', color: '#041a10', fontWeight: 700 }}
-                >
-                  Ya, Timpa Draf
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <AlertModal
+          isOpen={showOverwriteDraftModal}
+          onClose={() => setShowOverwriteDraftModal(false)}
+          options={{
+            title: 'Peringatan: Draf Naskah Sudah Ada',
+            type: 'warning',
+            message: `Di Draft Studio sudah ada naskah sebanyak ${scriptOutput.trim().split(/\s+/).filter(Boolean).length.toLocaleString('id-ID')} kata. Apakah Anda yakin ingin menimpa dengan naskah baru dari AI Scriptwriter? Draf saat ini akan dicadangkan secara otomatis ke Riwayat Snapshot sehingga Anda tetap dapat memulihkannya kapan saja.`,
+            confirmText: 'Ya, Timpa Draf',
+            cancelText: 'Batal',
+            onConfirm: () => {
+              setShowOverwriteDraftModal(false);
+              executeGenerateFullScript();
+            },
+          }}
+        />
       )}
 
-      {/* Studio Generate Thumbnail Modal */}
+      {/* Studio Pembuatan Thumbnail Modal */}
       {/* id="studio-thumbnail-section" | className="modal-container thumbnail-modal-container" */}
-      {/* Studio Generate Thumbnail (Dual-Mode) | className="close-btn" | className="modal-footer" */}
-      {/* Opsi 1: Copywriting Prompt (Text AI) | Opsi 2: Visual Image AI (Placeholder) */}
+      {/* Studio Pembuatan Thumbnail | className="close-btn" | className="modal-footer" */}
+      {/* Copywriting Prompt (Text AI) | Visual Image AI (Placeholder) */}
       {/* Aturan Thumbnail Zeinity (Bab 13) | Salin Thumbnail Prompt */}
       {/* thumbnailAspectRatio | thumbnailProvider | handleExportMockupSvg | SAFE ZONE 80% | Unduh Mockup SVG */}
       {/* Tandai Selesai (Publish) | handleProceedToThumbnailing | Lanjut ke Thumbnailing | Tandai Siap Publikasi / Publish ➔ | await handlePublish() */}

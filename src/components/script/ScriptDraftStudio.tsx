@@ -367,7 +367,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <h3 style={{ margin: 0, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.95rem' }}>
-              <FileText size={17} /> PANEL KANAN: DRAFT STUDIO (RUANG KERJA PRODUKSI)
+              <FileText size={17} /> Draft Studio (Ruang Kerja Produksi)
             </h3>
             {renderSaveIndicator(scriptSaveStatus)}
           </div>
@@ -717,7 +717,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
               <div style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span>💡</span>
                 <span>
-                  <strong>Fokus Menulis:</strong> Setelah draf selesai, buka tab <strong style={{ color: 'var(--cyan)' }}>"2. FINISHING &amp; PACKAGING"</strong> untuk menjalankan Spoken Audit, 5 Formula Judul, dan Studio Thumbnail.
+                  <strong>Fokus Menulis:</strong> Setelah draf selesai, buka tab <strong style={{ color: 'var(--cyan)' }}>"2. Finishing &amp; Packaging"</strong> untuk menjalankan Spoken Audit, 5 Formula Judul, dan Studio Thumbnail.
                 </span>
               </div>
 
@@ -946,7 +946,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
           <div style={{ background: '#070f1e', border: '1px solid #1a2f4c', borderRadius: 8, padding: '12px 14px' }}>
             <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--amber)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Sparkles size={16} />
-              <span>FINISHING &amp; PACKAGING</span>
+              <span>Finishing &amp; Packaging</span>
             </div>
             <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 4, lineHeight: 1.4 }}>
               Tahap pemolesan naskah, formula judul YouTube, dan desain visual thumbnail.
@@ -978,12 +978,20 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
 
           {/* 3 LARGE VERTICAL STEPPER CARDS */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {/* CARD 1: 1. Audit Spoken & TTS */}
+            {/* CARD 1: Audit Spoken & TTS */}
             <div
               className={`finishing-stepper-card ${activeFinishingStep === 1 ? 'active' : ''}`}
               onClick={() => setActiveFinishingStep(1)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setActiveFinishingStep(1);
+                }
+              }}
               role="button"
               tabIndex={0}
+              aria-label="Langkah 1: Audit Spoken & TTS"
+              aria-current={activeFinishingStep === 1 ? 'step' : undefined}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1005,7 +1013,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                     1
                   </span>
                   <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#f8fafc' }}>
-                    1. Audit Spoken &amp; TTS
+                    Audit Spoken &amp; TTS
                   </span>
                 </div>
 
@@ -1031,7 +1039,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                     <span>{parsedDiffs.length > 0 ? `${parsedDiffs.length} Temuan Terdeteksi` : auditSummary || 'Temuan Tersedia'}</span>
                     {casualFindings ? (
                       <span style={{ color: 'var(--cyan)' }}>
-                        • {parsedCasualDiffs.length > 0 ? `${parsedCasualDiffs.length} Kasual Friendly` : 'Kasual Friendly Selesai'}
+                        • {parsedCasualDiffs.length > 0 ? `${parsedCasualDiffs.length} Temuan Kasual` : 'Gaya Sudah Kasual Friendly'}
                       </span>
                     ) : (
                       <span style={{ color: '#7890af' }}>
@@ -1045,12 +1053,20 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
               </div>
             </div>
 
-            {/* CARD 2: 2. 5 Formula Judul */}
+            {/* CARD 2: 5 Formula Judul */}
             <div
               className={`finishing-stepper-card ${activeFinishingStep === 2 ? 'active' : ''}`}
               onClick={() => setActiveFinishingStep(2)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setActiveFinishingStep(2);
+                }
+              }}
               role="button"
               tabIndex={0}
+              aria-label="Langkah 2: 5 Formula Judul"
+              aria-current={activeFinishingStep === 2 ? 'step' : undefined}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1072,7 +1088,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                     2
                   </span>
                   <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#f8fafc' }}>
-                    2. 5 Formula Judul
+                    5 Formula Judul
                   </span>
                 </div>
 
@@ -1098,15 +1114,15 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                   </span>
                 ) : hasTitlesGenerated ? (
                   <span style={{ color: '#cbd5e1' }}>
-                    5 varian hook Zeinity siap dipilih.
+                    5 varian rekomendasi judul Zeinity siap dipilih.
                   </span>
                 ) : (
-                  '5 varian hook Zeinity sesuai Bab 12, 25C & 32.'
+                  'Rekomendasi formula judul Zeinity sesuai Bab 12, 25C &amp; 32.'
                 )}
               </div>
 
               <div style={{ fontSize: '0.70rem', color: '#7890af', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <span>{selectedRec ? selectedRec.formulaName : '5 Formula Hook'}</span>
+                <span>{selectedRec ? selectedRec.formulaName : 'Formula Judul & Hook'}</span>
                 <span>•</span>
                 <span style={{ color: selectedRec?.isMobileSafe ? 'var(--green)' : undefined }}>
                   {selectedRec ? (selectedRec.isMobileSafe ? 'Aman Mobile (5–8 kata)' : `${selectedRec.wordCount} kata • Periksa`) : '5–8 kata • Mobile-safe'}
@@ -1114,12 +1130,20 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
               </div>
             </div>
 
-            {/* CARD 3: 3. Studio Thumbnail */}
+            {/* CARD 3: Studio Thumbnail */}
             <div
               className={`finishing-stepper-card ${activeFinishingStep === 3 ? 'active' : ''}`}
               onClick={() => setActiveFinishingStep(3)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setActiveFinishingStep(3);
+                }
+              }}
               role="button"
               tabIndex={0}
+              aria-label="Langkah 3: Studio Thumbnail"
+              aria-current={activeFinishingStep === 3 ? 'step' : undefined}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1141,7 +1165,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                     3
                   </span>
                   <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#f8fafc' }}>
-                    3. Studio Thumbnail
+                    Studio Thumbnail
                   </span>
                 </div>
 
@@ -1234,7 +1258,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                   }}
                 >
                   <CheckCircle2 size={14} />
-                  <span>1. Evaluasi Spoken &amp; TTS (Wajib)</span>
+                  <span>Evaluasi Spoken &amp; TTS (Wajib)</span>
                   {isStep1Done && (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: '0.68rem', background: 'rgba(52, 211, 153, 0.2)', color: 'var(--green)', padding: '1px 6px', borderRadius: 4 }}>
                       <Check size={10} /> Selesai
@@ -1263,7 +1287,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                   }}
                 >
                   <Smile size={14} />
-                  <span>2. Sub-Sesi: Poles Kasual Friendly</span>
+                  <span>Poles Kasual Friendly (Opsional)</span>
                   {casualFindings ? (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: '0.68rem', background: 'rgba(56, 189, 248, 0.2)', color: 'var(--cyan)', padding: '1px 6px', borderRadius: 4 }}>
                       <Check size={10} /> {parsedCasualDiffs.length} Temuan
@@ -1339,22 +1363,22 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                   className={`copy-action-btn ${copied === 'audit_prompt_hdr' ? 'copied' : ''}`}
                   onClick={() => onCopy(formatExternalAuditPrompt(scriptOutput), 'audit_prompt_hdr')}
                   disabled={!scriptOutput.trim()}
-                  title="Salin Prompt Audit Spoken & TTS (Tahap 4) untuk ChatGPT / Claude"
+                  title="Salin Prompt Audit Spoken & TTS untuk ChatGPT / Claude"
                   style={{ fontSize: '0.72rem', padding: '4px 10px' }}
                 >
                   {copied === 'audit_prompt_hdr' ? <Check size={13} /> : <Copy size={13} />}
-                  <span>{copied === 'audit_prompt_hdr' ? 'Audit Tersalin' : 'Salin Prompt Audit (Tahap 4)'}</span>
+                  <span>{copied === 'audit_prompt_hdr' ? 'Audit Tersalin' : 'Salin Prompt Audit Spoken'}</span>
                 </button>
                 <button
                   type="button"
                   className={`copy-action-btn ${copied === 'audit_rev_prompt_hdr' ? 'copied' : ''}`}
                   onClick={() => onCopy(formatExternalFinalRevisionPrompt(scriptOutput, auditFindings), 'audit_rev_prompt_hdr')}
                   disabled={!scriptOutput.trim()}
-                  title="Salin Prompt Revisi Naskah (Tahap 5) untuk ChatGPT / Claude"
+                  title="Salin Prompt Revisi Naskah untuk ChatGPT / Claude"
                   style={{ fontSize: '0.72rem', padding: '4px 10px' }}
                 >
                   {copied === 'audit_rev_prompt_hdr' ? <Check size={13} /> : <Copy size={13} />}
-                  <span>{copied === 'audit_rev_prompt_hdr' ? 'Prompt Tersalin' : 'Salin Prompt Revisi (Tahap 5)'}</span>
+                  <span>{copied === 'audit_rev_prompt_hdr' ? 'Prompt Tersalin' : 'Salin Prompt Revisi Naskah'}</span>
                 </button>
               </div>
 
@@ -1640,11 +1664,11 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                   className={`copy-action-btn ${copied === 'casual_prompt_hdr' ? 'copied' : ''}`}
                   onClick={() => onCopy(formatExternalCasualAuditPrompt(scriptOutput), 'casual_prompt_hdr')}
                   disabled={!scriptOutput.trim()}
-                  title="Salin Prompt Audit Kasual Friendly (Tahap 4B) untuk ChatGPT / Claude"
+                  title="Salin Prompt Kasual Friendly untuk ChatGPT / Claude"
                   style={{ fontSize: '0.72rem', padding: '4px 10px' }}
                 >
                   {copied === 'casual_prompt_hdr' ? <Check size={13} /> : <Copy size={13} />}
-                  <span>{copied === 'casual_prompt_hdr' ? 'Prompt Kasual Tersalin' : 'Salin Prompt Kasual Friendly (Tahap 4B)'}</span>
+                  <span>{copied === 'casual_prompt_hdr' ? 'Prompt Kasual Tersalin' : 'Salin Prompt Kasual Friendly'}</span>
                 </button>
               </div>
 
@@ -2046,7 +2070,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
               >
                 <div>
                   <h4 style={{ margin: 0, padding: 0, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--cyan)', fontSize: '0.92rem', fontWeight: 700 }}>
-                    <ImageIcon size={17} /> Studio Thumbnail (Dual-Mode: Copywriting &amp; Mockup Visual)
+                    <ImageIcon size={17} /> Studio Thumbnail (Copywriting &amp; Mockup Visual)
                   </h4>
                   <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 2 }}>
                     Standar Packaging Bab 13: Hook Teks 2–4 Kata Kapital Kontras Tinggi &amp; Safe Zone 80%.

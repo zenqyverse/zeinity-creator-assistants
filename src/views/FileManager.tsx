@@ -34,11 +34,14 @@ export default function FileManager({ files, loading, onImportFile, onDelete }: 
     if (!previewFile) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (document.querySelector('.alert-modal-layer')) return;
+        e.preventDefault();
+        e.stopPropagation();
         setPreviewFile(null);
       }
     };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [previewFile]);
 
   const handleDeleteClick = (file: UploadedFile) => {
@@ -70,7 +73,7 @@ export default function FileManager({ files, loading, onImportFile, onDelete }: 
           <p className="eyebrow">Dokumen & Referensi</p>
           <h1>File Manager</h1>
           <p className="subtitle">
-            Kelola dokumen referensi yang diekstrak secara lokal untuk konteks AI (Gemini, OpenRouter, & Ollama).
+            Kelola dokumen referensi yang diekstrak secara lokal untuk konteks AI (Gemini, OpenRouter, Ollama, & 9Router Gateway).
           </p>
         </div>
         <div className="hero-actions">

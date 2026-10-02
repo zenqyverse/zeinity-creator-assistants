@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, UploadCloud, FileText, Check, Trash2, Sparkles } from 'lucide-react';
 import {
   CONTENT_PILLARS,
@@ -6,6 +6,7 @@ import {
   normalizeContentPillar,
 } from '@/types';
 import { useAlert } from '@/components/AlertModal';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 import {
   type ParsedIdeaItem,
@@ -17,6 +18,7 @@ export type { ParsedIdeaItem };
 interface BulkImportModalProps {
   open: boolean;
   onClose: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
   onImport: (ideas: Array<{
     title: string;
     source: ContentSource;
@@ -25,8 +27,9 @@ interface BulkImportModalProps {
   }>) => Promise<void> | void;
 }
 
-export default function BulkImportModal({ open, onClose, onImport }: BulkImportModalProps) {
-  const { showError, showWarning } = useAlert();
+export default function BulkImportModal({ open, onClose, onDirtyChange, onImport }: BulkImportModalProps) {
+  const modalRef = useFocusTrap<HTMLDivElement>(open);
+  const { showAlert, showError, showWarning } = useAlert();
   const [activeTab, setActiveTab] = useState<'file' | 'paste'>('file');
   const [dragover, setDragover] = useState(false);
   const [pasteText, setPasteText] = useState('');
@@ -133,11 +136,71 @@ export default function BulkImportModal({ open, onClose, onImport }: BulkImportM
     }
   };
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setParsedItems([]);
     setFileName(null);
     setPasteText('');
-  };
+    setActiveTab('file');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, []);
+
+  const prevOpenRef = useRef(false);
+  useEffect(() => {
+    if (open && !prevOpenRef.current) {
+      handleReset();
+    }
+    prevOpenRef.current = open;
+  }, [open, handleReset]);
+
+  const isDirty = parsedItems.length > 0 || pasteText.trim().length > 0 || Boolean(fileName);
+
+  useEffect(() => {
+    onDirtyChange?.(open && isDirty);
+  }, [open, isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    return () => {
+      onDirtyChange?.(false);
+    };
+  }, [onDirtyChange]);
+
+  const handleRequestClose = useCallback(() => {
+    if (isSubmitting) return;
+    if (isDirty) {
+      showAlert({
+        title: 'Tinggalkan Import Masal?',
+        message: 'Daftar ide yang telah dimuat atau diketik belum diimpor ke pipeline. Apakah Anda yakin ingin membatalkan dan keluar?',
+        type: 'warning',
+        confirmText: 'Ya, Buang Perubahan',
+        cancelText: 'Lanjutkan',
+        onConfirm: () => {
+          handleReset();
+          onClose();
+        },
+      });
+    } else {
+      handleReset();
+      onClose();
+    }
+  }, [isSubmitting, isDirty, onClose, handleReset, showAlert]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting) {
+        if (document.querySelector('.alert-modal-layer')) {
+          return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        handleRequestClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [open, isSubmitting, handleRequestClose]);
 
   if (!open) return null;
 
@@ -145,12 +208,13 @@ export default function BulkImportModal({ open, onClose, onImport }: BulkImportM
 
   return (
     <div
+      ref={modalRef}
       className={`modal-layer ${open ? 'open' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="bulk-import-title"
       onClick={(e) => {
-        if (e.target === e.currentTarget && !isSubmitting) onClose();
+        if (e.target === e.currentTarget && !isSubmitting) handleRequestClose();
       }}
     >
       <div className="modal glass" style={{ maxWidth: 780, width: '92%' }}>
@@ -165,7 +229,7 @@ export default function BulkImportModal({ open, onClose, onImport }: BulkImportM
             className="icon-btn"
             type="button"
             aria-label="Tutup modal"
-            onClick={onClose}
+            onClick={handleRequestClose}
             disabled={isSubmitting}
           >
             <X size={18} />
@@ -449,7 +513,7 @@ export default function BulkImportModal({ open, onClose, onImport }: BulkImportM
         )}
 
         <div className="modal-actions" style={{ marginTop: 20 }}>
-          <button className="btn btn-secondary" type="button" onClick={onClose} disabled={isSubmitting}>
+          <button className="btn btn-secondary" type="button" onClick={handleRequestClose} disabled={isSubmitting}>
             Batal
           </button>
           {parsedItems.length > 0 && (

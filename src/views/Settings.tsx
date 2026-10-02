@@ -244,7 +244,7 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
     try {
       let allOk = true;
       for (const k of keysToSave) {
-        const valToSave = k === 'telegram_token' ? tgVal : k === 'active_provider' ? 'custom' : (values[k] || '');
+        const valToSave = k === 'telegram_token' ? tgVal : k === 'active_provider' ? (values.active_provider || 'custom') : (values[k] || '');
         const ok = await onSave(k, valToSave);
         if (ok === false) allOk = false;
       }

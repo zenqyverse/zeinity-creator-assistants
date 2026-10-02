@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Bot } from 'lucide-react';
 import {
   CONTENT_PILLARS,
@@ -8,10 +8,12 @@ import {
   normalizeContentPillar,
 } from '@/types';
 import { useAlert } from '@/components/AlertModal';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface AddIdeaModalProps {
   open: boolean;
   onClose: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
   onAdd: (data: {
     title: string;
     source: ContentSource;
@@ -21,7 +23,7 @@ interface AddIdeaModalProps {
     telegram_message_id?: number | null;
     telegram_chat_id?: string | null;
     telegram_sender_username?: string | null;
-  }) => void;
+  }) => Promise<void> | void;
   initialData?: {
     title: string;
     source: ContentSource;
@@ -42,28 +44,114 @@ interface AddIdeaModalProps {
 // 5. Modern Life & Digital Psychology
 const categories = CONTENT_PILLARS;
 
-export default function AddIdeaModal({ open, onClose, onAdd, initialData }: AddIdeaModalProps) {
-  const { showWarning } = useAlert();
+export default function AddIdeaModal({ open, onClose, onDirtyChange, onAdd, initialData }: AddIdeaModalProps) {
+  const modalRef = useFocusTrap<HTMLDivElement>(open);
+  const { showAlert, showWarning } = useAlert();
   const [title, setTitle] = useState('');
   const [source, setSource] = useState<ContentSource>('Web');
   const [category, setCategory] = useState<string>(categories[0]);
   const [status, setStatus] = useState<ContentStatus>('Idea');
   const [context, setContext] = useState('');
   const [hasError, setHasError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const initialTitle = initialData?.title || '';
+  const initialSource = initialData?.source || 'Web';
+  const initialCategory = initialData?.category ? normalizeContentPillar(initialData.category) : categories[0];
+  const initialStatus = initialData?.status || 'Idea';
+  const initialContext = initialData?.research_text || '';
+
+  const resetForm = useCallback(() => {
+    setTitle(initialTitle);
+    setSource(initialSource);
+    setCategory(initialCategory);
+    setStatus(initialStatus);
+    setContext(initialContext);
+    setHasError(false);
+  }, [initialTitle, initialSource, initialCategory, initialStatus, initialContext]);
+
+  // Create a fingerprint of initialData to prevent parent re-renders (e.g. from isDirty updates)
+  // from wiping out the user's input due to new object references
+  const initialDataKey = initialData
+    ? `${initialData.title}|${initialData.source}|${initialData.category}|${initialData.status}|${initialData.research_text}|${initialData.telegram_message_id}`
+    : '';
+
+  const prevOpenRef = useRef(false);
+  const prevDataKeyRef = useRef(initialDataKey);
 
   useEffect(() => {
-    if (open) {
-      setTitle(initialData?.title || '');
-      setSource(initialData?.source || 'Web');
-      setCategory(initialData?.category ? normalizeContentPillar(initialData.category) : categories[0]);
-      setStatus(initialData?.status || 'Idea');
-      setContext(initialData?.research_text || '');
+    const justOpened = open && !prevOpenRef.current;
+    const dataKeyChanged = open && initialDataKey !== prevDataKeyRef.current;
+
+    if (justOpened || dataKeyChanged) {
+      setTitle(initialTitle);
+      setSource(initialSource);
+      setCategory(initialCategory);
+      setStatus(initialStatus);
+      setContext(initialContext);
       setHasError(false);
     }
-  }, [open, initialData]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+    prevOpenRef.current = open;
+    prevDataKeyRef.current = initialDataKey;
+  }, [open, initialDataKey, initialTitle, initialSource, initialCategory, initialStatus, initialContext]);
+
+  const isDirty =
+    title !== initialTitle ||
+    source !== initialSource ||
+    category !== initialCategory ||
+    (Boolean(initialData) && status !== initialStatus) ||
+    context !== initialContext;
+
+  useEffect(() => {
+    onDirtyChange?.(open && isDirty);
+  }, [open, isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    return () => {
+      onDirtyChange?.(false);
+    };
+  }, [onDirtyChange]);
+
+  const handleRequestClose = useCallback(() => {
+    if (isSubmitting) return;
+    if (isDirty) {
+      showAlert({
+        title: 'Tinggalkan Formulir?',
+        message: 'Perubahan data ide yang telah Anda masukkan belum disimpan. Apakah Anda yakin ingin membatalkan dan keluar?',
+        type: 'warning',
+        confirmText: 'Ya, Buang Perubahan',
+        cancelText: 'Lanjutkan Mengisi',
+        onConfirm: () => {
+          resetForm();
+          onClose();
+        },
+      });
+    } else {
+      resetForm();
+      onClose();
+    }
+  }, [isSubmitting, isDirty, onClose, resetForm, showAlert]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting) {
+        if (document.querySelector('.alert-modal-layer')) {
+          return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        handleRequestClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [open, isSubmitting, handleRequestClose]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!title.trim()) {
       setHasError(true);
       showWarning(
@@ -77,35 +165,40 @@ export default function AddIdeaModal({ open, onClose, onAdd, initialData }: AddI
     }
     
     setHasError(false);
-    onAdd({
-      title: title.trim(),
-      source,
-      category,
-      research_text: context.trim() || null,
-      status,
-      telegram_message_id: initialData?.telegram_message_id ?? null,
-      telegram_chat_id: initialData?.telegram_chat_id ?? null,
-      telegram_sender_username: initialData?.telegram_sender_username ?? null,
-    });
-    setTitle('');
-    setSource('Web');
-    setCategory(categories[0]);
-    setStatus('Idea');
-    setContext('');
+    setIsSubmitting(true);
+    try {
+      await onAdd({
+        title: title.trim(),
+        source,
+        category,
+        research_text: context.trim() || null,
+        status,
+        telegram_message_id: initialData?.telegram_message_id ?? null,
+        telegram_chat_id: initialData?.telegram_chat_id ?? null,
+        telegram_sender_username: initialData?.telegram_sender_username ?? null,
+      });
+      resetForm();
+    } catch (err) {
+      // Retain form inputs if submission fails so user doesn't lose data
+      console.error('Error adding/updating idea:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div
+      ref={modalRef}
       className={`modal-layer ${open ? 'open' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="idea-modal-title"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => { if (e.target === e.currentTarget) handleRequestClose(); }}
     >
       <form className="modal glass" onSubmit={handleSubmit}>
         <div className="modal-top">
           <h2 id="idea-modal-title">{initialData ? 'Edit Ide' : 'Tambah Ide Baru'}</h2>
-          <button className="icon-btn" type="button" aria-label="Tutup modal" onClick={onClose}>
+          <button className="icon-btn" type="button" aria-label="Tutup modal" onClick={handleRequestClose} disabled={isSubmitting}>
             <X size={18} />
           </button>
         </div>
@@ -195,11 +288,11 @@ export default function AddIdeaModal({ open, onClose, onAdd, initialData }: AddI
           />
         </div>
         <div className="modal-actions">
-          <button className="btn btn-secondary" type="button" onClick={onClose}>
+          <button className="btn btn-secondary" type="button" onClick={handleRequestClose} disabled={isSubmitting}>
             Cancel
           </button>
-          <button className="btn btn-primary" type="submit">
-            {initialData ? 'Simpan Perubahan' : 'Simpan Ide'}
+          <button className="btn btn-primary" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Menyimpan...' : (initialData ? 'Simpan Perubahan' : 'Simpan Ide')}
           </button>
         </div>
       </form>

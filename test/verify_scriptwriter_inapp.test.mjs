@@ -126,7 +126,11 @@ describe('In-App AI Scriptwriter & Dual-Track Studio Verification Suite', () => 
   });
 
   it('Layer 3: ScriptDetail.tsx implements Pre-Flight Configuration bar with mode switcher and custom word inputs', () => {
-    assert.ok(scriptDetailContent.includes('PRE-FLIGHT CONFIGURATION'), 'Must render Pre-Flight Configuration header');
+    assert.ok(
+      scriptDetailContent.includes('Konfigurasi Parameter Naskah (Pre-Flight Settings)') ||
+      scriptDetailContent.includes('ScriptPreflightBar'),
+      'Must render Pre-Flight Configuration bar'
+    );
     assert.ok(scriptDetailContent.includes('handleSelectTrack'), 'Must implement handleSelectTrack');
     assert.ok(scriptDetailContent.includes('In-App AI Scriptwriter'), 'Must support In-App AI Scriptwriter track');
     assert.ok(scriptDetailContent.includes('AI Eksternal (ChatGPT / Claude)'), 'Must support External AI track');
@@ -136,8 +140,22 @@ describe('In-App AI Scriptwriter & Dual-Track Studio Verification Suite', () => 
   });
 
   it('Layer 3: ScriptDetail.tsx implements Stretched Dual-Pane with Human Approval Gate & Undo Terakhir', () => {
-    assert.ok(scriptDetailContent.includes('PANEL KIRI: PIPELINE KERANGKA (OUTLINE STUDIO)'), 'Must render Outline Studio left pane');
-    assert.ok(scriptDetailContent.includes('PANEL KANAN: DRAFT STUDIO (RUANG KERJA PRODUKSI)'), 'Must render Draft Studio right pane');
+    assert.ok(
+      scriptDetailContent.includes('Pipeline Kerangka (Outline Studio)'),
+      'Must render Outline Studio left pane'
+    );
+    assert.ok(
+      scriptDetailContent.includes('Draft Studio (Ruang Kerja Produksi)'),
+      'Must render Draft Studio right pane'
+    );
+    assert.ok(
+      !scriptDetailContent.includes('PANEL KIRI: PIPELINE KERANGKA'),
+      'Must not leak directional wireframe PANEL KIRI'
+    );
+    assert.ok(
+      !scriptDetailContent.includes('PANEL KANAN: DRAFT STUDIO'),
+      'Must not leak directional wireframe PANEL KANAN'
+    );
     assert.ok(scriptDetailContent.includes('Tahap 2: Human Approval Gate'), 'Must render Human Approval Gate in Outline Studio');
     assert.ok(scriptDetailContent.includes('Setujui & Tulis Naskah'), 'Must provide Setujui & Tulis Naskah approval CTA');
     assert.ok(scriptDetailContent.includes('Undo Terakhir'), 'Must provide Undo Terakhir button for outline regeneration rollback');

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import type { ContentItem, ContentSource, ContentStatus, ViewKey, AIProvider } from '@/types';
 import { useContent } from '@/hooks/useContent';
 import { useSettings, setChannelIdentity, getChannelIdentity, parseFallbackChain } from '@/hooks/useSettings';
@@ -80,7 +80,9 @@ export default function App() {
   const [activeView, setActiveView] = useState<ViewKey>(initialNav.view);
   const [searchQuery, setSearchQuery] = useState('');
   const [addIdeaOpen, setAddIdeaOpen] = useState(false);
+  const [isAddIdeaDirty, setIsAddIdeaDirty] = useState(false);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
+  const [isBulkImportDirty, setIsBulkImportDirty] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
@@ -241,6 +243,7 @@ export default function App() {
   };
 
   const handleViewPublished = (item: ContentItem) => {
+    setActiveView('published');
     setPublishedItem(item);
     setPendingPublishedId(item.id);
     setScriptItem(null);
@@ -266,11 +269,29 @@ export default function App() {
     if (!options?.silent) {
       if (scriptItem && scriptItem.id === id) {
         const updated = { ...scriptItem, ...updates, ...res };
-        setScriptItem(updated);
-        try {
-          localStorage.setItem(STORAGE_KEY_CACHED_SCRIPT, JSON.stringify(updated));
-        } catch {
-          /* ignore localStorage quota errors */
+        if (updates.status === 'Published') {
+          // Transisi langsung ke PublishedDetail resmi (F-16)
+          setActiveView('published');
+          setScriptItem(null);
+          setPendingScriptId(null);
+          setPublishedItem(updated);
+          setPendingPublishedId(updated.id);
+          try {
+            localStorage.removeItem(STORAGE_KEY_SCRIPT_ID);
+            localStorage.removeItem(STORAGE_KEY_CACHED_SCRIPT);
+            localStorage.setItem(STORAGE_KEY_PUBLISHED_ID, updated.id);
+            localStorage.setItem(STORAGE_KEY_CACHED_PUBLISHED, JSON.stringify(updated));
+            window.location.hash = `#/published/${updated.id}`;
+          } catch {
+            /* ignore localStorage quota errors */
+          }
+        } else {
+          setScriptItem(updated);
+          try {
+            localStorage.setItem(STORAGE_KEY_CACHED_SCRIPT, JSON.stringify(updated));
+          } catch {
+            /* ignore localStorage quota errors */
+          }
         }
       }
       const isTargetPublished = (publishedItem && publishedItem.id === id) || pendingPublishedId === id;
@@ -348,11 +369,13 @@ export default function App() {
       }
       setAddIdeaOpen(false);
       setEditItem(null);
+      setIsAddIdeaDirty(false);
     } catch (err: unknown) {
       console.error('Add/Update idea error:', err);
       const errMsg = err instanceof Error ? err.message : (editItem ? 'Gagal memperbarui ide' : 'Gagal menyimpan ide');
       errorActivity(errMsg);
       showError('Gagal Menyimpan Ide', errMsg);
+      throw err;
     }
   };
 
@@ -514,26 +537,55 @@ export default function App() {
     }
   }, [validatingId, updateItem, showToast, settings, showError, startActivity, addLog, finishActivity, errorActivity]);
 
-  // Close sidebar on Escape
+  // Close sidebar and safe modals on Escape with unified modal hierarchy coordination
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setSidebarOpen(false);
-        setAddIdeaOpen(false);
-        setImportOpen(false);
-        setBulkImportOpen(false);
-        closeTerminal();
+        // Guard: If an alert or modal layer is currently active in the foreground, do not handle Escape in App
+        if (
+          document.querySelector('.alert-modal-layer') ||
+          document.querySelector('.modal-overlay') ||
+          document.querySelector('.zen-editor-overlay') ||
+          (document.querySelector('.modal-layer.open') && (isAddIdeaDirty || isBulkImportDirty || importOpen))
+        ) {
+          return;
+        }
+
+        // If an open modal is currently visible, let the modal's internal listener/focus trap handle it cleanly
+        if (addIdeaOpen || bulkImportOpen || importOpen) {
+          if (!isAddIdeaDirty) {
+            setAddIdeaOpen(false);
+            setEditItem(null);
+          }
+          if (!isBulkImportDirty) {
+            setBulkImportOpen(false);
+          }
+          return;
+        }
+
+        // Floating Terminal takes precedence when no modal is open
+        if (document.querySelector('.terminal.open')) {
+          closeTerminal();
+          return;
+        }
+
+        // Mobile drawer navigation closes on Escape
+        if (sidebarOpen) {
+          setSidebarOpen(false);
+          return;
+        }
       }
     };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [closeTerminal]);
+  }, [closeTerminal, isAddIdeaDirty, isBulkImportDirty, addIdeaOpen, bulkImportOpen, importOpen, sidebarOpen]);
 
   const providers = [
-    { name: 'Google Gemini', state: settings.active_provider === 'gemini' ? 'Active' : 'Available', keyMask: settings.gemini_api_key ? `AIza••••••••••${settings.gemini_api_key.slice(-3)}` : 'Not configured' },
-    { name: 'OpenRouter / Groq-Llama', state: settings.active_provider === 'openrouter' ? 'Active' : 'Available', keyMask: settings.openrouter_api_key ? `sk-or-••••••••••••` : 'Not configured' },
-    { name: '9Router / Custom Gateway', state: settings.active_provider === 'custom' ? 'Active' : 'Available', keyMask: settings.custom_gateway_endpoint || 'http://localhost:20128/v1' },
-    { name: 'Ollama Local', state: settings.active_provider === 'ollama' ? 'Active' : 'Available', keyMask: settings.ollama_endpoint || 'http://localhost:11434' },
+    {
+      name: '9Router / Custom Gateway',
+      state: settings.active_provider === 'custom' ? 'Active' : 'Available',
+      keyMask: settings.custom_gateway_endpoint || 'http://localhost:20128/v1',
+    },
   ];
 
   const renderView = () => {
@@ -562,6 +614,7 @@ export default function App() {
           providerConfig={providerConfig}
           identityText={getChannelIdentity()}
           onNavigateSettings={() => handleNavigate('settings')}
+          onViewPublished={handleViewPublished}
         />
       );
     }
@@ -637,6 +690,7 @@ export default function App() {
         return (
           <ContentTable
             key="ideas"
+            viewType="ideas"
             items={items}
             loading={loading}
             searchQuery={searchQuery}
@@ -660,6 +714,7 @@ export default function App() {
         return (
           <ContentTable
             key="research"
+            viewType="research"
             items={items.filter((i) => i.status === 'Idea' || i.status === 'Validating' || i.status === 'Researching')}
             loading={loading}
             searchQuery={searchQuery}
@@ -677,13 +732,14 @@ export default function App() {
             title="AI Research"
             eyebrow="Validasi & Riset AI"
             subtitle="Ide yang sedang divalidasi atau dalam proses riset AI."
-            defaultTab="validation"
+            defaultTab="all"
           />
         );
       case 'scripts':
         return (
           <ContentTable
             key="scripts"
+            viewType="scripts"
             items={items.filter((i) => i.status === 'Scripting' || i.status === 'Thumbnailing')}
             loading={loading}
             searchQuery={searchQuery}
@@ -700,13 +756,14 @@ export default function App() {
             title="Scripts"
             eyebrow="Script Editor"
             subtitle="Script semi-matang dari AI, siap untuk direvisi dan diproduksi."
-            defaultTab="production"
+            defaultTab="all"
           />
         );
       case 'published':
         return (
           <ContentTable
             key="published"
+            viewType="published"
             items={items.filter((i) => i.status === 'Published')}
             loading={loading}
             searchQuery={searchQuery}
@@ -722,6 +779,7 @@ export default function App() {
             title="Published"
             eyebrow="Konten Live"
             subtitle="Konten yang telah dipublikasi dan performanya dipantau."
+            defaultTab="all"
           />
         );
       case 'files':
@@ -761,10 +819,37 @@ export default function App() {
 
   const handleSearchChange = (val: string) => {
     setSearchQuery(val);
+    if (val.trim()) {
+      const nonTableViews: ViewKey[] = ['overview', 'trends', 'rss', 'files', 'analytics', 'settings'];
+      if (nonTableViews.includes(activeView) || scriptItem || publishedItem) {
+        setActiveView('ideas');
+        setScriptItem(null);
+        setPublishedItem(null);
+        setPendingScriptId(null);
+        setPendingPublishedId(null);
+      }
+    }
   };
+
+  const addIdeaInitialData = useMemo(() => {
+    if (!editItem) return undefined;
+    return {
+      title: editItem.title,
+      source: editItem.source,
+      category: editItem.category || 'Internet & Social Media Culture',
+      research_text: editItem.research_text,
+      status: editItem.status,
+      telegram_message_id: editItem.telegram_message_id,
+      telegram_chat_id: editItem.telegram_chat_id,
+      telegram_sender_username: editItem.telegram_sender_username,
+    };
+  }, [editItem]);
 
   return (
     <>
+      <a href="#main-content" className="skip-link">
+        Lewati ke Konten Utama
+      </a>
       <div className={`app-shell ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <Sidebar
           open={sidebarOpen}
@@ -774,46 +859,42 @@ export default function App() {
           activeProvider={settings.active_provider || 'gemini'}
           providers={providers}
         />
-        <Topbar
-          searchQuery={searchQuery}
-          onSearchChange={handleSearchChange}
-          onMenuClick={() => setSidebarOpen(true)}
-          activeProvider={settings.active_provider || 'gemini'}
-          searchPlaceholder={isTableActive ? "Cari ide, judul, atau sumber…" : "Cari ide (ketik untuk cari di tabel)…"}
-          isSearchable={isTableActive}
-          isGatewayOnline={(() => {
-            const provider = settings.active_provider || 'custom';
-            if (provider === 'custom') return isNineRouterOnline && Boolean(settings.custom_gateway_endpoint?.trim());
-            if (provider === 'gemini') return Boolean(settings.gemini_api_key?.trim());
-            if (provider === 'openrouter') return Boolean(settings.openrouter_api_key?.trim());
-            if (provider === 'ollama') return Boolean(settings.ollama_endpoint?.trim());
-            return false;
-          })()}
-          isBotConfigured={Boolean(settings.telegram_token?.trim())}
-          settings={settings}
-          onSelectProvider={(p) => {
-            upsertSetting('active_provider', p);
-            showToast(`Provider AI aktif dialihkan ke ${getProviderLabel(p)}`);
-          }}
-          onSaveSetting={(k, v) => upsertSetting(k, v)}
-          onNavigateSettings={() => handleNavigate('settings')}
-        />
-        {renderView()}
+        <div className="app-main">
+          <Topbar
+            searchQuery={searchQuery}
+            onSearchChange={handleSearchChange}
+            onMenuClick={() => setSidebarOpen(true)}
+            activeProvider={settings.active_provider || 'gemini'}
+            searchPlaceholder={isTableActive ? "Cari ide, judul, atau sumber…" : "Cari ide (ketik untuk cari di tabel)…"}
+            isSearchable={isTableActive}
+            isGatewayOnline={(() => {
+              const provider = settings.active_provider || 'custom';
+              if (provider === 'custom') return isNineRouterOnline && Boolean(settings.custom_gateway_endpoint?.trim());
+              if (provider === 'gemini') return Boolean(settings.gemini_api_key?.trim());
+              if (provider === 'openrouter') return Boolean(settings.openrouter_api_key?.trim());
+              if (provider === 'ollama') return Boolean(settings.ollama_endpoint?.trim());
+              return false;
+            })()}
+            isBotConfigured={Boolean(settings.telegram_token?.trim())}
+            settings={settings}
+            onSelectProvider={(p) => {
+              upsertSetting('active_provider', p);
+              showToast(`Provider AI aktif dialihkan ke ${getProviderLabel(p)}`);
+            }}
+            onSaveSetting={(k, v) => upsertSetting(k, v)}
+            onNavigateSettings={() => handleNavigate('settings')}
+          />
+          <div id="main-content" tabIndex={-1} style={{ outline: 'none', width: '100%' }}>
+            {renderView()}
+          </div>
+        </div>
       </div>
       <AddIdeaModal
         open={addIdeaOpen}
-        onClose={() => { setAddIdeaOpen(false); setEditItem(null); }}
+        onClose={() => { setAddIdeaOpen(false); setEditItem(null); setIsAddIdeaDirty(false); }}
+        onDirtyChange={setIsAddIdeaDirty}
         onAdd={handleAddIdea}
-        initialData={editItem ? {
-          title: editItem.title,
-          source: editItem.source,
-          category: editItem.category || 'Internet & Social Media Culture',
-          research_text: editItem.research_text,
-          status: editItem.status,
-          telegram_message_id: editItem.telegram_message_id,
-          telegram_chat_id: editItem.telegram_chat_id,
-          telegram_sender_username: editItem.telegram_sender_username,
-        } : undefined}
+        initialData={addIdeaInitialData}
       />
       <ImportModal
         open={importOpen}
@@ -824,7 +905,8 @@ export default function App() {
       />
       <BulkImportModal
         open={bulkImportOpen}
-        onClose={() => setBulkImportOpen(false)}
+        onClose={() => { setBulkImportOpen(false); setIsBulkImportDirty(false); }}
+        onDirtyChange={setIsBulkImportDirty}
         onImport={handleBulkImportIdeas}
       />
       <Toast message={toastMsg} show={toastShow} />

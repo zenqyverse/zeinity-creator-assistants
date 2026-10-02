@@ -271,7 +271,7 @@ export function TerminalView({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       style={{
-        zIndex: 55,
+        zIndex: 80,
         ...(position
           ? {
               left: `${position.x}px`,

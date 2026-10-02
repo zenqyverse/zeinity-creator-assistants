@@ -58,7 +58,12 @@ describe('Transforms B & C: Audit & Visual Cue AI Actions Verification', () => {
     assert.ok(scriptDetailContent.includes('Audit Spoken & TTS ✨'), 'ScriptDetail must render "Audit Spoken & TTS ✨" button');
     assert.ok(!scriptDetailContent.includes('Anotasi Visual Cue ✨'), 'ScriptDetail must permanently remove "Anotasi Visual Cue ✨" button');
     assert.ok(scriptDetailContent.includes('Generate Rekomendasi Judul ✨'), 'ScriptDetail must render "Generate Rekomendasi Judul ✨" button');
-    assert.ok(scriptDetailContent.includes('Studio Generate Thumbnail'), 'ScriptDetail must render Studio Generate Thumbnail');
+    assert.ok(
+      scriptDetailContent.includes('Studio Pembuatan Thumbnail') ||
+      scriptDetailContent.includes('Studio Thumbnail') ||
+      scriptDetailContent.includes('Studio Generate Thumbnail'),
+      'ScriptDetail must render Studio Thumbnail / Studio Pembuatan Thumbnail'
+    );
 
     // Results panel checks
     assert.ok(scriptDetailContent.includes('audit-results-panel'), 'ScriptDetail must render audit-results-panel');

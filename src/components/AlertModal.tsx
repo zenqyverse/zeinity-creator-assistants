@@ -9,6 +9,7 @@ import {
   Check,
   Lightbulb,
   ExternalLink,
+  RotateCcw,
 } from 'lucide-react';
 import {
   AlertContext,
@@ -19,6 +20,7 @@ import {
   type AlertDiagnostics,
   type AlertContextType,
 } from '@/hooks/useAlert';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 /**
  * Re-export type definitions for consumers and backward compatibility.
@@ -129,18 +131,22 @@ interface AlertModalProps {
 }
 
 export function AlertModal({ isOpen, options, onClose }: AlertModalProps) {
+  const modalRef = useFocusTrap<HTMLDivElement>(isOpen);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation?.();
         if (options.onCancel) options.onCancel();
         onClose();
       }
     };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [isOpen, options, onClose]);
 
   if (!isOpen) return null;
@@ -206,6 +212,7 @@ export function AlertModal({ isOpen, options, onClose }: AlertModalProps) {
 
   return (
     <div
+      ref={modalRef}
       className="alert-modal-layer open"
       role="dialog"
       aria-modal="true"
@@ -310,7 +317,12 @@ export function AlertModal({ isOpen, options, onClose }: AlertModalProps) {
                 onClose();
               }}
             >
-              <ExternalLink size={15} /> {actionButton.label}
+              {actionButton.icon === 'none' ? null : actionButton.icon === 'reset' ? (
+                <RotateCcw size={15} />
+              ) : (
+                <ExternalLink size={15} />
+              )}{' '}
+              {actionButton.label}
             </button>
           )}
           {cancelText && (

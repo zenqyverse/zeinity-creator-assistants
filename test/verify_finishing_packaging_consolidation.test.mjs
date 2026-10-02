@@ -18,15 +18,15 @@ describe('Verification Suite: Finishing & Packaging Studio Consolidation', () =>
   const cssPath = path.join(projectRoot, 'src', 'index.css');
   const cssContent = fs.readFileSync(cssPath, 'utf8');
 
-  it('1. Top Workflow Tabs Consolidation in ScriptDetail.tsx: 2 Workspace Tabs (Studio Naskah & FINISHING & PACKAGING)', () => {
+  it('1. Top Workflow Tabs Consolidation in ScriptDetail.tsx: 2 Workspace Tabs (Studio Naskah & Finishing & Packaging)', () => {
     // Top tab strip must contain tab 1 and tab 2, and NOT tab 3 button
     assert.ok(
       scriptDetailContent.includes('✍️ 1. Studio Naskah'),
       'ScriptDetail tab strip must include Tab 1: Studio Naskah'
     );
     assert.ok(
-      scriptDetailContent.includes('📦 2. FINISHING & PACKAGING'),
-      'ScriptDetail tab strip must include Tab 2: FINISHING & PACKAGING'
+      scriptDetailContent.includes('📦 2. Finishing & Packaging'),
+      'ScriptDetail tab strip must include Tab 2: Finishing & Packaging'
     );
 
     // Old Tab 3 button in strip should be gone
@@ -40,6 +40,10 @@ describe('Verification Suite: Finishing & Packaging Studio Consolidation', () =>
     assert.ok(
       !tabStripContent.includes('🏷️ 2. Judul & Audit'),
       'Tab strip must not use obsolete label "2. Judul & Audit"'
+    );
+    assert.ok(
+      !scriptDetailContent.includes('📦 2. FINISHING & PACKAGING'),
+      'ScriptDetail tab strip must not contain all-caps "📦 2. FINISHING & PACKAGING"'
     );
   });
 
@@ -146,20 +150,96 @@ Alasan logis
       'Left panel must render "X dari 3 Selesai" progress'
     );
 
-    // 3 Large Stepper Cards
+    // Header casing in ScriptDraftStudio
     assert.ok(
-      scriptDraftStudioContent.includes('1. Audit Spoken &amp; TTS') ||
-      scriptDraftStudioContent.includes('1. Audit Spoken & TTS'),
+      scriptDraftStudioContent.includes('<span>Finishing &amp; Packaging</span>') ||
+      scriptDraftStudioContent.includes('<span>Finishing & Packaging</span>'),
+      'Stepper header in ScriptDraftStudio must use Title Case Finishing & Packaging'
+    );
+    assert.ok(
+      !scriptDraftStudioContent.includes('<span>FINISHING &amp; PACKAGING</span>') &&
+      !scriptDraftStudioContent.includes('<span>FINISHING & PACKAGING</span>'),
+      'Stepper header must not use all-caps FINISHING & PACKAGING'
+    );
+
+    // Fokus Menulis info box casing in ScriptDraftStudio
+    assert.ok(
+      scriptDraftStudioContent.includes('"2. Finishing &amp; Packaging"') ||
+      scriptDraftStudioContent.includes('"2. Finishing & Packaging"'),
+      'Fokus Menulis banner must reference "2. Finishing & Packaging" in Title Case'
+    );
+    assert.ok(
+      !scriptDraftStudioContent.includes('"2. FINISHING &amp; PACKAGING"') &&
+      !scriptDraftStudioContent.includes('"2. FINISHING & PACKAGING"'),
+      'Fokus Menulis banner must not contain all-caps "2. FINISHING & PACKAGING"'
+    );
+
+    // 3 Large Stepper Cards (Clean titles without redundant number prefixes)
+    assert.ok(
+      scriptDraftStudioContent.includes('Audit Spoken &amp; TTS') ||
+      scriptDraftStudioContent.includes('Audit Spoken & TTS'),
       'Left panel must render Card 1 for Audit Spoken & TTS'
     );
     assert.ok(
-      scriptDraftStudioContent.includes('2. 5 Formula Judul'),
+      scriptDraftStudioContent.includes('5 Formula Judul'),
       'Left panel must render Card 2 for 5 Formula Judul'
     );
     assert.ok(
-      scriptDraftStudioContent.includes('3. Studio Thumbnail'),
+      scriptDraftStudioContent.includes('Studio Thumbnail'),
       'Left panel must render Card 3 for Studio Thumbnail'
     );
+    assert.ok(
+      !scriptDraftStudioContent.includes('1. Audit Spoken'),
+      'Left panel must not contain redundant prefix "1. Audit Spoken"'
+    );
+    assert.ok(
+      !scriptDraftStudioContent.includes('2. 5 Formula Judul'),
+      'Left panel must not contain redundant prefix "2. 5 Formula Judul"'
+    );
+    assert.ok(
+      !scriptDraftStudioContent.includes('3. Studio Thumbnail'),
+      'Left panel must not contain redundant prefix "3. Studio Thumbnail"'
+    );
+
+    // Accessibility attributes on Stepper Cards
+    assert.ok(
+      scriptDraftStudioContent.includes('aria-label="Langkah 1: Audit Spoken & TTS"'),
+      'Card 1 must include accessible aria-label'
+    );
+    assert.ok(
+      scriptDraftStudioContent.includes('aria-label="Langkah 2: 5 Formula Judul"'),
+      'Card 2 must include accessible aria-label'
+    );
+    assert.ok(
+      scriptDraftStudioContent.includes('aria-label="Langkah 3: Studio Thumbnail"'),
+      'Card 3 must include accessible aria-label'
+    );
+    assert.ok(
+      scriptDraftStudioContent.includes('aria-current={activeFinishingStep === 1 ? \'step\' : undefined}'),
+      'Stepper cards must declare aria-current step indicator'
+    );
+
+    // SVG Mockup Asset consistency
+    const svgPath = path.join(projectRoot, 'finishing_packaging_mockup.svg');
+    if (fs.existsSync(svgPath)) {
+      const svgContent = fs.readFileSync(svgPath, 'utf8');
+      assert.ok(
+        !svgContent.includes('2. 5 Formula Judul'),
+        'SVG mockup must not have redundant prefix "2. 5 Formula Judul"'
+      );
+      assert.ok(
+        !svgContent.includes('1. Audit Spoken &amp; TTS'),
+        'SVG mockup must not have redundant prefix "1. Audit Spoken & TTS"'
+      );
+      assert.ok(
+        !svgContent.includes('3. Studio Thumbnail'),
+        'SVG mockup must not have redundant prefix "3. Studio Thumbnail"'
+      );
+      assert.ok(
+        svgContent.includes('📦 2. Finishing &amp; Packaging') || svgContent.includes('📦 2. Finishing & Packaging'),
+        'SVG mockup must use Title Case for Tab 2'
+      );
+    }
 
     // Return to Studio Naskah Button
     assert.ok(

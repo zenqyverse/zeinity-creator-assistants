@@ -69,13 +69,13 @@ export const ResearchWorkspace: React.FC<ResearchWorkspaceProps> = ({
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
-        {/* Opsi 1: Ketik / Paste Teks */}
+        {/* Editor Teks Riset */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#c8d6ea', display: 'flex', alignItems: 'center', gap: 6 }}>
               <FileText size={15} style={{ color: 'var(--cyan)' }} />
               <span>
-                {uploadedFileName ? 'Pratinjau & Edit Teks Riset:' : 'Opsi 1: Ketik / Paste Teks'}
+                {uploadedFileName ? 'Pratinjau & Edit Teks Riset:' : 'Editor Teks Riset'}
               </span>
             </div>
             {renderSaveIndicator(researchSaveStatus)}
@@ -101,11 +101,11 @@ export const ResearchWorkspace: React.FC<ResearchWorkspaceProps> = ({
           />
         </div>
 
-        {/* Opsi 2: Upload Berkas .DOCX / .MD */}
+        {/* Unggah Berkas .DOCX / .MD */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#c8d6ea', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
             <UploadCloud size={15} style={{ color: 'var(--cyan)' }} />
-            <span>Opsi 2: Upload Berkas (.docx / .md)</span>
+            <span>Unggah Berkas (.docx / .md)</span>
           </div>
           <label
             style={{

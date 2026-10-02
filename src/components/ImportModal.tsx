@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, UploadCloud, FileText, CheckCircle, Loader2 } from 'lucide-react';
 import type { UploadedFile } from '@/types';
 import { isChannelIdentityFile } from '@/hooks/useFiles';
 import { useAlert } from '@/components/AlertModal';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface ImportModalProps {
   open: boolean;
@@ -19,10 +20,25 @@ export default function ImportModal({
   existingFiles,
   isProcessing = false,
 }: ImportModalProps) {
+  const modalRef = useFocusTrap<HTMLDivElement>(open);
   const { showError, showWarning } = useAlert();
   const [dragover, setDragover] = useState(false);
   const [currentFile, setCurrentFile] = useState<{ name: string; ext: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isProcessing) {
+        if (document.querySelector('.alert-modal-layer')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [open, isProcessing, onClose]);
 
   const handleFile = async (file: File) => {
     const ext = file.name.split('.').pop()?.toLowerCase();
@@ -54,6 +70,7 @@ export default function ImportModal({
 
   return (
     <div
+      ref={modalRef}
       className={`modal-layer ${open ? 'open' : ''}`}
       role="dialog"
       aria-modal="true"

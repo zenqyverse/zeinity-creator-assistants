@@ -134,6 +134,21 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
   const [editPillar, setEditPillar] = useState<ContentPillar>('AI & Technology Impact');
   const [editLoading, setEditLoading] = useState(false);
 
+  // Close Manage Feeds modal on Escape
+  useEffect(() => {
+    if (!manageModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (document.querySelector('.alert-modal-layer')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setManageModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [manageModalOpen]);
+
   // Load sources on mount
   useEffect(() => {
     let mounted = true;

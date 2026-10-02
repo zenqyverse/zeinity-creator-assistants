@@ -7,7 +7,7 @@
 **AI-Powered Spoken-First Narrative & Video Production Studio for YouTube Creators**
 
 [![Status: In Active Development](https://img.shields.io/badge/Status-In%20Active%20Development-amber?style=for-the-badge&logo=git)](https://github.com/zenqyverse/zeinity-creator-assistants)
-[![Tests Passing](https://img.shields.io/badge/Tests-238%20Passing%20%7C%2036%20Suites-brightgreen?style=for-the-badge&logo=node.js)](test/)
+[![Tests Passing](https://img.shields.io/badge/Tests-277%20Passing%20%7C%2047%20Suites-brightgreen?style=for-the-badge&logo=node.js)](test/)
 [![React](https://img.shields.io/badge/React-18.3.1-61dafb?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-3178c6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.4.8-646cff?style=for-the-badge&logo=vite)](https://vitejs.dev/)
@@ -101,14 +101,14 @@ This created heavy cognitive friction—creators felt like manual data-entry cle
 ### Phase 6: Consolidated Finishing & Packaging Studio & Casual Audio Polish
 - **Consolidated 2-Workflow Tabs**: Streamlined `ScriptDetail.tsx` workflow tabs from 3 fragmented tabs to **2 Primary Workspaces**:
   1. `✍️ 1. Studio Naskah` (Focus on Hook-First pipeline, outline drafting, and full scriptwriting canvas).
-  2. `📦 2. FINISHING & PACKAGING` (Consolidated Spoken Audit, 5 Title Formulas, and Inline Thumbnail Studio).
+  2. `📦 2. Finishing & Packaging` (Consolidated Spoken Audit, 5 Title Formulas, and Inline Thumbnail Studio).
 - **2-Panel Master-Detail Layout**:
   - **Left Panel (Production Stepper & Progress)**:
     - Progress Bar: *"Progres Packaging: X dari 3 Selesai (Y%)"*.
     - 3 Dynamic Stepper Cards replacing the legacy redundant bottom checklist:
-      - *Card 1: 1. Audit Spoken & TTS* (Status SELESAI / PERLU AUDIT, findings counter).
-      - *Card 2: 2. 5 Formula Judul* (Status JUDUL TERPILIH / 5 VARIAN SIAP, active title preview, mobile-safe badge).
-      - *Card 3: 3. Studio Thumbnail* (Status SEDANG AKTIF / SIAP, 16:9 ratio, hook text preview).
+      - *Card 1: Audit Spoken & TTS* (Status SELESAI / PERLU AUDIT, findings counter).
+      - *Card 2: 5 Formula Judul* (Status JUDUL TERPILIH / 5 VARIAN SIAP, active title preview, mobile-safe badge).
+      - *Card 3: Studio Thumbnail* (Status SEDANG AKTIF / SIAP, 16:9 ratio, hook text preview).
     - Quick navigation: *"Kembali ke Studio Naskah"*.
   - **Right Panel (Dedicated Sub-Studio Canvas)**:
     - **Sub-Studio 1 (Audit Spoken & TTS)**:
@@ -149,6 +149,13 @@ This created heavy cognitive friction—creators felt like manual data-entry cle
 - **Combo Presets vs Specific Models**: Switch between curated multi-model blends (`Creator-Combo`, `Jarvis_Creator`) and grouped individual models (Groq Llama 3.3 70B, Google Gemini 2.0 Flash, DeepSeek, etc.).
 - **Multi-Provider Auto-Fallback Chain**: Dynamic 4-tier failover (`9Router Gateway` ➔ `Google Gemini` ➔ `OpenRouter` ➔ `Local Ollama`). If any provider hits rate-limits or network failure, the engine automatically rolls over to the next provider while streaming progress logs to the Terminal drawer.
 - **Topbar 1-Click AI Switcher**: Interactive header widget providing instant model switching, provider latency status, and direct shortcut to Settings without leaving your writing flow.
+
+### Phase 8: Comprehensive UI/UX Audit & Design System Remediation
+- **Data Integrity & Dirty-State Guard (P0)**: Unsaved changes guard on modal backdrops and Escape key events (`AddIdeaModal`, `BulkImportModal`), preventing accidental content loss. Dynamic `active_provider` persistence in Settings.
+- **Accessibility & Focus Management (P1)**: Universal `useFocusTrap` hook across all dialogs, WCAG AA color contrast ratio (`--muted: #9eb3cf`, 6.84:1), micro-typography scale raised to `>= 12px` (`0.75rem`), accessible `Skip to Content` bypass link, and elimination of false affordances.
+- **Desktop Navigation Ergonomics (P1)**: Persistent sidebar grid layout on desktop (`>= 1024px`) with `aria-current="page"` semantics. Responsive tablet sub-tab switcher (`<= 960px`) and 44px mobile touch targets.
+- **Unified Modal Architecture & Z-Index Tokenization (P1/P2)**: Standardized scale (`--z-header: 30`, `--z-sidebar: 30`, `--z-dropdown: 70`, `--z-terminal: 80`, `--z-modal: 1000`, `--z-zen: 1050`, `--z-alert: 2000`).
+- **Pipeline & Studio Polish**: Decoupled Content Source tabs from Pipeline Status filters, eliminated string-sniffing routing, streamlined Sidebar AI Gateway panel to dedicated 9Router view, and eliminated legacy wireframe text leaks.
 
 ---
 
@@ -225,7 +232,7 @@ flowchart LR
    - **External Handoff**: 1-click copy zero-token prompt for Claude 3.5 Sonnet or ChatGPT.
 
 ### Phase 6: Finishing & Packaging Studio (Tab 2)
-1. Switch to **FINISHING & PACKAGING**:
+1. Switch to **Finishing & Packaging**:
 2. **Sub-Studio 1 (Audit Spoken & TTS)**:
    - Run the Spoken Audit to inspect interactive diff cards (`BAGIAN ASLI` vs `REVISI SPOKEN / TTS`).
    - Run the **Sub-Sesi Kasual Friendly** to soften academic phrasing into warm conversation.

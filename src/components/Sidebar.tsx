@@ -37,7 +37,7 @@ export default function Sidebar({ open, activeView, onNavigate, onClose, activeP
             <img src={zeinityLogo} alt="Zeinity Logo" className="brand-mark" />
             <strong className="brand-name">ZEINITY</strong>
           </div>
-          <button className="icon-btn" type="button" aria-label="Tutup navigasi" onClick={onClose}>
+          <button className="icon-btn sidebar-close-btn" type="button" aria-label="Tutup navigasi" onClick={onClose}>
             <X size={18} />
           </button>
         </div>
@@ -49,6 +49,7 @@ export default function Sidebar({ open, activeView, onNavigate, onClose, activeP
                 key={item.key}
                 className={`nav-item ${activeView === item.key ? 'active' : ''}`}
                 type="button"
+                aria-current={activeView === item.key ? 'page' : undefined}
                 onClick={() => onNavigate(item.key)}
               >
                 <Icon size={17} />

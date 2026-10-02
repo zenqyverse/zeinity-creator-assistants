@@ -109,20 +109,20 @@ describe('Verification Suite: Sub-Sesi Audit Kasual Friendly di Studio Naskah', 
 
   it('5. ScriptDraftStudio.tsx provides Sub-Session switcher and dedicated Casual Friendly Studio view', () => {
     assert.ok(
-      scriptDraftStudioContent.includes('1. Evaluasi Spoken &amp; TTS (Wajib)') ||
-      scriptDraftStudioContent.includes('1. Evaluasi Spoken & TTS (Wajib)'),
-      'ScriptDraftStudio must provide Sub-Tahap 1: Spoken & TTS (Wajib)'
+      scriptDraftStudioContent.includes('Evaluasi Spoken &amp; TTS (Wajib)') ||
+      scriptDraftStudioContent.includes('Evaluasi Spoken & TTS (Wajib)'),
+      'ScriptDraftStudio must provide Evaluasi Spoken & TTS (Wajib)'
     );
     assert.ok(
-      scriptDraftStudioContent.includes('2. Sub-Sesi: Poles Kasual Friendly'),
-      'ScriptDraftStudio must provide Sub-Tahap 2: Poles Kasual Friendly'
+      scriptDraftStudioContent.includes('Poles Kasual Friendly (Opsional)'),
+      'ScriptDraftStudio must provide Poles Kasual Friendly (Opsional)'
     );
     assert.ok(
       scriptDraftStudioContent.includes('Sub-Sesi: Transformasi Kasual Friendly'),
       'ScriptDraftStudio must render header for Sub-Sesi Transformasi Kasual Friendly'
     );
     assert.ok(
-      scriptDraftStudioContent.includes('Salin Prompt Kasual Friendly (Tahap 4B)'),
+      scriptDraftStudioContent.includes('Salin Prompt Kasual Friendly'),
       'ScriptDraftStudio must provide button to copy Casual Friendly prompt'
     );
     assert.ok(

@@ -42,8 +42,9 @@ describe('Kategori 3 (MINOR, PLACEHOLDER & POLISHING) Verification Suite', async
   it('Item 2: Perbaikan Teks Multi-Provider di FileManager.tsx', () => {
     // Subtitle hero harus menyebutkan multi-provider (Gemini, OpenRouter, & Ollama)
     assert.ok(
+      fileManagerContent.includes('konteks AI (Gemini, OpenRouter, Ollama, & 9Router Gateway)') ||
       fileManagerContent.includes('konteks AI (Gemini, OpenRouter, & Ollama)'),
-      'FileManager.tsx must mention (Gemini, OpenRouter, & Ollama) in hero subtitle'
+      'FileManager.tsx must mention multi-provider including 9Router Gateway in hero subtitle'
     );
     assert.ok(
       !fileManagerContent.includes('konteks AI Gemini.'),

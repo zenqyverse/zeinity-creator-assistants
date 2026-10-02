@@ -162,11 +162,11 @@ describe('Fase 4 Polish Verification Suite (F-09, F-17, F-19, F-20, F-21, F-22, 
     assert.ok(!publishedDetailSrc.includes('function formatDate('), 'PublishedDetail.tsx must not define local formatDate');
   });
 
-  // ─── 4. F-19: Status & Aksesibilitas Avatar "ZA" di Topbar ──────────────────
-  it('F-19: Topbar avatar has descriptive accessibility attributes, role, tabIndex, and interactive hover', () => {
+  // ─── 4. F-19 & F-11: Status & Aksesibilitas Avatar "ZA" di Topbar ───────────
+  it('F-19 & F-11: Topbar avatar has descriptive accessibility attributes, role, and no misleading tabIndex={0}', () => {
     assert.ok(topbarSrc.includes('user-avatar'), 'Topbar.tsx avatar must have user-avatar class');
     assert.ok(topbarSrc.includes('role="img"'), 'Topbar.tsx avatar must have role="img"');
-    assert.ok(topbarSrc.includes('tabIndex={0}'), 'Topbar.tsx avatar must have tabIndex={0}');
+    assert.ok(!topbarSrc.includes('tabIndex={0}'), 'Topbar.tsx non-interactive avatar must not have tabIndex={0} (F-11, WCAG 4.1.2)');
     assert.ok(
       topbarSrc.includes('title="Akun: Zeinity Admin (Sesi Lokal)"'),
       'Topbar.tsx avatar must have descriptive title attribute'
