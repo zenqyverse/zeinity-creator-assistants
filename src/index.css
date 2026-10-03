@@ -1025,6 +1025,39 @@ tbody tr:hover {
   padding-left: 8px;
 }
 
+/* Sidebar User Profile Card */
+.sidebar-user-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  margin: 12px 0 8px;
+  background: rgba(4, 14, 34, 0.45);
+  border: 1px solid rgba(141, 183, 255, 0.12);
+  border-radius: var(--radius-md);
+}
+
+.sidebar-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sidebar-user-name {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #e2edff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-role {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
 /* Sidebar System Tools (Terminal & Bot Telegram) */
 .sidebar-system-tools {
   margin: 10px 0 12px;
@@ -2737,18 +2770,29 @@ tbody tr:hover {
     margin-top: 4px;
   }
 
+  /* N-01 & N-03: Sembunyikan Avatar dari Topbar Mobile agar Baris 1 Muat Presisi Tanpa Terlempar / Melorot ke Baris 2 */
+  .topbar .avatar,
+  .topbar .user-avatar {
+    display: none !important;
+  }
+
+  .topbar.topbar-non-table:not(.mobile-search-open) {
+    max-height: 62px !important;
+    min-height: 56px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .topbar .mobile-search-toggle {
+    flex-shrink: 0 !important;
+  }
+
   /* N-01: Touch targets minimum 44px & anti-fat-finger */
   .topbar .icon-btn,
-  .topbar .mobile-menu-btn,
-  .topbar .avatar {
+  .topbar .mobile-menu-btn {
     min-width: 44px !important;
     min-height: 44px !important;
     width: 44px !important;
     height: 44px !important;
-  }
-
-  .topbar .avatar {
-    margin-left: 0 !important;
   }
 
   .sidebar-tool-item {
@@ -3042,9 +3086,12 @@ tbody tr:hover {
 @media (max-width: 620px) {
   .app-shell { padding: 10px 10px calc(16px + env(safe-area-inset-bottom, 0px)); }
   .topbar { top: 6px; border-radius: 14px; padding: 10px; gap: 8px; flex-wrap: wrap; }
+  .topbar.topbar-non-table:not(.mobile-search-open) { flex-wrap: nowrap !important; }
   .product-label, .brand-divider { display: none; }
   .search-box { order: 3; flex-basis: 100%; max-width: none; margin-left: 0; }
   .avatar { margin-left: auto; width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+  .topbar .avatar,
+  .topbar .user-avatar { display: none !important; }
   .icon-btn { min-width: 44px; min-height: 44px; width: 44px; height: 44px; }
   .quick-provider-pill { min-height: 44px; min-width: 44px; padding: 6px 10px; }
   .quick-provider-pill .quick-pill-name,

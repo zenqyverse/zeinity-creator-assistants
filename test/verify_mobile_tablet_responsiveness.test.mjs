@@ -31,6 +31,7 @@ describe('Mobile & Tablet Responsiveness Verification Suite (17 Audit Items)', (
   const indexCss = fs.readFileSync(path.join(rootDir, 'src/index.css'), 'utf8');
   const indexHtml = fs.readFileSync(path.join(rootDir, 'index.html'), 'utf8');
   const topbarTsx = fs.readFileSync(path.join(rootDir, 'src/components/Topbar.tsx'), 'utf8');
+  const sidebarTsx = fs.readFileSync(path.join(rootDir, 'src/components/Sidebar.tsx'), 'utf8');
   const rssReaderTsx = fs.readFileSync(path.join(rootDir, 'src/views/RSSReader.tsx'), 'utf8');
   const scriptDetailTsx = fs.readFileSync(path.join(rootDir, 'src/views/ScriptDetail.tsx'), 'utf8');
   const scriptDraftStudioTsx = fs.readFileSync(path.join(rootDir, 'src/components/script/ScriptDraftStudio.tsx'), 'utf8');
@@ -796,5 +797,24 @@ describe('Mobile & Tablet Responsiveness Verification Suite (17 Audit Items)', (
       null,
       `Analytics.tsx must not contain font sizes < 0.75rem (12px), found: ${JSON.stringify(analyticsMatches)}`
     );
+  });
+
+  it('33. [HOTFIX / Topbar Avatar Wrap Prevention] Sembunyikan Avatar dari Topbar Mobile & Tampilkan Profil Akun di Sidebar Drawer', () => {
+    // 1. Topbar avatar must be hidden on mobile <= 640px to prevent 5-item row overflow & dropping below navbar
+    assert.match(
+      media640,
+      /\.topbar\s+\.avatar,\s*\.topbar\s+\.user-avatar\s*\{[^}]*display:\s*none\s*!important;/s,
+      'Topbar avatar must be hidden on mobile <= 640px'
+    );
+    assert.match(
+      media640,
+      /\.topbar\.topbar-non-table:not\(\.mobile-search-open\)\s*\{[^}]*flex-wrap:\s*nowrap\s*!important;/s,
+      'Topbar on non-table views must enforce flex-wrap: nowrap to prevent any element from wrapping'
+    );
+
+    // 2. Sidebar drawer renders user account card
+    assert.ok(sidebarTsx.includes('sidebar-user-card'), 'Sidebar.tsx must render sidebar-user-card');
+    assert.ok(sidebarTsx.includes('sidebar-user-name'), 'Sidebar.tsx must render sidebar-user-name');
+    assert.ok(indexCss.includes('.sidebar-user-card'), 'index.css must style .sidebar-user-card');
   });
 });

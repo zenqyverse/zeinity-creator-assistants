@@ -85,6 +85,17 @@ export default function Sidebar({
           })}
         </nav>
 
+        {/* User Account Profile in Drawer */}
+        <div className="sidebar-user-card" aria-label="Profil Pengguna">
+          <div className="avatar user-avatar" role="img" aria-label="Profil Pengguna: Zeinity Admin">
+            ZA
+          </div>
+          <div className="sidebar-user-info">
+            <strong className="sidebar-user-name">Zeinity Admin</strong>
+            <span className="sidebar-user-role">Sesi Lokal Aktif</span>
+          </div>
+        </div>
+
         {/* Mobile / Drawer System Utilities: Terminal & Bot Telegram */}
         <section className="sidebar-system-tools" aria-label="Alat & Status Sistem">
           <div className="sidebar-tools-header">
