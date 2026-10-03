@@ -351,7 +351,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
   // =========================================================================
   if (activeWorkflowTab === 'writing') {
     return (
-      <section className="detail-card glass" style={{ margin: 0, display: 'flex', flexDirection: 'column' }}>
+      <section className="detail-card glass script-editor-container" style={{ margin: 0, display: 'flex', flexDirection: 'column' }}>
         {/* Editor Top Bar with Title, Save Indicator & Word Meter */}
         <div
           style={{
@@ -570,7 +570,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
                 </span>
               </div>
 
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              <div className="sub-tabs beat-deconstruction-bar" style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                 {SCRIPT_BEATS.map((beat) => {
                   const isSelected = activeBeatTab === beat.beatNumber;
                   const isGenerating = generatingBeatNumber === beat.beatNumber;
@@ -680,7 +680,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
               onChange={(e) => onScriptChange(e.target.value)}
               onBlur={onScriptBlur}
               placeholder="Editor Naskah Video Zeinity... Tempel atau ketik naskah di sini, atau hasilkan otomatis lewat AI Scriptwriter."
-              className={`script-draft-textarea ${isDraftHighlighted ? 'draft-highlight-pulse' : ''}`.trim()}
+              className={`script-draft-textarea zen-editor-textarea ${isDraftHighlighted ? 'draft-highlight-pulse' : ''}`.trim()}
               style={{
                 width: '100%',
                 minHeight: 460,
@@ -701,6 +701,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
 
             {/* SLEEK FOOTER STATUS & TRANSITION TO FINISHING */}
             <div
+              className="script-bottom-actions"
               style={{
                 marginTop: 4,
                 padding: '8px 12px',
@@ -2038,7 +2039,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
               </div>
 
               {/* Bottom Navigation */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+              <div className="finishing-bottom-actions" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
                 <button
                   type="button"
                   className="btn btn-primary"
@@ -2438,6 +2439,7 @@ export const ScriptDraftStudio: React.FC<ScriptDraftStudioProps> = ({
 
               {/* Bottom Footer Hero Bar */}
               <div
+                className="finishing-publish-box"
                 style={{
                   marginTop: 10,
                   padding: '14px 18px',

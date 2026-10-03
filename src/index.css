@@ -653,6 +653,38 @@ tbody tr:hover {
   font-size: .75rem;
 }
 
+/* Mobile Card List (hidden by default on desktop) */
+.mobile-card-list {
+  display: none;
+}
+
+.mobile-card-hook-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(153, 133, 255, 0.12);
+  border: 1px solid rgba(153, 133, 255, 0.28);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  color: #d8b4fe;
+  max-width: 100%;
+  box-sizing: border-box;
+  word-break: break-word;
+}
+
+.mobile-card-hook-badge .hook-badge-label {
+  font-weight: 700;
+  color: #c084fc;
+  flex-shrink: 0;
+}
+
+.mobile-card-hook-badge .hook-badge-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .source,
 .status-badge {
   display: inline-flex;
@@ -942,12 +974,14 @@ tbody tr:hover {
   flex-direction: column;
 }
 
-.sidebar-open .sidebar {
+.sidebar-open .sidebar,
+.sidebar.sidebar-open {
   transform: translateX(0);
   z-index: 95;
 }
 
-.sidebar-open .sidebar-backdrop {
+.sidebar-open .sidebar-backdrop,
+.sidebar-backdrop.sidebar-open {
   opacity: 1;
   pointer-events: auto;
 }
@@ -989,6 +1023,117 @@ tbody tr:hover {
 .nav-item.active {
   border-left: 3px solid var(--cyan);
   padding-left: 8px;
+}
+
+/* Sidebar System Tools (Terminal & Bot Telegram) */
+.sidebar-system-tools {
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  background: rgba(4, 14, 34, 0.45);
+  border: 1px solid rgba(141, 183, 255, 0.12);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-tools-header {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.sidebar-tool-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: #cfddec;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  min-height: 40px;
+}
+
+.sidebar-tool-item:hover {
+  background: rgba(79, 232, 255, 0.1);
+  border-color: rgba(79, 232, 255, 0.3);
+  color: #fff;
+}
+
+.sidebar-tool-item.active {
+  background: rgba(79, 232, 255, 0.15);
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.sidebar-tool-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-tool-status {
+  font-size: 0.72rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sidebar-tool-status.live,
+.sidebar-tool-status.online {
+  background: rgba(83, 242, 173, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(83, 242, 173, 0.3);
+}
+
+.sidebar-tool-status.live .dot,
+.sidebar-tool-status.online .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+}
+
+.sidebar-tool-status.offline {
+  background: rgba(255, 255, 255, 0.04);
+  color: #91a4bd;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-tool-status.offline .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #64748b;
+}
+
+.mobile-search-toggle {
+  display: none;
+}
+
+.quick-provider-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.quick-pill-provider {
+  display: none;
 }
 
 .provider-panel {
@@ -1490,8 +1635,9 @@ tbody tr:hover {
   bottom: -22px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: .65rem;
-  color: var(--muted);
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -1519,9 +1665,138 @@ tbody tr:hover {
   width: 10px;
   height: 10px;
   border-radius: 3px;
+  flex-shrink: 0;
+  display: inline-block;
 }
 
-/* File manager */
+.legend-label-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.legend-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legend-count {
+  color: var(--muted);
+  margin-left: auto;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* YouTube Trends Alert Card & API Key Form (M-01) */
+.trend-radar-content-area {
+  padding: 20px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.yt-alert-card {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 680px;
+  margin: 20px auto;
+  padding: 24px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 10px;
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.yt-alert-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.yt-alert-icon {
+  background: rgba(239, 68, 68, 0.18);
+  padding: 10px;
+  border-radius: 8px;
+  color: #f87171;
+  flex-shrink: 0;
+}
+
+.yt-alert-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.yt-alert-content h3 {
+  margin: 0 0 6px;
+  color: #fca5a5;
+  font-size: 1.05rem;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.yt-alert-content p {
+  margin: 0 0 16px;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.yt-api-key-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.yt-api-key-input {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+
+.yt-api-key-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.yt-alert-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* File manager (M-03) */
+.file-list-container {
+  width: 100%;
+  border-top: 1px solid rgba(174, 206, 255, .08);
+}
+
+.file-cards-grid {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+}
+
 .file-card {
   border-radius: var(--radius-lg);
   padding: 16px;
@@ -1529,10 +1804,20 @@ tbody tr:hover {
   align-items: center;
   gap: 14px;
   transition: .2s ease;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .file-card:hover {
   border-color: rgba(79, 232, 255, .3);
+}
+
+.file-card-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
 }
 
 .file-icon {
@@ -1552,17 +1837,34 @@ tbody tr:hover {
   min-width: 0;
 }
 
+.file-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
 .file-info strong {
   display: block;
   font-size: .83rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 100%;
 }
 
+.file-info span.file-meta,
 .file-info span {
   font-size: 0.75rem;
   color: var(--muted);
+}
+
+.file-card-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 /* Scripts / Published detail */
@@ -1780,6 +2082,96 @@ tbody tr:hover {
   }
 }
 
+/* Base styles for FASE 3 Components (RSS Reader, Model Router, Trend Radar) */
+.rss-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.rss-pillar-filter,
+.rss-pillar-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rss-pillar-chip {
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rss-filter-search {
+  position: relative;
+  width: 220px;
+}
+
+.model-mode-grid,
+.model-router-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+.model-mode-card {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.model-select-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.trend-radar-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.trend-radar-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.trend-radar-filter-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(13, 21, 38, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 0 8px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.trend-radar-filter-item:hover,
+.trend-radar-filter-item:focus-within {
+  border-color: rgba(79, 232, 255, 0.45);
+  box-shadow: 0 0 8px rgba(79, 232, 255, 0.15);
+}
+
+.trend-radar-filter-item select {
+  background: transparent !important;
+  color: #e2edff;
+  border: none !important;
+  padding: 6px 4px;
+  font-size: 0.82rem;
+  outline: none;
+  cursor: pointer;
+}
+
 /* iOS Safari Auto-Zoom Prevention & Mobile Touch Targets */
 @media (max-width: 768px) {
   input,
@@ -1810,6 +2202,70 @@ tbody tr:hover {
     min-height: 40px;
     padding-top: 8px;
     padding-bottom: 8px;
+  }
+
+  /* Item M-11: Penutupan Celah Drawer Mengambang di Layar Mobile (100dvh & menempel penuh) */
+  .sidebar {
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    width: min(320px, 86vw) !important;
+    border-radius: 0 16px 16px 0 !important;
+    border-left: none !important;
+    margin: 0 !important;
+    padding-top: max(16px, env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)) !important;
+    background: rgba(7, 16, 38, 0.98) !important;
+  }
+
+  .sidebar-tool-item {
+    min-height: 44px !important;
+  }
+
+  /* Item M-07: Layout 1 Kolom Model Router di Pengaturan (<= 768px) */
+  .model-mode-grid,
+  .model-router-grid {
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    gap: 12px !important;
+  }
+
+  .model-mode-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .model-select-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .model-select-row select {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 44px !important;
+  }
+
+  .model-select-row .btn {
+    width: 100% !important;
+    min-height: 44px !important;
+    justify-content: center !important;
+  }
+
+  .recommendation-chips {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .rec-chip {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    min-height: 44px !important;
   }
 }
 
@@ -1854,8 +2310,7 @@ tbody tr:hover {
 
   .draft-studio-col textarea,
   .script-draft-textarea,
-  .audit-section textarea,
-  .zen-editor-textarea {
+  .audit-section textarea {
     min-height: 220px !important;
     height: 45dvh !important;
     scroll-margin-bottom: 280px;
@@ -1885,6 +2340,702 @@ tbody tr:hover {
   .settings-grid .btn,
   .settings-actions .btn {
     width: 100% !important;
+  }
+
+  /* ========================================================
+     FASE 1: Perbaikan Kritis Fungsionalitas & Elemen Terpotong (Audit Infinix GT 20 Pro)
+     ======================================================== */
+
+  /* M-01: YouTube Alert Card & Vertical API Key Form */
+  .trend-radar-content-area {
+    padding: 12px !important;
+  }
+
+  .yt-alert-card {
+    padding: 16px !important;
+    margin: 12px auto !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .yt-alert-inner {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .yt-alert-content {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .yt-alert-content h3,
+  .yt-alert-content p {
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+  }
+
+  .yt-api-key-form {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+
+  .yt-api-key-input {
+    width: 100% !important;
+    min-height: 42px !important;
+    font-size: 16px !important;
+  }
+
+  .yt-api-key-button {
+    width: 100% !important;
+    min-height: 44px !important;
+    padding: 10px 16px !important;
+    justify-content: center !important;
+  }
+
+  .yt-alert-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .yt-alert-actions .btn,
+  .yt-alert-actions .small-btn {
+    width: 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+    min-height: 42px !important;
+  }
+
+  /* M-02: Transform Desktop Table to Mobile Card List */
+  .table-container.table-scroll {
+    overflow-x: visible !important;
+  }
+
+  .pipeline-panel table.desktop-table,
+  .table-container table.desktop-table {
+    display: none !important;
+  }
+
+  .mobile-card-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding: 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .idea-mobile-card {
+    border-radius: var(--radius-lg);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-sizing: border-box;
+    width: 100%;
+    transition: border-color 0.2s ease, transform 0.15s ease;
+  }
+
+  .idea-mobile-card:active {
+    transform: scale(0.995);
+  }
+
+  .mobile-card-top {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .mobile-card-title-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .mobile-card-title-btn {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    text-align: left;
+    white-space: normal !important;
+    padding: 0 !important;
+  }
+
+  .mobile-card-title-btn .cell-title-inner {
+    display: flex !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .mobile-card-title-btn .cell-title-text {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    font-weight: 600;
+    color: #e2edff;
+  }
+
+  .mobile-card-title-btn .title-nav-icon {
+    margin-top: 3px;
+    flex-shrink: 0;
+  }
+
+  .mobile-card-source {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .mobile-card-middle {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .mobile-card-meta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .mobile-card-category {
+    font-size: 0.75rem;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.04);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-card-date {
+    font-size: 0.75rem;
+    color: #a6b7cf;
+    margin-left: auto;
+  }
+
+  .mobile-card-ai-output {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    background: rgba(4, 12, 31, 0.35);
+    border: 1px solid rgba(174, 206, 255, 0.08);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 0.8rem;
+    color: #c4d7ed;
+    line-height: 1.45;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-card-ai-output .ai-sparkle-icon {
+    color: var(--cyan);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .mobile-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid rgba(174, 206, 255, 0.08);
+    padding-top: 10px;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .mobile-card-primary-action {
+    flex: 1 1 120px;
+    min-width: 0;
+  }
+
+  .mobile-card-primary-action .row-action {
+    width: 100% !important;
+    min-height: 42px !important;
+    justify-content: center !important;
+    font-size: 0.84rem !important;
+    padding: 8px 12px !important;
+  }
+
+  .mobile-card-secondary-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .mobile-card-secondary-actions .row-action {
+    min-height: 42px !important;
+    min-width: 42px !important;
+    padding: 8px 10px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 0.82rem;
+  }
+
+  /* M-03: Responsive File Card in File Manager */
+  .file-cards-grid {
+    padding: 12px !important;
+    gap: 12px !important;
+  }
+
+  .file-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    padding: 14px !important;
+  }
+
+  .file-card-main {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .file-info strong {
+    min-width: 0 !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    line-height: 1.4 !important;
+  }
+
+  .file-card-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    width: 100% !important;
+    border-top: 1px solid rgba(174, 206, 255, 0.08);
+    padding-top: 10px;
+  }
+
+  .file-card-actions .row-action {
+    flex: 1 1 0 !important;
+    min-height: 42px !important;
+    justify-content: center !important;
+    font-size: 0.82rem !important;
+    padding: 8px 12px !important;
+  }
+
+  /* ========================================================
+     FASE 2: Redesain Ergonomi Navbar & Navigasi Mobile (Audit Infinix GT 20 Pro)
+     ======================================================== */
+
+  /* N-01 & N-02: Sembunyikan Terminal & Bot Status dari Topbar Mobile */
+  .topbar .topbar-terminal-btn,
+  .topbar .bot-status-dot {
+    display: none !important;
+  }
+
+  /* N-01 & N-02: Pulihkan Brand Identity ZEINITY secara proporsional */
+  .topbar .brand {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .topbar .brand .brand-mark {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .topbar .brand .brand-name {
+    display: inline-block !important;
+    font-size: 0.92rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.08em !important;
+    color: #e2edff !important;
+  }
+
+  /* N-01: Quick Provider Pill Komunikatif & Touch-friendly */
+  .topbar .quick-provider-wrapper {
+    margin-left: auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+
+  .quick-provider-pill,
+  .topbar .quick-provider-pill {
+    min-height: 44px !important;
+    padding: 6px 10px !important;
+    gap: 6px !important;
+    max-width: 140px !important;
+    margin-left: auto !important;
+  }
+
+  .quick-provider-pill .quick-pill-provider,
+  .topbar .quick-provider-pill .quick-pill-provider {
+    display: inline-block !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    color: #e2edff !important;
+    letter-spacing: 0.02em !important;
+    max-width: 76px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .quick-provider-pill .quick-pill-name,
+  .topbar .quick-provider-pill .quick-pill-name,
+  .quick-provider-pill .quick-pill-badge,
+  .quick-provider-pill .quick-pill-status,
+  .topbar .quick-provider-pill .quick-pill-badge,
+  .topbar .quick-provider-pill .quick-pill-status,
+  .quick-provider-pill .quick-pill-chevron,
+  .topbar .quick-provider-pill .quick-pill-chevron {
+    display: none !important;
+  }
+
+  /* N-03 & M-10: Pencarian Adaptif Peka Konteks & Sticky Navbar Slim 56px–60px */
+  .topbar.topbar-non-table:not(.mobile-search-open) {
+    max-height: 62px !important;
+    min-height: 56px !important;
+  }
+
+  .topbar.topbar-non-table:not(.mobile-search-open) .search-box {
+    display: none !important;
+  }
+
+  .mobile-search-toggle {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .topbar.topbar-non-table.mobile-search-open .search-box,
+  .topbar.topbar-table-active .search-box {
+    order: 3;
+    flex-basis: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-top: 4px;
+  }
+
+  /* N-01: Touch targets minimum 44px & anti-fat-finger */
+  .topbar .icon-btn,
+  .topbar .mobile-menu-btn,
+  .topbar .avatar {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .topbar .avatar {
+    margin-left: 0 !important;
+  }
+
+  .sidebar-tool-item {
+    min-height: 44px !important;
+  }
+
+  /* ========================================================
+     FASE 3: Optimasi Filter, Ruang Vertikal & Layout Form (Audit Infinix GT 20 Pro)
+     ======================================================== */
+
+  /* M-05: Transformasi Filter Pilar RSS Menjadi Swipeable Chips Horizontal */
+  .rss-filter-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 10px 14px !important;
+  }
+
+  .rss-pillar-chips,
+  .rss-pillar-filter {
+    display: flex !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    padding-bottom: 6px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .rss-pillar-chips::-webkit-scrollbar,
+  .rss-pillar-filter::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .rss-pillar-chip,
+  .rss-pillar-chips .small-btn,
+  .rss-pillar-filter .small-btn,
+  .rss-pillar-chips button,
+  .rss-pillar-filter button {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    border-radius: 999px !important;
+    min-height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 6px 14px !important;
+  }
+
+  .rss-filter-search {
+    width: 100% !important;
+  }
+
+  .rss-filter-search input {
+    width: 100% !important;
+    min-height: 40px !important;
+  }
+
+  .rss-category-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 10px 14px !important;
+  }
+
+  .rss-status-switcher {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  /* M-07: Layout 1 Kolom Model Router di Pengaturan (<= 640px) */
+  .model-mode-grid,
+  .model-router-grid {
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    gap: 12px !important;
+  }
+
+  .model-mode-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .recommendation-chips {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .rec-chip {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    min-height: 44px !important;
+  }
+
+  /* M-14: Harmonisasi Filter Region & Kategori di Radar Tren */
+  .trend-radar-controls-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    padding: 12px !important;
+  }
+
+  .trend-radar-tabs {
+    width: 100% !important;
+    display: flex !important;
+  }
+
+  .trend-radar-tabs .tab {
+    flex: 1 1 50% !important;
+    justify-content: center !important;
+    min-height: 40px !important;
+    font-size: 0.82rem !important;
+  }
+
+  .trend-radar-filters {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .trend-radar-filter-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    min-height: 40px !important;
+    padding: 0 10px !important;
+    border-radius: 8px !important;
+  }
+
+  .trend-radar-filter-item select {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    min-height: 40px !important;
+    font-size: 0.82rem !important;
+    padding: 8px 0 !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+  }
+
+  /* ========================================================
+     FASE 4: Harmonisasi Tipografi, Spacing & Finishing Canvas (Audit Infinix GT 20 Pro)
+     ======================================================== */
+
+  /* M-04: Card Padding & Spacing Breathing Room pada Mobile */
+  .panel,
+  .glass:not(.topbar):not(.sidebar):not(.icon-btn):not(.btn):not(.modal-overlay):not(.alert-modal-layer),
+  .pipeline-panel,
+  .overview-card,
+  .analytics-card,
+  .chart-card,
+  .detail-card,
+  .settings-card,
+  .yt-alert-card {
+    padding: 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* M-04: Word Break & Text Overflow Protection */
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .overview-card,
+  .analytics-card,
+  .metric-card,
+  .summary-card,
+  .detail-card,
+  .chart-card,
+  .detail-content {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+
+  /* M-06: Visual Hint Tab Scroll Indicator / Fade Masking */
+  .tabs,
+  .sub-tabs,
+  .radar-tabs,
+  .trend-radar-tabs,
+  .rss-pillar-chips,
+  .rss-pillar-filter {
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+  }
+
+  /* M-08 & M-09: Virtual Keyboard Ergonomics & Bottom Safe Area Inset pada Kanvas Naskah */
+  .zen-editor-textarea {
+    scroll-margin-bottom: 240px;
+    height: min(48dvh, 380px);
+    min-height: 220px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .script-editor-container,
+  .dual-pane-editor {
+    min-height: 0;
+    scroll-margin-bottom: 240px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Single-row swipeable deconstruction beat tabs with fade hint on mobile */
+  .beat-deconstruction-bar {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding-bottom: 6px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  .beat-deconstruction-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .beat-deconstruction-bar button {
+    flex-shrink: 0 !important;
+  }
+
+  /* Mobile Zen Maximize Editor ergonomics */
+  .zen-editor-overlay {
+    padding: 8px 8px calc(12px + env(safe-area-inset-bottom, 0px)) 8px !important;
+  }
+
+  .zen-editor-container {
+    height: 100% !important;
+    max-height: none !important;
+  }
+
+  .zen-editor-header {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+
+  /* M-08 & M-09: Bottom Action Row Ergonomics & Safe Area Inset */
+  .script-bottom-actions,
+  .finishing-bottom-actions,
+  .finishing-publish-box,
+  .outline-approval-bar {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    gap: 10px !important;
+  }
+
+  .script-bottom-actions .btn,
+  .finishing-bottom-actions .btn,
+  .finishing-publish-box .btn,
+  .outline-approval-bar .btn {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    touch-action: manipulation;
+  }
+
+  /* M-15: Tipografi Mikro Kontras Tinggi & Font >= 12px (0.75rem) */
+  .bar-label {
+    font-size: 0.75rem !important;
+    color: #cbd5e1 !important;
+    font-weight: 600;
+  }
+
+  .metric-change {
+    font-size: 0.75rem !important;
+    color: #cbd5e1 !important;
+    font-weight: 600;
+  }
+
+  .status-badge,
+  .source,
+  .ai-score-badge,
+  .duration-pill,
+  .preflight-pill,
+  .rec-chip,
+  .hook-badge-label,
+  .hook-badge-text {
+    font-size: 0.75rem !important;
+    min-height: 18px;
+    letter-spacing: 0.01em;
   }
 }
 
@@ -1934,10 +3085,43 @@ tbody tr:hover {
     flex-direction: column;
     align-items: center;
     gap: 16px;
+    padding: 10px 0;
   }
   .donut-legend {
     margin-left: 0 !important;
     width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .legend-item {
+    font-size: 0.8rem !important;
+    min-height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    color: #edf6ff !important;
+  }
+
+  .legend-item span {
+    min-width: 0;
+  }
+
+  .legend-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .legend-dot {
+    flex-shrink: 0 !important;
+  }
+
+  .legend-count {
+    flex-shrink: 0 !important;
+    white-space: nowrap;
   }
 }
 

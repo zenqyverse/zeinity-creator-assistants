@@ -593,6 +593,7 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
       <section className="pipeline-panel glass" style={{ marginBottom: 24 }}>
         {/* Level 1 Navigation Tabs: Category */}
         <div
+          className="rss-category-bar"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -620,7 +621,7 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
           </div>
 
           {/* Status Switcher (Semua / Belum Dibaca / Disimpan) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <div className="rss-status-switcher" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <button
               className={`small-btn ${statusTab === 'all' ? 'active' : ''}`}
               type="button"
@@ -674,24 +675,12 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
             >
               <Bookmark size={12} /> Disimpan ({bookmarkedList.length})
             </button>
-            <button
-              className="small-btn"
-              type="button"
-              onClick={() => setManageModalOpen(true)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 5,
-              }}
-              title="Kelola Sumber Feed"
-            >
-              <Settings2 size={12} /> Kelola Sumber
-            </button>
           </div>
         </div>
 
         {/* Level 2 Filter Pills: 5 Pilar Zeinity & Search */}
         <div
+          className="rss-filter-bar"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -703,14 +692,20 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
             borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
           }}
         >
-          {/* Pilar Pills */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.74rem', color: 'var(--muted)', marginRight: 4, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          {/* Pilar Pills: Swipeable Chips Horizontal (M-05) */}
+          <div
+            className="rss-pillar-chips"
+            role="group"
+            aria-label="Filter 5 Pilar Konten Zeinity"
+            style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+          >
+            <span className="rss-pillar-label" style={{ fontSize: '0.74rem', color: 'var(--muted)', marginRight: 4, display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
               <Layers size={13} /> Pilar:
             </span>
             <button
-              className={`small-btn ${selectedPillar === 'all' ? 'active' : ''}`}
+              className={`small-btn rss-pillar-chip ${selectedPillar === 'all' ? 'active' : ''}`}
               type="button"
+              aria-pressed={selectedPillar === 'all'}
               onClick={() => setSelectedPillar('all')}
               style={{
                 fontSize: '0.74rem',
@@ -724,8 +719,9 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
             {CONTENT_PILLARS.map((p) => (
               <button
                 key={p}
-                className={`small-btn ${selectedPillar === p ? 'active' : ''}`}
+                className={`small-btn rss-pillar-chip ${selectedPillar === p ? 'active' : ''}`}
                 type="button"
+                aria-pressed={selectedPillar === p}
                 onClick={() => setSelectedPillar(p)}
                 style={{
                   fontSize: '0.74rem',
@@ -740,7 +736,7 @@ export default function RSSReader({ onAddIdea, onAddIdeaFromRSS, existingTitles 
           </div>
 
           {/* Search Bar */}
-          <div style={{ position: 'relative', width: 220 }}>
+          <div className="rss-filter-search" style={{ position: 'relative', width: 220 }}>
             <Search
               size={13}
               style={{

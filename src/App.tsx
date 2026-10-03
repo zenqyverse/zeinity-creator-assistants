@@ -819,17 +819,37 @@ export default function App() {
 
   const handleSearchChange = (val: string) => {
     setSearchQuery(val);
-    if (val.trim()) {
-      const nonTableViews: ViewKey[] = ['overview', 'trends', 'rss', 'files', 'analytics', 'settings'];
-      if (nonTableViews.includes(activeView) || scriptItem || publishedItem) {
-        setActiveView('ideas');
-        setScriptItem(null);
-        setPublishedItem(null);
-        setPendingScriptId(null);
-        setPendingPublishedId(null);
-      }
+    // Item N-03 & M-10: On non-table views, never redirect forcibly on keystroke/touch.
+    // Explicit search submission is handled via handleSearchSubmit (e.g. on Enter key).
+  };
+
+  const handleSearchSubmit = () => {
+    const nonTableViews: ViewKey[] = ['overview', 'trends', 'rss', 'files', 'analytics', 'settings'];
+    if (searchQuery.trim() && (!isTableActive || nonTableViews.includes(activeView) || scriptItem || publishedItem)) {
+      setActiveView('ideas');
+      setScriptItem(null);
+      setPublishedItem(null);
+      setPendingScriptId(null);
+      setPendingPublishedId(null);
     }
   };
+
+  const searchPlaceholder = useMemo(() => {
+    if (isTableActive) {
+      if (activeView === 'ideas') return "Cari ide, judul, atau sumber…";
+      if (activeView === 'research') return "Cari riset AI & ide…";
+      if (activeView === 'scripts') return "Cari naskah & draf…";
+      if (activeView === 'published') return "Cari konten terbit…";
+      return "Cari ide, judul, atau sumber…";
+    }
+    if (activeView === 'trends') return "Cari tren YouTube & Google Trends…";
+    if (activeView === 'rss') return "Cari artikel di RSS Reader…";
+    if (activeView === 'files') return "Cari berkas referensi…";
+    if (activeView === 'analytics') return "Cari metrik analitik…";
+    if (activeView === 'settings') return "Cari pengaturan…";
+    if (scriptItem || publishedItem) return "Cari di naskah aktif…";
+    return "Cari ide konten…";
+  }, [isTableActive, activeView, scriptItem, publishedItem]);
 
   const addIdeaInitialData = useMemo(() => {
     if (!editItem) return undefined;
@@ -858,6 +878,7 @@ export default function App() {
           onClose={() => setSidebarOpen(false)}
           activeProvider={settings.active_provider || 'gemini'}
           providers={providers}
+          isBotConfigured={Boolean(settings.telegram_token?.trim())}
         />
         <div className="app-main">
           <Topbar
@@ -865,7 +886,7 @@ export default function App() {
             onSearchChange={handleSearchChange}
             onMenuClick={() => setSidebarOpen(true)}
             activeProvider={settings.active_provider || 'gemini'}
-            searchPlaceholder={isTableActive ? "Cari ide, judul, atau sumber…" : "Cari ide (ketik untuk cari di tabel)…"}
+            searchPlaceholder={searchPlaceholder}
             isSearchable={isTableActive}
             isGatewayOnline={(() => {
               const provider = settings.active_provider || 'custom';
@@ -883,6 +904,7 @@ export default function App() {
             }}
             onSaveSetting={(k, v) => upsertSetting(k, v)}
             onNavigateSettings={() => handleNavigate('settings')}
+            onSearchSubmit={handleSearchSubmit}
           />
           <div id="main-content" tabIndex={-1} style={{ outline: 'none', width: '100%' }}>
             {renderView()}

@@ -995,16 +995,17 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
             Pilih antara <strong>Combo Presets</strong> (auto-routing 3-tier cerdas di dalam proxy 9Router untuk zero downtime) atau <strong>Model Spesifik</strong> langsung dari provider upstream.
           </p>
 
-          {/* Mode Switcher Tabs */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginTop: 14 }}>
+          {/* Mode Switcher Tabs (M-07: 1-Column Responsive Grid on Mobile) */}
+          <div className="model-mode-grid model-router-grid" style={{ marginTop: 14 }}>
             <button
               type="button"
+              className={`model-mode-card ${values.custom_gateway_model_mode !== 'direct' ? 'active' : ''}`}
               onClick={() => {
                 setValues((v) => ({ ...v, custom_gateway_model_mode: 'combo' }));
                 onSave('custom_gateway_model_mode', 'combo');
               }}
               style={{
-                padding: '10px 14px',
+                padding: '12px 14px',
                 borderRadius: 10,
                 border: values.custom_gateway_model_mode !== 'direct' ? '1px solid var(--cyan)' : '1px solid var(--border)',
                 background: values.custom_gateway_model_mode !== 'direct' ? 'rgba(79, 232, 255, 0.12)' : 'rgba(255, 255, 255, 0.02)',
@@ -1013,25 +1014,26 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
                 textAlign: 'left',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 3,
+                gap: 4,
               }}
             >
               <span style={{ fontWeight: 700, fontSize: '0.86rem', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Zap size={15} /> ⚡ Combo Presets (3-Tier Auto-Fallback)
               </span>
-              <span style={{ fontSize: '0.72rem', color: values.custom_gateway_model_mode !== 'direct' ? 'var(--cyan)' : 'var(--muted)' }}>
+              <span style={{ fontSize: '0.74rem', color: values.custom_gateway_model_mode !== 'direct' ? 'var(--cyan)' : 'var(--muted)', lineHeight: 1.4, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                 Rekomendasi Utama: Otomatis failover bila kuota habis atau timeout
               </span>
             </button>
 
             <button
               type="button"
+              className={`model-mode-card ${values.custom_gateway_model_mode === 'direct' ? 'active' : ''}`}
               onClick={() => {
                 setValues((v) => ({ ...v, custom_gateway_model_mode: 'direct' }));
                 onSave('custom_gateway_model_mode', 'direct');
               }}
               style={{
-                padding: '10px 14px',
+                padding: '12px 14px',
                 borderRadius: 10,
                 border: values.custom_gateway_model_mode === 'direct' ? '1px solid var(--purple, #a855f7)' : '1px solid var(--border)',
                 background: values.custom_gateway_model_mode === 'direct' ? 'rgba(168, 85, 247, 0.12)' : 'rgba(255, 255, 255, 0.02)',
@@ -1040,13 +1042,13 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
                 textAlign: 'left',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 3,
+                gap: 4,
               }}
             >
               <span style={{ fontWeight: 700, fontSize: '0.86rem', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Cpu size={15} /> 🎯 Model Spesifik (Direct Model)
               </span>
-              <span style={{ fontSize: '0.72rem', color: values.custom_gateway_model_mode === 'direct' ? 'var(--purple, #a855f7)' : 'var(--muted)' }}>
+              <span style={{ fontSize: '0.74rem', color: values.custom_gateway_model_mode === 'direct' ? 'var(--purple, #a855f7)' : 'var(--muted)', lineHeight: 1.4, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                 Kirim langsung ke satu model LLM tanpa routing combo
               </span>
             </button>
@@ -1058,7 +1060,7 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
               <label htmlFor="custom_gateway_model_version" style={{ fontWeight: 600, fontSize: '0.86rem', display: 'block', marginBottom: 8 }}>
                 Pilih Combo Preset 9Router:
               </label>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <div className="model-select-row" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                 <select
                   id="custom_gateway_model_version"
                   aria-label="Pilih Combo Preset 9Router"
@@ -1165,7 +1167,7 @@ export default function Settings({ settings, onSave, onDelete, onResetTelegramTo
               <label htmlFor="custom_gateway_direct_model" style={{ fontWeight: 600, fontSize: '0.86rem', display: 'block', marginBottom: 8 }}>
                 Pilih Model Spesifik (Dikelompokkan per Vendor Upstream):
               </label>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <div className="model-select-row" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                 <select
                   id="custom_gateway_direct_model"
                   aria-label="Pilih Model Spesifik 9Router"

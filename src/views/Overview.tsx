@@ -254,7 +254,7 @@ function detectPillarFromKeywords(text: string, fallbackPillar = 'Internet & Soc
       </section>
 
       <section className="metrics" aria-label="Ringkasan metrik">
-        <article className="metric-card glass" style={{ ['--metric' as string]: '#4fe8ff' }}>
+        <article className="metric-card overview-card glass" style={{ ['--metric' as string]: '#4fe8ff' }}>
           <div className="metric-top">
             <span>Total Ide</span>
             <span className="metric-icon"><Lightbulb size={16} /></span>
@@ -262,7 +262,7 @@ function detectPillarFromKeywords(text: string, fallbackPillar = 'Internet & Soc
           <div className="metric-value">{total}</div>
           <div className="metric-change">+{ideasThisWeek} minggu ini</div>
         </article>
-        <article className="metric-card glass" style={{ ['--metric' as string]: '#f9c74f' }}>
+        <article className="metric-card overview-card glass" style={{ ['--metric' as string]: '#f9c74f' }}>
           <div className="metric-top">
             <span>Menunggu Validasi</span>
             <span className="metric-icon"><Clock size={16} /></span>
@@ -270,7 +270,7 @@ function detectPillarFromKeywords(text: string, fallbackPillar = 'Internet & Soc
           <div className="metric-value">{pending}</div>
           <div className="metric-change">{ideasToday} ide baru hari ini</div>
         </article>
-        <article className="metric-card glass" style={{ ['--metric' as string]: '#53f2ad' }}>
+        <article className="metric-card overview-card glass" style={{ ['--metric' as string]: '#53f2ad' }}>
           <div className="metric-top">
             <span>Dalam Produksi</span>
             <span className="metric-icon"><FileText size={16} /></span>
@@ -278,7 +278,7 @@ function detectPillarFromKeywords(text: string, fallbackPillar = 'Internet & Soc
           <div className="metric-value">{production}</div>
           <div className="metric-change">{scriptsInProduction} script dalam pengerjaan</div>
         </article>
-        <article className="metric-card glass" style={{ ['--metric' as string]: '#9985ff' }}>
+        <article className="metric-card overview-card glass" style={{ ['--metric' as string]: '#9985ff' }}>
           <div className="metric-top">
             <span>Telah Terbit</span>
             <span className="metric-icon"><CheckCircle size={16} /></span>
@@ -290,7 +290,7 @@ function detectPillarFromKeywords(text: string, fallbackPillar = 'Internet & Soc
 
       {/* Radar Sinyal Terhangat (Compact Trends Widget) */}
       <section
-        className="pipeline-panel glass"
+        className="pipeline-panel overview-card glass"
         style={{
           marginTop: 18,
           padding: '16px 20px',
@@ -327,7 +327,7 @@ function detectPillarFromKeywords(text: string, fallbackPillar = 'Internet & Soc
               <h2 style={{ fontSize: '0.98rem', margin: 0, color: '#f1f5f9', fontWeight: 700 }}>
                 Radar Sinyal Terhangat
               </h2>
-              <p style={{ margin: 0, fontSize: '0.74rem', color: 'var(--muted)' }}>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--muted)' }}>
                 Topik pencarian teratas di Indonesia siap dijadikan ide konten seketika
               </p>
             </div>
@@ -425,7 +425,7 @@ function detectPillarFromKeywords(text: string, fallbackPillar = 'Internet & Soc
                       </h4>
                       <span
                         style={{
-                          fontSize: '0.7rem',
+                          fontSize: '0.75rem',
                           color: '#fb923c',
                           fontWeight: 600,
                         }}
@@ -441,7 +441,7 @@ function detectPillarFromKeywords(text: string, fallbackPillar = 'Internet & Soc
                     onClick={() => handleAddTopTrend(t)}
                     disabled={isAdded}
                     style={{
-                      fontSize: '0.72rem',
+                      fontSize: '0.75rem',
                       padding: '4px 8px',
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -474,7 +474,7 @@ function detectPillarFromKeywords(text: string, fallbackPillar = 'Internet & Soc
         )}
       </section>
 
-      <section className="pipeline-panel glass" style={{ marginTop: 18 }}>
+      <section className="pipeline-panel overview-card glass" style={{ marginTop: 18 }}>
         <div className="table-head">
           <h2>Aktivitas Terbaru</h2>
           <button

@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Eye,
   Calendar,
+  Tag,
 } from 'lucide-react';
 import type { ContentSource, GoogleTrendItem, YouTubeTrendItem } from '@/types';
 import {
@@ -248,6 +249,21 @@ export default function TrendRadar({
     }, 1000);
   };
 
+  const handleOpenFilterSelect = (e: React.MouseEvent<HTMLDivElement>) => {
+    const sel = e.currentTarget.querySelector('select');
+    if (sel && e.target !== sel) {
+      if (typeof sel.showPicker === 'function') {
+        try {
+          sel.showPicker();
+        } catch {
+          sel.focus();
+        }
+      } else {
+        sel.focus();
+      }
+    }
+  };
+
   const handleAddYouTubeIdea = (item: YouTubeTrendItem) => {
     // Determine appropriate pillar
     let pillar = 'Internet & Social Media Culture';
@@ -316,9 +332,10 @@ export default function TrendRadar({
         </div>
       </section>
 
-      {/* Sub-Tab Navigation & Controls Bar */}
+      {/* Sub-Tab Navigation & Controls Bar (M-14: Harmonized Region & Category Layout) */}
       <section className="pipeline-panel glass" style={{ marginBottom: 20 }}>
         <div
+          className="trend-radar-controls-bar"
           style={{
             display: 'flex',
             flexWrap: 'wrap',
@@ -330,7 +347,7 @@ export default function TrendRadar({
           }}
         >
           {/* Sub-Tabs */}
-          <div className="tabs" role="tablist" style={{ margin: 0 }}>
+          <div className="tabs sub-tabs radar-tabs trend-radar-tabs" role="tablist" style={{ margin: 0 }}>
             <button
               className={`tab ${activeSubTab === 'youtube' ? 'active' : ''}`}
               type="button"
@@ -349,19 +366,15 @@ export default function TrendRadar({
             </button>
           </div>
 
-          {/* Controls: Region & Category */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Globe size={14} style={{ color: 'var(--muted)' }} />
+          {/* Controls: Region & Category Harmonized Grid */}
+          <div className="trend-radar-filters" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <div className="trend-radar-filter-item" style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }} onClick={handleOpenFilterSelect}>
+              <Globe size={14} style={{ color: 'var(--muted)', flexShrink: 0 }} />
               <select
                 value={selectedRegion}
                 onChange={(e) => setSelectedRegion(e.target.value)}
                 style={{
-                  background: 'rgba(13, 21, 38, 0.8)',
                   color: '#e2edff',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  borderRadius: 6,
-                  padding: '6px 10px',
                   fontSize: '0.82rem',
                 }}
                 aria-label="Pilih Region Tren"
@@ -375,31 +388,30 @@ export default function TrendRadar({
             </div>
 
             {activeSubTab === 'youtube' && (
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                style={{
-                  background: 'rgba(13, 21, 38, 0.8)',
-                  color: '#e2edff',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  borderRadius: 6,
-                  padding: '6px 10px',
-                  fontSize: '0.82rem',
-                }}
-                aria-label="Pilih Kategori YouTube"
-              >
-                {YOUTUBE_CATEGORIES.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
+              <div className="trend-radar-filter-item" style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }} onClick={handleOpenFilterSelect}>
+                <Tag size={14} style={{ color: 'var(--muted)', flexShrink: 0 }} />
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  style={{
+                    color: '#e2edff',
+                    fontSize: '0.82rem',
+                  }}
+                  aria-label="Pilih Kategori YouTube"
+                >
+                  {YOUTUBE_CATEGORIES.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
           </div>
         </div>
 
         {/* Content Area */}
-        <div style={{ padding: '20px' }}>
+        <div className="trend-radar-content-area">
           {/* ==================== YOUTUBE VIEW ==================== */}
           {activeSubTab === 'youtube' && (
             <>
@@ -411,58 +423,30 @@ export default function TrendRadar({
               )}
 
               {!ytLoading && ytError && (
-                <div
-                  style={{
-                    background: 'rgba(239, 68, 68, 0.08)',
-                    border: '1px solid rgba(239, 68, 68, 0.25)',
-                    borderRadius: 10,
-                    padding: 24,
-                    maxWidth: 680,
-                    margin: '20px auto',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-                    <div
-                      style={{
-                        background: 'rgba(239, 68, 68, 0.18)',
-                        padding: 10,
-                        borderRadius: 8,
-                        color: '#f87171',
-                        flexShrink: 0,
-                      }}
-                    >
+                <div className="yt-alert-card">
+                  <div className="yt-alert-inner">
+                    <div className="yt-alert-icon">
                       <AlertCircle size={24} />
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <h3 style={{ margin: '0 0 6px', color: '#fca5a5', fontSize: '1.05rem' }}>
-                        {ytError.message}
-                      </h3>
-                      <p style={{ margin: '0 0 16px', color: '#cbd5e1', fontSize: '0.85rem', lineHeight: 1.5 }}>
+                    <div className="yt-alert-content">
+                      <h3>{ytError.message}</h3>
+                      <p>
                         {ytError.details ||
                           'YouTube Data API memerlukan API Key gratis untuk membaca daftar video paling populer.'}
                       </p>
 
                       {ytError.code === 'NO_API_KEY' && (
-                        <form onSubmit={handleSaveApiKey} style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                        <form onSubmit={handleSaveApiKey} className="yt-api-key-form">
                           <input
                             type="password"
+                            className="yt-api-key-input"
                             placeholder="Tempel YouTube API Key di sini (AIzaSy...)"
                             value={apiKeyInput}
                             onChange={(e) => setApiKeyInput(e.target.value)}
-                            style={{
-                              flex: 1,
-                              background: 'rgba(15, 23, 42, 0.8)',
-                              border: '1px solid rgba(255, 255, 255, 0.15)',
-                              color: '#fff',
-                              borderRadius: 6,
-                              padding: '8px 12px',
-                              fontSize: '0.85rem',
-                            }}
                           />
                           <button
                             type="submit"
-                            className="btn btn-primary"
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px' }}
+                            className="btn btn-primary yt-api-key-button"
                           >
                             {apiKeySaved ? <Check size={16} /> : <Key size={16} />}
                             {apiKeySaved ? 'Tersimpan!' : 'Simpan Key'}
@@ -470,13 +454,12 @@ export default function TrendRadar({
                         </form>
                       )}
 
-                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <div className="yt-alert-actions">
                         <a
                           href="https://console.cloud.google.com/apis/library/youtube.googleapis.com"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="btn btn-secondary"
-                          style={{ fontSize: '0.8rem', padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                          className="btn btn-secondary small-btn"
                         >
                           <ExternalLink size={13} /> Panduan Buat API Key Gratis
                         </a>
@@ -741,8 +724,12 @@ export default function TrendRadar({
                     borderRadius: 10,
                     padding: 20,
                     maxWidth: 600,
+                    width: '100%',
+                    boxSizing: 'border-box',
                     margin: '20px auto',
                     textAlign: 'center',
+                    overflowWrap: 'anywhere',
+                    wordBreak: 'break-word',
                   }}
                 >
                   <AlertCircle size={28} style={{ color: '#f87171', margin: '0 auto 10px' }} />

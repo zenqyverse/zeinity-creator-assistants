@@ -9,6 +9,7 @@ import {
   ExternalLink,
   Zap,
   RefreshCw,
+  X,
 } from 'lucide-react';
 import { useTerminal } from './Terminal';
 import type { AIProvider, NineRouterCatalog } from '@/types';
@@ -29,6 +30,7 @@ interface TopbarProps {
   onSelectProvider?: (provider: AIProvider) => void;
   onSaveSetting?: (key: string, value: string) => Promise<boolean> | void;
   onNavigateSettings?: () => void;
+  onSearchSubmit?: () => void;
 }
 
 export default function Topbar({
@@ -44,10 +46,27 @@ export default function Topbar({
   onSelectProvider,
   onSaveSetting,
   onNavigateSettings,
+  onSearchSubmit,
 }: TopbarProps) {
   const { isOpen, openTerminal, closeTerminal, status } = useTerminal();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus mobile search input when expanded
+  useEffect(() => {
+    if (mobileSearchOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [mobileSearchOpen]);
+
+  // Collapse mobile search when navigating to a table-active view
+  useEffect(() => {
+    if (isSearchable) {
+      setMobileSearchOpen(false);
+    }
+  }, [isSearchable]);
 
   // Close dropdown on outside click or touch
   useEffect(() => {
@@ -200,7 +219,7 @@ export default function Topbar({
   }, [cachedCatalog, defaultDirects, isComboMode, activeModelName]);
 
   return (
-    <header className={`topbar glass ${dropdownOpen ? 'quick-provider-open' : ''}`}>
+    <header className={`topbar glass ${dropdownOpen ? 'quick-provider-open' : ''} ${!isSearchable ? 'topbar-non-table' : 'topbar-table-active'} ${mobileSearchOpen ? 'mobile-search-open' : ''}`}>
       <button className="icon-btn mobile-menu-btn" type="button" aria-label="Buka navigasi" onClick={onMenuClick}>
         <Menu size={19} />
       </button>
@@ -212,9 +231,10 @@ export default function Topbar({
         <span className="product-label">Creator Assistant</span>
       </div>
 
-      <div className="search-box">
+      <div className={`search-box ${!isSearchable ? 'non-table-search' : ''} ${mobileSearchOpen ? 'search-expanded' : ''}`}>
         <Search size={17} />
         <input
+          ref={searchInputRef}
           type="search"
           placeholder={searchPlaceholder || "Cari ide, judul, atau sumber…"}
           aria-label={searchPlaceholder || "Cari ide, judul, atau sumber"}
@@ -223,14 +243,18 @@ export default function Topbar({
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
               onSearchChange('');
+              setMobileSearchOpen(false);
+            } else if (e.key === 'Enter' && !isSearchable && searchQuery.trim()) {
+              onSearchSubmit?.();
+              setMobileSearchOpen(false);
             }
           }}
-          title={isSearchable === false ? "Ketik pencarian untuk langsung membuka tabel ide konten" : undefined}
+          title={isSearchable === false ? "Ketik pencarian untuk mencari ide konten" : undefined}
         />
       </div>
 
       {/* QUICK PROVIDER SELECTOR PILL & DROPDOWN */}
-      <div ref={dropdownRef} style={{ position: 'relative' }}>
+      <div ref={dropdownRef} className="quick-provider-wrapper" style={{ position: 'relative' }}>
         <button
           type="button"
           className="quick-provider-pill"
@@ -271,6 +295,7 @@ export default function Topbar({
           <span className="quick-pill-content" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
             <Zap size={14} style={{ color: 'var(--cyan)' }} />
             <strong className="quick-pill-name">{activeModelName}</strong>
+            <strong className="quick-pill-provider">{activeProvider === 'custom' ? '9Router' : providerLabel}</strong>
             <span
               className="quick-pill-badge"
               style={{
@@ -298,6 +323,7 @@ export default function Topbar({
           </span>
           <ChevronDown
             size={13}
+            className="quick-pill-chevron"
             style={{
               opacity: 0.7,
               transform: dropdownOpen ? 'rotate(180deg)' : 'none',
@@ -549,8 +575,25 @@ export default function Topbar({
         )}
       </div>
 
+      {!isSearchable && (
+        <button
+          className={`icon-btn mobile-search-toggle ${mobileSearchOpen ? 'active' : ''}`}
+          type="button"
+          aria-label={mobileSearchOpen ? "Tutup pencarian" : "Buka pencarian"}
+          onClick={() => {
+            setMobileSearchOpen((v) => {
+              if (v) onSearchChange('');
+              return !v;
+            });
+          }}
+          title={mobileSearchOpen ? "Tutup pencarian" : "Buka pencarian"}
+        >
+          {mobileSearchOpen ? <X size={16} /> : <Search size={16} />}
+        </button>
+      )}
+
       <div
-        className={`bot-status-dot${isBotConfigured ? ' online' : ''}`}
+        className={`bot-status-dot topbar-bot-status${isBotConfigured ? ' online' : ''}`}
         title={
           isBotConfigured
             ? 'Bot Telegram terhubung — token tersimpan & terverifikasi'
@@ -568,7 +611,7 @@ export default function Topbar({
       </div>
 
       <button
-        className="icon-btn"
+        className="icon-btn topbar-terminal-btn"
         type="button"
         aria-label="Alihkan Log Aktivitas"
         onClick={() => (isOpen ? closeTerminal() : openTerminal())}

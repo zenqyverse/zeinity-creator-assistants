@@ -2509,7 +2509,7 @@ export default function ScriptDetail({
           {/* ==================== 3. WORKSPACE VIEWS (WRITING VS FINISHING) ==================== */}
           {activeWorkflowTab === 'writing' ? (
             /* TAB 1: STUDIO NASKAH (DUAL-PANE STRETCHED: OUTLINE + ZEN WRITING CANVAS) */
-            <div className={`scripting-dual-pane-grid tablet-view-${tabletStudioTab}`}>
+            <div className={`scripting-dual-pane-grid dual-pane-editor tablet-view-${tabletStudioTab}`}>
               {/* Tablet sub-tab toggle ergonomis (<= 960px) - F-14 */}
               <div className="tablet-studio-toggle" role="tablist" aria-label="Navigasi Tablet Studio Naskah">
                 <button
@@ -3517,7 +3517,7 @@ export default function ScriptDetail({
       {/* Zen Maximize Editor Modal */}
       {isScriptMaximized && (
         <div className="zen-editor-overlay" onClick={() => setIsScriptMaximized(false)}>
-          <div className="zen-editor-container" onClick={(e) => e.stopPropagation()}>
+          <div className="zen-editor-container script-editor-container" onClick={(e) => e.stopPropagation()}>
             <div className="zen-editor-header">
               <div className="zen-editor-title">
                 <FileText size={18} style={{ color: 'var(--cyan)' }} />

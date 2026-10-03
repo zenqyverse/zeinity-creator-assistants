@@ -151,7 +151,7 @@ export default function Analytics({ items }: AnalyticsProps) {
 
       {/* Top metrics */}
       <section className="metrics" aria-label="Metrik analitik">
-        <article className="metric-card glass" style={{ ['--metric' as string]: '#4fe8ff' }}>
+        <article className="metric-card analytics-card glass" style={{ ['--metric' as string]: '#4fe8ff' }}>
           <div className="metric-top">
             <span>Total Views</span>
             <span className="metric-icon"><Eye size={16} /></span>
@@ -161,7 +161,7 @@ export default function Analytics({ items }: AnalyticsProps) {
             {totalViews > 0 ? `Dari ${publishedCount} konten published` : 'Belum ada data views'}
           </div>
         </article>
-        <article className="metric-card glass" style={{ ['--metric' as string]: '#53f2ad' }}>
+        <article className="metric-card analytics-card glass" style={{ ['--metric' as string]: '#53f2ad' }}>
           <div className="metric-top">
             <span>Avg Engagement</span>
             <span className="metric-icon"><ThumbsUp size={16} /></span>
@@ -169,7 +169,7 @@ export default function Analytics({ items }: AnalyticsProps) {
           <div className="metric-value">{avgEngagement}</div>
           <div className="metric-change">{totalLikes.toLocaleString()} likes · {totalComments.toLocaleString()} comments</div>
         </article>
-        <article className="metric-card glass" style={{ ['--metric' as string]: '#f9c74f' }}>
+        <article className="metric-card analytics-card glass" style={{ ['--metric' as string]: '#f9c74f' }}>
           <div className="metric-top">
             <span>Avg Production Time</span>
             <span className="metric-icon"><Clock size={16} /></span>
@@ -177,7 +177,7 @@ export default function Analytics({ items }: AnalyticsProps) {
           <div className="metric-value">{formattedProdTime}</div>
           <div className="metric-change">{publishedItems.length} video published diukur</div>
         </article>
-        <article className="metric-card glass" style={{ ['--metric' as string]: '#9985ff' }}>
+        <article className="metric-card analytics-card glass" style={{ ['--metric' as string]: '#9985ff' }}>
           <div className="metric-top">
             <span>Production Velocity</span>
             <span className="metric-icon"><TrendingUp size={16} /></span>
@@ -190,7 +190,7 @@ export default function Analytics({ items }: AnalyticsProps) {
       {/* Charts */}
       <section className="analytics-grid" style={{ marginTop: 18 }}>
         {/* Monthly production chart */}
-        <article className="chart-card glass">
+        <article className="chart-card analytics-card glass">
           <h3>Konten Diproduksi per Bulan</h3>
           <div className="bar-chart" style={{ marginBottom: 28 }}>
             {monthlyData.map((d) => (
@@ -211,7 +211,7 @@ export default function Analytics({ items }: AnalyticsProps) {
         </article>
 
         {/* Status distribution donut */}
-        <article className="chart-card glass">
+        <article className="chart-card analytics-card glass">
           <h3>Distribusi Status Pipeline</h3>
           <div className="donut-chart">
             <svg width={160} height={160} viewBox="0 0 160 160" style={{ transform: 'rotate(-90deg)' }}>
@@ -240,9 +240,11 @@ export default function Analytics({ items }: AnalyticsProps) {
             <div className="donut-legend">
               {donutSegments.map((seg) => (
                 <div key={seg.status} className="legend-item">
-                  <span className="legend-dot" style={{ background: seg.color }} />
-                  <span>{seg.status}</span>
-                  <span style={{ color: 'var(--muted)', marginLeft: 'auto', fontWeight: 700 }}>{seg.count}</span>
+                  <div className="legend-label-group">
+                    <span className="legend-dot" style={{ background: seg.color }} />
+                    <span className="legend-text">{seg.status}</span>
+                  </div>
+                  <span className="legend-count">{seg.count}</span>
                 </div>
               ))}
             </div>
@@ -250,7 +252,7 @@ export default function Analytics({ items }: AnalyticsProps) {
         </article>
 
         {/* Category breakdown */}
-        <article className="chart-card glass">
+        <article className="chart-card analytics-card glass">
           <h3>Konten per Kategori</h3>
           <div style={{ display: 'grid', gap: 12, marginTop: 16 }}>
             {Object.entries(byCategory).map(([cat, count], i) => (
@@ -277,7 +279,7 @@ export default function Analytics({ items }: AnalyticsProps) {
         </article>
 
         {/* Source breakdown */}
-        <article className="chart-card glass">
+        <article className="chart-card analytics-card glass">
           <h3>Sumber Ide</h3>
           <div style={{ display: 'grid', gap: 16, marginTop: 16 }}>
             {Object.entries(bySource).map(([source, count]) => {

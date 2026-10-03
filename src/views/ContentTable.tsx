@@ -220,7 +220,7 @@ export default function ContentTable({
   const renderAction = (item: ContentItem) => {
     if (item.id === validatingId) {
       return (
-        <span style={{ color: '#f9d777', fontSize: '.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <span className="row-action validating-indicator" style={{ color: '#f9d777', fontSize: '.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
           <Loader2 size={14} className="spinner" /> Memproses...
         </span>
       );
@@ -338,6 +338,81 @@ export default function ContentTable({
     }
   };
 
+  const renderSourceBadge = (item: ContentItem) => {
+    if (item.source === 'Telegram') {
+      return item.telegram_message_id ? (
+        <span
+          className="source-verified-bot"
+          title={`Verified Bot — Telegram (Bot): dikirim otomatis via Telegram Bot API${item.telegram_sender_username ? ` • @${item.telegram_sender_username}` : ''} • Msg ID: ${item.telegram_message_id}`}
+        >
+          <Bot size={11} /> Telegram (Bot)
+        </span>
+      ) : (
+        <span
+          className="source source-telegram-manual"
+          title="Telegram (Manual) — Dicatat manual oleh user di web app"
+        >
+          Telegram (Manual)
+        </span>
+      );
+    }
+    if (item.source === 'YouTube Trends') {
+      return (
+        <span
+          className="source source-youtube-trends"
+          title="YouTube Trends"
+          style={{
+            color: '#ff6b6b',
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.25)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+          }}
+        >
+          <Flame size={11} /> YouTube Trends
+        </span>
+      );
+    }
+    if (item.source === 'Google Trends') {
+      return (
+        <span
+          className="source source-google-trends"
+          title="Google Trends"
+          style={{
+            color: '#38bdf8',
+            background: 'rgba(56, 189, 248, 0.12)',
+            border: '1px solid rgba(56, 189, 248, 0.25)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+          }}
+        >
+          <TrendingUp size={11} /> Google Trends
+        </span>
+      );
+    }
+    if (item.source === 'RSS') {
+      return (
+        <span
+          className="source source-rss"
+          title="RSS Reader"
+          style={{
+            color: '#fb923c',
+            background: 'rgba(249, 115, 22, 0.12)',
+            border: '1px solid rgba(249, 115, 22, 0.25)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+          }}
+        >
+          <Rss size={11} /> RSS
+        </span>
+      );
+    }
+    return <span className={`source ${item.source.toLowerCase()}`}>{item.source}</span>;
+  };
+
   return (
     <main className="main-content">
       <section className="hero">
@@ -419,7 +494,8 @@ export default function ContentTable({
           {loading ? (
             <div className="empty-row">Memuat data…</div>
           ) : (
-            <table>
+            <>
+              <table className="desktop-table">
               <thead>
                 <tr>
                   <th>Judul</th>
@@ -535,70 +611,7 @@ export default function ContentTable({
                       </td>
                       <td>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          {item.source === 'Telegram' ? (
-                            item.telegram_message_id ? (
-                              <span
-                                className="source-verified-bot"
-                                title={`Verified Bot — Telegram (Bot): dikirim otomatis via Telegram Bot API${item.telegram_sender_username ? ` • @${item.telegram_sender_username}` : ''} • Msg ID: ${item.telegram_message_id}`}
-                              >
-                                <Bot size={11} /> Telegram (Bot)
-                              </span>
-                            ) : (
-                              <span
-                                className="source source-telegram-manual"
-                                title="Telegram (Manual) — Dicatat manual oleh user di web app"
-                              >
-                                Telegram (Manual)
-                              </span>
-                            )
-                          ) : item.source === 'YouTube Trends' ? (
-                            <span
-                              className="source source-youtube-trends"
-                              title="YouTube Trends"
-                              style={{
-                                color: '#ff6b6b',
-                                background: 'rgba(239, 68, 68, 0.12)',
-                                border: '1px solid rgba(239, 68, 68, 0.25)',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                              }}
-                            >
-                              <Flame size={11} /> YouTube Trends
-                            </span>
-                          ) : item.source === 'Google Trends' ? (
-                            <span
-                              className="source source-google-trends"
-                              title="Google Trends"
-                              style={{
-                                color: '#38bdf8',
-                                background: 'rgba(56, 189, 248, 0.12)',
-                                border: '1px solid rgba(56, 189, 248, 0.25)',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                              }}
-                            >
-                              <TrendingUp size={11} /> Google Trends
-                            </span>
-                          ) : item.source === 'RSS' ? (
-                            <span
-                              className="source source-rss"
-                              title="RSS Reader"
-                              style={{
-                                color: '#fb923c',
-                                background: 'rgba(249, 115, 22, 0.12)',
-                                border: '1px solid rgba(249, 115, 22, 0.25)',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                              }}
-                            >
-                              <Rss size={11} /> RSS
-                            </span>
-                          ) : (
-                            <span className={`source ${item.source.toLowerCase()}`}>{item.source}</span>
-                          )}
+                          {renderSourceBadge(item)}
                         </div>
                       </td>
                       <td>
@@ -673,7 +686,207 @@ export default function ContentTable({
                 )}
               </tbody>
             </table>
-          )}
+
+            {/* Mobile Card List View (<= 640px) */}
+            <div className="mobile-card-list" aria-label="Daftar Kartu Ide Mobile">
+              {filtered.length === 0 ? (
+                items.length === 0 ? (
+                  <div
+                    className="zero-state-onboarding"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 14,
+                      padding: '40px 16px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: '50%',
+                        background: 'rgba(79, 232, 255, 0.12)',
+                        border: '1px solid rgba(79, 232, 255, 0.28)',
+                        display: 'grid',
+                        placeItems: 'center',
+                        color: 'var(--cyan)',
+                      }}
+                    >
+                      <Sparkles size={24} />
+                    </div>
+                    <div>
+                      <h4 style={{ margin: '0 0 6px 0', fontSize: '1.05rem', color: '#edf6ff', fontWeight: 700 }}>
+                        Selamat Datang di Zeinity Creator Assistant
+                      </h4>
+                      <p style={{ margin: 0, maxWidth: 480, color: 'var(--muted)', fontSize: '0.88rem', lineHeight: 1.55 }}>
+                        Belum ada ide konten yang terdaftar di workspace Anda. Mulai pipeline riset dan penulisan naskah dengan menambahkan ide pertama Anda.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={onAddIdea}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '10px 20px',
+                        fontWeight: 700,
+                        marginTop: 4,
+                      }}
+                    >
+                      <Plus size={16} /> + Tambah Ide Pertama
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    className="mobile-empty-filter"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 12,
+                      padding: '24px 12px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <span style={{ color: 'var(--muted)', fontSize: '0.88rem' }}>{emptyMessage}</span>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={handleResetFilters}
+                      style={{
+                        fontSize: '0.82rem',
+                        padding: '8px 16px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        minHeight: 40,
+                      }}
+                    >
+                      <Filter size={13} /> Reset Filter
+                    </button>
+                  </div>
+                )
+              ) : (
+                filtered.map((item) => (
+                  <article key={`mobile-card-${item.id}`} className="idea-mobile-card glass">
+                    {/* Bagian Atas: Judul ide lengkap + badge sumber */}
+                    <div className="mobile-card-top">
+                      <div className="mobile-card-title-row">
+                        <button
+                          type="button"
+                          className="cell-title cell-title-btn mobile-card-title-btn"
+                          onClick={() => handleTitleClick(item)}
+                          title={getTitleTooltip(item)}
+                          aria-label={getTitleTooltip(item)}
+                        >
+                          <span className="cell-title-inner">
+                            {getTitleDestinationIcon(item.status)}
+                            <span className="cell-title-text">{item.title}</span>
+                          </span>
+                        </button>
+                        <div className="mobile-card-source">
+                          {renderSourceBadge(item)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bagian Tengah: Badge status + Kategori / Tanggal + Output AI / Skor */}
+                    <div className="mobile-card-middle">
+                      <div className="mobile-card-meta-row">
+                        <div className="mobile-card-status">
+                          {onStatusChange ? (
+                            <select
+                              className={`status-badge ${item.status.toLowerCase()}`}
+                              value={item.status}
+                              onChange={(e) => onStatusChange(item, e.target.value as ContentStatus)}
+                              aria-label={`Ubah status ${item.title}`}
+                              title="Klik untuk mengubah status pipeline secara langsung"
+                              style={{
+                                border: 'none',
+                                outline: 'none',
+                                cursor: 'pointer',
+                                fontWeight: 700,
+                                fontFamily: 'inherit',
+                              }}
+                            >
+                              {(item.status === 'Validating'
+                                ? (['Validating', ...statuses.filter((s) => s !== 'Validating')] as ContentStatus[])
+                                : statuses.filter((s) => s !== 'Validating')
+                              ).map((s) => (
+                                <option key={s} value={s} style={{ background: '#0d1526', color: '#e2edff' }}>
+                                  {s}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className={`status-badge ${item.status.toLowerCase()}`}>{item.status}</span>
+                          )}
+                        </div>
+
+                        {item.category && (
+                          <span className="mobile-card-category" title={item.category}>
+                            {item.category}
+                          </span>
+                        )}
+
+                        <span className="mobile-card-date">
+                          {formatDate(item.created_at)}
+                        </span>
+                      </div>
+
+                      {item.script_hook_type && (
+                        <div className="mobile-card-hook-badge" title={`Formula Hook: ${item.script_hook_type}`}>
+                          <span className="hook-badge-label">🎯 Hook:</span>
+                          <span className="hook-badge-text">{item.script_hook_type}</span>
+                        </div>
+                      )}
+
+                      {item.ai_output && item.ai_output !== '—' && (
+                        <div className="mobile-card-ai-output" title={item.ai_output}>
+                          <Sparkles size={12} className="ai-sparkle-icon" />
+                          <span className="ai-output-text">{item.ai_output}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bagian Bawah: Baris tombol aksi jari jempol (min 40-44px touch target) */}
+                    <div className="mobile-card-actions">
+                      <div className="mobile-card-primary-action">
+                        {renderAction(item)}
+                      </div>
+                      <div className="mobile-card-secondary-actions">
+                        <button
+                          className="row-action edit-btn default"
+                          type="button"
+                          onClick={() => onEdit(item)}
+                          title={`Edit metadata ide: ${item.title}`}
+                          aria-label={`Edit ide: ${item.title}`}
+                        >
+                          <Pencil size={14} /> <span>Edit</span>
+                        </button>
+                        <button
+                          className="row-action danger"
+                          type="button"
+                          onClick={() => handleDeleteClick(item)}
+                          title="Hapus"
+                          aria-label={`Hapus ide: ${item.title}`}
+                        >
+                          <Trash2 size={14} /> <span>Hapus</span>
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+          </>
+        )}
         </div>
       </section>
     </main>

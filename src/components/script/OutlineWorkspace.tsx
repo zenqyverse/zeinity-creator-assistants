@@ -687,7 +687,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
             </div>
 
             {/* Action Controls: Secondary Buttons + ONE PRIMARY HERO CTA */}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="outline-approval-bar" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               {/* Secondary Ghost 1: Regenerate */}
               <button
                 type="button"
@@ -1135,7 +1135,7 @@ export const OutlineWorkspace: React.FC<OutlineWorkspaceProps> = ({
                   }}
                 />
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <div className="outline-approval-bar" style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <button
                     type="button"
                     className="btn btn-primary"

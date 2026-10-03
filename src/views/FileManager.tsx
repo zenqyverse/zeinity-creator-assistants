@@ -88,7 +88,7 @@ export default function FileManager({ files, loading, onImportFile, onDelete }: 
           <h2>Berkas Terunggah</h2>
           <span className="record-count">{files.length} berkas</span>
         </div>
-        <div className="table-scroll">
+        <div className="file-list-container">
           {loading ? (
             <div className="empty-row">Memuat data…</div>
           ) : files.length === 0 ? (
@@ -96,7 +96,7 @@ export default function FileManager({ files, loading, onImportFile, onDelete }: 
               Belum ada berkas. Klik "Upload Dokumen" untuk menambahkan dokumen referensi.
             </div>
           ) : (
-            <div style={{ display: 'grid', gap: 10, padding: 18 }}>
+            <div className="file-cards-grid">
               {files.map((file) => {
                 const isIdentity = isChannelIdentityFile(file.filename);
                 return (
@@ -105,39 +105,41 @@ export default function FileManager({ files, loading, onImportFile, onDelete }: 
                     className="file-card glass"
                     style={{ borderLeft: isIdentity ? '3px solid var(--cyan)' : undefined }}
                   >
-                    <div className="file-icon" style={{ color: isIdentity ? 'var(--cyan)' : undefined }}>
-                      {getFileIcon(file.file_type)}
-                    </div>
-                    <div className="file-info">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <strong title={file.filename}>{file.filename}</strong>
-                        {isIdentity && (
-                          <span
-                            className="status-badge"
-                            style={{
-                              color: 'var(--cyan)',
-                              background: 'rgba(79, 232, 255, .15)',
-                              padding: '2px 7px',
-                              fontSize: '.66rem',
-                            }}
-                          >
-                            ⭐ Master AI Context
-                          </span>
-                        )}
+                    <div className="file-card-main">
+                      <div className="file-icon" style={{ color: isIdentity ? 'var(--cyan)' : undefined }}>
+                        {getFileIcon(file.file_type)}
                       </div>
-                      <span>
-                        {file.file_type?.toUpperCase() || 'FILE'} · {formatSize(file.extracted_text)} · {formatDate(file.created_at, true)}
-                      </span>
+                      <div className="file-info">
+                        <div className="file-name-row">
+                          <strong title={file.filename}>{file.filename}</strong>
+                          {isIdentity && (
+                            <span
+                              className="status-badge"
+                              style={{
+                                color: 'var(--cyan)',
+                                background: 'rgba(79, 232, 255, .15)',
+                                padding: '2px 7px',
+                                fontSize: '.66rem',
+                                flexShrink: 0,
+                              }}
+                            >
+                              ⭐ Master AI Context
+                            </span>
+                          )}
+                        </div>
+                        <span className="file-meta">
+                          {file.file_type?.toUpperCase() || 'FILE'} · {formatSize(file.extracted_text)} · {formatDate(file.created_at, true)}
+                        </span>
+                      </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <div className="file-card-actions">
                       <button
                         className="row-action"
                         type="button"
                         onClick={() => setPreviewFile(file)}
                         title="Pratinjau isi berkas"
                         aria-label={`Pratinjau isi berkas: ${file.filename}`}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
                       >
                         <Eye size={13} /> Pratinjau
                       </button>
@@ -148,7 +150,7 @@ export default function FileManager({ files, loading, onImportFile, onDelete }: 
                         title="Hapus berkas"
                         aria-label={`Hapus berkas: ${file.filename}`}
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={14} /> Hapus
                       </button>
                     </div>
                   </div>

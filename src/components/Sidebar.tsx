@@ -1,5 +1,20 @@
-import { LayoutDashboard, Lightbulb, Sparkles, FileText, CheckCircle, FolderOpen, BarChart3, Settings, X, Flame, Rss } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Lightbulb,
+  Sparkles,
+  FileText,
+  CheckCircle,
+  FolderOpen,
+  BarChart3,
+  Settings,
+  X,
+  Flame,
+  Rss,
+  Terminal as TerminalIcon,
+  Bot,
+} from 'lucide-react';
 import type { ViewKey } from '@/types';
+import { useTerminal } from './Terminal';
 import zeinityLogo from '@/assets/zeinity-logo.png';
 
 interface SidebarProps {
@@ -9,6 +24,7 @@ interface SidebarProps {
   onClose: () => void;
   activeProvider: string;
   providers: { name: string; state: string; keyMask: string }[];
+  isBotConfigured?: boolean;
 }
 
 const navItems: { key: ViewKey; label: string; icon: typeof LayoutDashboard }[] = [
@@ -24,7 +40,17 @@ const navItems: { key: ViewKey; label: string; icon: typeof LayoutDashboard }[] 
   { key: 'settings', label: 'Settings', icon: Settings },
 ];
 
-export default function Sidebar({ open, activeView, onNavigate, onClose, activeProvider, providers }: SidebarProps) {
+export default function Sidebar({
+  open,
+  activeView,
+  onNavigate,
+  onClose,
+  activeProvider,
+  providers,
+  isBotConfigured = false,
+}: SidebarProps) {
+  const { isOpen: isTerminalOpen, openTerminal, closeTerminal, status: terminalStatus } = useTerminal();
+
   return (
     <>
       <div
@@ -58,6 +84,61 @@ export default function Sidebar({ open, activeView, onNavigate, onClose, activeP
             );
           })}
         </nav>
+
+        {/* Mobile / Drawer System Utilities: Terminal & Bot Telegram */}
+        <section className="sidebar-system-tools" aria-label="Alat & Status Sistem">
+          <div className="sidebar-tools-header">
+            <span>SISTEM & KONSOL</span>
+          </div>
+
+          <button
+            type="button"
+            className={`sidebar-tool-item ${isTerminalOpen ? 'active' : ''}`}
+            onClick={() => {
+              if (isTerminalOpen) {
+                closeTerminal();
+              } else {
+                openTerminal();
+              }
+              onClose();
+            }}
+            aria-label="Alihkan Log Terminal Aktivitas"
+          >
+            <div className="sidebar-tool-left">
+              <TerminalIcon size={16} />
+              <span>Log Terminal Aktivitas</span>
+            </div>
+            {terminalStatus === 'LIVE' ? (
+              <span className="sidebar-tool-status live">
+                <span className="dot" /> LIVE
+              </span>
+            ) : (
+              <span className="sidebar-tool-status">
+                {isTerminalOpen ? 'Aktif' : 'Buka'}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            className="sidebar-tool-item"
+            onClick={() => {
+              onNavigate('settings');
+              onClose();
+            }}
+            aria-label={`Status Bot Telegram: ${isBotConfigured ? 'Terhubung Online' : 'Belum Dikonfigurasi'}`}
+          >
+            <div className="sidebar-tool-left">
+              <Bot size={16} />
+              <span>Bot Telegram</span>
+            </div>
+            <span className={`sidebar-tool-status ${isBotConfigured ? 'online' : 'offline'}`}>
+              <span className="dot" />
+              {isBotConfigured ? 'Online' : 'Belum Setup'}
+            </span>
+          </button>
+        </section>
+
         <section className="provider-panel" aria-labelledby="provider-title">
           <h3 id="provider-title" title={`Active: ${activeProvider}`}>AI Provider Gateway</h3>
           {providers.map((p) => (
